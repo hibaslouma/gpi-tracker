@@ -1,0 +1,101 @@
+<div class="admin-container">
+
+  <!-- Header -->
+  <div class="admin-header">
+    <h1>Dashboard</h1>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-info">
+        <span class="stat-number">8</span>
+        <span class="stat-label">Backoffice</span>
+      </div>
+      <div class="stat-icon">
+        <i class="pi pi-briefcase"></i>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-info">
+        <span class="stat-number">156</span>
+        <span class="stat-label">Clients</span>
+      </div>
+      <div class="stat-icon">
+        <i class="pi pi-users"></i>
+      </div>
+    </div>
+    <div class="stat-card stat-card-highlight">
+      <div class="stat-info">
+        <span class="stat-number">164</span>
+        <span class="stat-label">Total utilisateurs</span>
+      </div>
+      <div class="stat-icon">
+        <i class="pi pi-chart-bar"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content-grid">
+
+    <!-- Derniers utilisateurs -->
+    <div class="content-card">
+      <div class="card-header">
+        <h2>Derniers utilisateurs</h2>
+        <button class="see-all" (click)="navigate('/admin/utilisateurs')">
+          Voir tout <i class="pi pi-arrow-right"></i>
+        </button>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Rôle</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of recentUsers">
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar-sm">{{ user.initials }}</div>
+                <div>
+                  <div class="user-name">{{ user.name }}</div>
+                  <div class="user-email">{{ user.email }}</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="role-badge">{{ user.role }}</span></td>
+            <td><span class="status-badge" [class.active]="user.active">{{ user.active ? 'Actif' : 'Inactif' }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Accès rapide -->
+    <div class="content-card">
+      <div class="card-header">
+        <h2>Accès rapide</h2>
+      </div>
+      <div class="quick-links">
+        <div class="quick-link" (click)="navigate('/admin/utilisateurs')">
+          <div class="quick-icon"><i class="pi pi-users"></i></div>
+          <span>Gestion des utilisateurs</span>
+          <i class="pi pi-arrow-right arrow"></i>
+        </div>
+        <div class="quick-link" (click)="navigate('/admin/parametrage')">
+          <div class="quick-icon"><i class="pi pi-cog"></i></div>
+          <span>Paramétrage</span>
+          <i class="pi pi-arrow-right arrow"></i>
+        </div>
+        <div class="quick-link" (click)="navigate('/admin/annuaire')">
+          <div class="quick-icon"><i class="pi pi-book"></i></div>
+          <span>Mise à jour annuaire</span>
+          <i class="pi pi-arrow-right arrow"></i>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

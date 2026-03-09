@@ -1,0 +1,23 @@
+/* You can add global styles to this file, and also import other style files */
+@use 'primeicons/primeicons.css';
+@use '@/assets/layout/layout.scss';
+@use '@/assets/demo/demo.scss';
+:root,
+:root[data-p-theme],
+[data-p-theme] {
+      --p-primary-color: #f97316 !important;
+
+  --p-primary-50:  #f97316 !important;
+  --p-primary-100: #f97316 !important;
+  --p-primary-200: #f97316 !important;
+  --p-primary-300: #f97316 !important;
+  --p-primary-400: #f97316 !important;
+  --p-primary-500: #f97316 !important;
+  --p-primary-600: #f97316 !important;
+  --p-primary-700: #f97316 !important;
+  --p-primary-800: #f97316 !important;
+  --p-primary-900: #f97316 !important;
+
+
+
+}

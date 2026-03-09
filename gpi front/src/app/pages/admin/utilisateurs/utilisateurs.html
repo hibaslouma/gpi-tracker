@@ -1,0 +1,201 @@
+<div class="users-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Gestion des utilisateurs</h1>
+      <p>{{ filteredUsers.length }} utilisateur(s) trouvé(s)</p>
+    </div>
+    <button class="btn-add" (click)="openAddModal()">
+      <i class="pi pi-plus"></i> Ajouter un utilisateur
+    </button>
+  </div>
+
+  <!-- Filtres -->
+  <div class="filters">
+    <div class="search-box">
+      <i class="pi pi-search"></i>
+      <input type="text" placeholder="Rechercher..." [(ngModel)]="searchQuery" />
+    </div>
+    <div class="role-filters">
+      <button [class.active]="selectedRole === 'Tous'" (click)="selectedRole = 'Tous'">Tous</button>
+      <button [class.active]="selectedRole === 'Backoffice'" (click)="selectedRole = 'Backoffice'">Backoffice</button>
+      <button [class.active]="selectedRole === 'Client'" (click)="selectedRole = 'Client'">Client</button>
+    </div>
+  </div>
+
+  <!-- Tableau -->
+  <div class="table-card">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Téléphone</th>
+          <th>Rôle</th>
+          <th>Date de création</th>
+          <th>Dernière connexion</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of filteredUsers">
+          <td>
+            <div class="user-cell">
+              <div class="avatar">{{ user.initials }}</div>
+              <div>
+                <div class="user-name">{{ user.name }}</div>
+                <div class="user-email">{{ user.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="text-secondary">{{ user.phone }}</td>
+          <td>
+            <span class="role-badge" [class.backoffice]="user.role === 'Backoffice'">
+              {{ user.role }}
+            </span>
+          </td>
+          <td class="text-secondary">{{ user.createdAt }}</td>
+          <td class="text-secondary">{{ user.lastLogin }}</td>
+          <td>
+            <div class="actions">
+              <button class="btn-action edit" (click)="openEditModal(user)" title="Modifier">
+                <i class="pi pi-pencil"></i>
+              </button>
+              <button class="btn-action history" (click)="openLogs(user)" title="Historique">
+                <i class="pi pi-history"></i>
+              </button>
+              <button class="btn-action delete" (click)="confirmDelete(user)" title="Supprimer">
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal Ajouter/Modifier -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="showModal = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEditing ? 'Modifier' : 'Ajouter' }} un utilisateur</h2>
+        <button (click)="showModal = false"><i class="pi pi-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nom complet</label>
+          <input type="text" [(ngModel)]="newUser.name" placeholder="Ex: Ahmed Ben Ali" />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" [(ngModel)]="newUser.email" placeholder="Ex: ahmed@gpi.tn" />
+        </div>
+        <div class="form-group">
+          <label>Téléphone</label>
+          <input type="text" [(ngModel)]="newUser.phone" placeholder="Ex: +216 22 111 222" />
+        </div>
+        <div class="form-group">
+          <label>Rôle</label>
+          <select [(ngModel)]="newUser.role">
+            <option value="Backoffice">Backoffice</option>
+            <option value="Client">Client</option>
+          </select>
+        </div>
+
+        <!-- Mot de passe — mode Ajouter -->
+        <div class="form-group" *ngIf="!isEditing">
+          <label>Mot de passe généré</label>
+          <div class="password-display-inline">
+            <span>{{ newUser.password }}</span>
+            <button type="button" class="btn-refresh" (click)="newUser.password = generatePassword()">
+              <i class="pi pi-refresh"></i>
+            </button>
+            <button type="button" class="btn-copy" [class.copied]="copied" (click)="copyPasswordText(newUser.password || '')">
+              <i [class]="copied ? 'pi pi-check' : 'pi pi-copy'"></i>
+              {{ copied ? 'Copié !' : 'Copier' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Réinitialiser mdp — mode Modifier -->
+        <div class="form-group reset-section" *ngIf="isEditing">
+          <label>Réinitialiser le mot de passe</label>
+          <div class="password-display-inline">
+            <span>{{ generatedPassword || '••••••••••' }}</span>
+            <button type="button" class="btn-refresh" (click)="refreshGeneratedPassword()">
+              <i class="pi pi-refresh"></i>
+            </button>
+            <button type="button" class="btn-copy" [class.copied]="copied"
+              (click)="copyPasswordText(generatedPassword)"
+              [disabled]="!generatedPassword">
+              <i [class]="copied ? 'pi pi-check' : 'pi pi-copy'"></i>
+              {{ copied ? 'Copié !' : 'Copier' }}
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showModal = false">Annuler</button>
+        <button class="btn-save" (click)="saveUser()">
+          {{ isEditing ? 'Modifier' : 'Ajouter' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Supprimer -->
+  <div class="modal-overlay" *ngIf="showDeleteModal" (click)="showDeleteModal = false">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Confirmer la suppression</h2>
+        <button (click)="showDeleteModal = false"><i class="pi pi-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p>Voulez-vous vraiment supprimer <strong>{{ selectedUser?.name }}</strong> ?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showDeleteModal = false">Annuler</button>
+        <button class="btn-delete" (click)="deleteUser()">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Historique par utilisateur -->
+  <div class="modal-overlay" *ngIf="showLogsModal" (click)="showLogsModal = false">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="logs-modal-title">
+          <div class="avatar">{{ selectedUser?.initials }}</div>
+          <div>
+            <h2>Historique — {{ selectedUser?.name }}</h2>
+            <span class="logs-subtitle">{{ selectedUser?.email }}</span>
+          </div>
+        </div>
+        <button (click)="showLogsModal = false"><i class="pi pi-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="timeline">
+          <div class="timeline-item" *ngFor="let log of selectedUserLogs">
+            <div class="timeline-dot" [ngClass]="getLogActionClass(log.action)"></div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <span class="log-badge" [ngClass]="getLogActionClass(log.action)">{{ log.action }}</span>
+                <span class="timeline-date">{{ log.date }}</span>
+              </div>
+              <span class="timeline-admin">Par : {{ log.admin }}</span>
+            </div>
+          </div>
+          <div *ngIf="selectedUserLogs.length === 0" class="no-logs">
+            <i class="pi pi-inbox"></i>
+            <p>Aucun historique disponible</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-save" (click)="showLogsModal = false">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+</div>
