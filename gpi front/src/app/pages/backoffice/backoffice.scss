@@ -1,0 +1,570 @@
+// ═══════════════════════════════════════════════════════════
+// BACKOFFICE GPI — Styles complets v2
+// ═══════════════════════════════════════════════════════════
+
+$orange:       #F97316;
+$orange-dark:  #ea6c0a;
+$orange-light: #FFF7ED;
+$blue:         #0066FF;
+$blue-light:   #eff6ff;
+$green:        #16a34a;
+$red:          #dc2626;
+$text-dark:    #1e293b;
+$text-medium:  #64748b;
+$text-light:   #94a3b8;
+$border:       #e2e8f0;
+$bg:           #f8fafc;
+$white:        #ffffff;
+
+// ─── Reset ─────────────────────────────────────────────────
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+// ─── Toast ─────────────────────────────────────────────────
+.toast {
+  position: fixed; top: 1.5rem; right: 1.5rem; z-index: 9999;
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.85rem 1.25rem; border-radius: 8px;
+  font-size: 0.875rem; font-weight: 500; color: $white;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  transform: translateY(-12px); opacity: 0; pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+  &.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+  &--success { background: $green; }
+  &--error   { background: $red; }
+  &--info    { background: $blue; }
+}
+
+// ─── Layout ────────────────────────────────────────────────
+.backoffice-wrapper {
+  background: $bg; font-family: 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh; display: flex; flex-direction: column;
+  font-size: 14px; color: $text-dark;
+}
+
+// ─── Topbar ────────────────────────────────────────────────
+.topbar {
+  height: 56px; background: $white; border-bottom: 1px solid $border;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1.75rem; position: sticky; top: 0; z-index: 100; flex-shrink: 0;
+}
+.topbar-logo {
+  font-size: 1.4rem; font-weight: 900; color: $orange; letter-spacing: 2px; font-style: italic;
+}
+.topbar-center {
+  flex: 1; display: flex; justify-content: center;
+}
+.topbar-bank {
+  font-size: 0.825rem; font-weight: 600; color: $text-medium; letter-spacing: 0.3px;
+}
+.topbar-actions { display: flex; align-items: center; gap: 0.5rem; }
+.topbar-badge {
+  position: relative; cursor: pointer; padding: 0.4rem;
+  color: $text-medium; display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; transition: all 0.2s;
+  &:hover { background: $orange-light; color: $orange; }
+}
+.topbar-badge-count {
+  position: absolute; top: 0; right: 0;
+  background: $red; color: $white;
+  font-size: 0.6rem; font-weight: 800;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid $white;
+}
+.topbar-btn {
+  width: 34px; height: 34px; border: none; background: none;
+  border-radius: 6px; cursor: pointer; color: $text-medium;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+  &:hover { background: $bg; color: $orange; }
+}
+
+// ─── Body ──────────────────────────────────────────────────
+.body-layout { display: flex; flex: 1; overflow: hidden; }
+
+// ─── Sidebar ───────────────────────────────────────────────
+.sidebar {
+  width: 256px; min-width: 256px; background: $white;
+  border-right: 1px solid $border; display: flex; flex-direction: column;
+  padding: 1.25rem 0.875rem; overflow-y: auto;
+}
+.user-profile {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.875rem 1rem; background: $bg; border-radius: 10px;
+  margin-bottom: 1.75rem; border: 1px solid $border;
+}
+.user-avatar {
+  width: 42px; height: 42px; background: $orange; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: $white; font-size: 0.85rem; font-weight: 800; flex-shrink: 0;
+}
+.user-name { font-size: 0.875rem; font-weight: 700; color: $text-dark; margin: 0; }
+.user-role { font-size: 0.75rem; color: $orange; font-weight: 500; margin: 0.1rem 0 0; }
+.menu-section { margin-bottom: 1.5rem; }
+.menu-section-title {
+  font-size: 0.65rem; font-weight: 800; color: $text-light;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  margin-bottom: 0.4rem; padding: 0 0.625rem;
+}
+.menu-item {
+  display: flex; align-items: center; gap: 0.75rem; width: 100%;
+  padding: 0.6rem 0.875rem; background: transparent; border: none;
+  border-radius: 7px; cursor: pointer; font-size: 0.85rem;
+  color: $text-medium; font-weight: 500; margin-bottom: 0.2rem;
+  transition: all 0.18s; text-align: left; position: relative;
+  &:hover    { background: $orange-light; color: $orange; }
+  &.active   { background: $orange-light; color: $orange; font-weight: 700; }
+  &--danger  { color: $red !important;
+    &:hover  { background: #fef2f2 !important; } }
+}
+.menu-badge {
+  margin-left: auto; background: $red; color: $white;
+  font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem;
+  border-radius: 10px; min-width: 20px; text-align: center;
+}
+
+// ─── Main ──────────────────────────────────────────────────
+.main-content { flex: 1; padding: 2rem; overflow-y: auto; min-width: 0; }
+.tab-content { animation: fadeIn 0.22s ease; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ─── Content header ────────────────────────────────────────
+.content-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 1.5rem; gap: 1rem;
+}
+.content-title { font-size: 1.2rem; font-weight: 800; color: $text-dark; margin: 0; }
+.content-sub { font-size: 0.82rem; color: $text-medium; margin: 0.25rem 0 0; }
+
+// ─── Bouton Nouveau pacs.008 ───────────────────────────────
+.btn-initier {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: $orange; color: $white; border: none;
+  padding: 0.625rem 1.25rem; border-radius: 7px; cursor: pointer;
+  font-size: 0.85rem; font-weight: 700; white-space: nowrap;
+  transition: all 0.2s; flex-shrink: 0;
+  &:hover { background: $orange-dark; box-shadow: 0 4px 14px rgba(249,115,22,0.35); transform: translateY(-1px); }
+}
+
+// ─── Formulaire initiation ─────────────────────────────────
+.initiation-form {
+  background: $white; border: 1.5px solid $orange; border-radius: 12px;
+  padding: 1.5rem; margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px rgba(249,115,22,0.08);
+}
+.initiation-form-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.25rem;
+  h3 { font-size: 1rem; font-weight: 700; color: $text-dark; }
+}
+.btn-close-form {
+  background: none; border: none; cursor: pointer; color: $text-light;
+  font-size: 1.1rem; padding: 0.2rem 0.5rem; border-radius: 4px;
+  transition: all 0.2s; &:hover { background: #fef2f2; color: $red; }
+}
+.form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+
+// ─── Formulaire commun ─────────────────────────────────────
+.form-group {
+  margin-bottom: 1.25rem;
+  label {
+    display: block; font-size: 0.82rem; font-weight: 700; color: $text-dark;
+    margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%; padding: 0.65rem 0.9rem;
+    border: 1.5px solid $border; border-radius: 7px;
+    font-size: 0.875rem; color: $text-dark; background: $white;
+    transition: all 0.18s; font-family: inherit;
+    &:focus { outline: none; border-color: $orange; box-shadow: 0 0 0 3px rgba(249,115,22,0.1); }
+    &::placeholder { color: $text-light; }
+    &:disabled { background: $bg; cursor: not-allowed; color: $text-light; }
+  }
+  textarea { resize: vertical; min-height: 90px; }
+}
+.required { color: $red; }
+
+.input-row { display: flex; gap: 0.75rem; align-items: stretch; }
+.select-uetr { flex: 1; font-family: 'Consolas', monospace; font-size: 0.8rem; }
+
+.form-actions {
+  display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;
+}
+.btn-primary {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: $orange; color: $white; border: none;
+  padding: 0.65rem 1.5rem; border-radius: 7px; cursor: pointer;
+  font-size: 0.875rem; font-weight: 700; transition: all 0.2s;
+  &:hover { background: $orange-dark; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(249,115,22,0.3); }
+}
+.btn-secondary {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: $white; color: $text-medium; border: 1.5px solid $border;
+  padding: 0.65rem 1.25rem; border-radius: 7px; cursor: pointer;
+  font-size: 0.875rem; font-weight: 600; transition: all 0.2s;
+  &:hover { border-color: $text-medium; color: $text-dark; }
+}
+.btn-danger {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: $red; color: $white; border: none;
+  padding: 0.65rem 1.5rem; border-radius: 7px; cursor: pointer;
+  font-size: 0.875rem; font-weight: 700; transition: all 0.2s;
+  &:hover { background: darken(#dc2626, 8%); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(220,38,38,0.3); }
+}
+.btn-search {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: $blue; color: $white; border: none;
+  padding: 0.65rem 1.25rem; border-radius: 7px; cursor: pointer;
+  font-size: 0.875rem; font-weight: 600; white-space: nowrap; transition: all 0.2s;
+  &:hover { background: darken(#0066FF, 8%); }
+}
+
+// ─── Filtres ───────────────────────────────────────────────
+.filter-section {
+  display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;
+  padding: 1rem 1.25rem; background: $white; border: 1px solid $border;
+  border-radius: 8px; align-items: center;
+}
+.filter-group {
+  display: flex; gap: 0.5rem; align-items: center;
+  label { font-size: 0.8rem; font-weight: 700; color: $text-dark; white-space: nowrap; }
+  select, input[type="date"] {
+    padding: 0.45rem 0.75rem; border: 1.5px solid $border; border-radius: 6px;
+    font-size: 0.825rem; background: $white; color: $text-dark; cursor: pointer;
+    transition: border-color 0.2s;
+    &:focus { outline: none; border-color: $orange; }
+  }
+}
+
+// ─── Search ────────────────────────────────────────────────
+.search-section { margin-bottom: 1.25rem; }
+.search-wrapper { position: relative; max-width: 420px; }
+.search-icon { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); color: $text-light; pointer-events: none; }
+.search-input {
+  width: 100%; padding: 0.7rem 0.875rem 0.7rem 2.75rem;
+  border: 1.5px solid $border; border-radius: 7px;
+  font-size: 0.875rem; color: $text-dark; background: $white; transition: all 0.2s;
+  &:focus { outline: none; border-color: $orange; box-shadow: 0 0 0 3px rgba(249,115,22,0.1); }
+  &::placeholder { color: $text-light; }
+}
+
+// ─── Table commune ─────────────────────────────────────────
+.table-wrapper {
+  background: $white; border: 1px solid $border;
+  border-radius: 10px; overflow-x: auto; margin-bottom: 1.25rem;
+}
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+thead { background: $bg; border-bottom: 2px solid $border; }
+th {
+  padding: 0.8rem 1rem; text-align: left; font-weight: 800;
+  color: $text-dark; text-transform: uppercase; font-size: 0.68rem;
+  letter-spacing: 0.8px; white-space: nowrap;
+  border-right: 1px solid $border;
+  &:last-child { border-right: none; }
+}
+td {
+  padding: 0.85rem 1rem; border-bottom: 1px solid $border;
+  border-right: 1px solid $border; color: $text-dark; vertical-align: middle;
+  &:last-child { border-right: none; }
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #fafafa; }
+.empty-state { text-align: center; color: $text-light; font-style: italic; padding: 2.5rem !important; font-size: 0.9rem; }
+
+// ─── Statuts ISO — Badges ──────────────────────────────────
+.badge {
+  display: inline-block; padding: 0.25rem 0.6rem;
+  border-radius: 5px; font-size: 0.72rem; font-weight: 800;
+  letter-spacing: 0.5px; white-space: nowrap; border: 1.5px solid transparent;
+}
+.badge-pdng { background: transparent; color: $blue;    border-color: $blue;    }
+.badge-accp { background: transparent; color: $orange;  border-color: $orange;  }
+.badge-acsp { background: transparent; color: $orange;  border-color: $orange;  }
+.badge-acsc { background: transparent; color: $green;   border-color: $green;   }
+.badge-rjct { background: transparent; color: $red;     border-color: $red;     }
+.badge-canc { background: transparent; color: $text-medium; border-color: $text-medium; }
+
+.badge-sm { font-size: 0.65rem; padding: 0.15rem 0.45rem; }
+
+.statut-cell { display: flex; flex-direction: column; gap: 0.2rem; }
+.statut-desc { font-size: 0.72rem; color: $text-light; }
+
+// ─── Badge type msg pacs / camt ───────────────────────────
+.badge-acsp { background: transparent; color: $orange;  border-color: $orange; }  // pacs.*
+.badge-rjct { background: transparent; color: $red;     border-color: $red;    }  // camt.056
+.badge-acsc { background: transparent; color: $green;   border-color: $green;  }  // camt.029
+
+// ─── Délai GPI ─────────────────────────────────────────────
+.delai-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.2rem 0.55rem; border-radius: 5px;
+  font-size: 0.75rem; font-weight: 700; border: 1.5px solid transparent;
+}
+.delai-ok     { color: $green;   border-color: $green;   background: transparent; }
+.delai-retard { color: $red;     border-color: $red;     background: transparent; }
+
+// ─── Motif rejet ───────────────────────────────────────────
+.motif-rejet {
+  display: inline-block; font-size: 0.78rem; font-weight: 600;
+  color: $red; white-space: nowrap;
+}
+.text-light { color: $text-light; }
+.motif-cell { font-size: 0.82rem; color: $text-medium; max-width: 200px; }
+
+// ─── Bouton action fleche ──────────────────────────────────
+.btn-action {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  background: $orange-light; color: $orange; border: 1.5px solid $orange;
+  border-radius: 6px; cursor: pointer; transition: all 0.2s;
+  &:hover { background: $orange; color: $white; transform: translateX(2px); }
+}
+.btn-retour {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: none; border: 1.5px solid $border; color: $text-medium;
+  padding: 0.5rem 1rem; border-radius: 7px; cursor: pointer; font-size: 0.85rem;
+  font-weight: 600; margin-bottom: 1.5rem; transition: all 0.2s;
+  &:hover { border-color: $orange; color: $orange; }
+}
+
+// ─── Pagination ────────────────────────────────────────────
+.pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 0; gap: 1rem;
+}
+.pagination-info { font-size: 0.82rem; color: $text-light; }
+.pagination-controls { display: flex; align-items: center; gap: 0.3rem; }
+.pagination-controls button {
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  background: $white; border: 1px solid $border; border-radius: 5px;
+  cursor: pointer; font-size: 0.82rem; color: $text-medium; transition: all 0.18s;
+  &:hover:not(:disabled) { border-color: $orange; color: $orange; }
+  &.active { background: $orange; color: $white; border-color: $orange; font-weight: 700; }
+  &:disabled { cursor: not-allowed; opacity: 0.4; }
+}
+
+// ─── Paiements entrants — boutons accept/reject ────────────
+.action-btns { display: flex; gap: 0.5rem; }
+.btn-accepter {
+  display: flex; align-items: center; gap: 0.35rem;
+  background: transparent; color: $green; border: 1.5px solid $green;
+  padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer;
+  font-size: 0.78rem; font-weight: 700; transition: all 0.2s;
+  &:hover { background: $green; color: $white; }
+}
+.btn-rejeter {
+  display: flex; align-items: center; gap: 0.35rem;
+  background: transparent; color: $red; border: 1.5px solid $red;
+  padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer;
+  font-size: 0.78rem; font-weight: 700; transition: all 0.2s;
+  &:hover { background: $red; color: $white; }
+}
+
+// ─── Info box ──────────────────────────────────────────────
+.info-box {
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  background: $blue-light; border-left: 4px solid $blue;
+  padding: 0.875rem 1rem; border-radius: 6px;
+  margin-bottom: 1.5rem; font-size: 0.875rem; color: darken(#0066FF,8%);
+  line-height: 1.5;
+}
+
+// ─── Alerte rejet ──────────────────────────────────────────
+.alert-rejet {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  background: #fef2f2; border-left: 4px solid $red; border-radius: 6px;
+  padding: 1rem 1.25rem; margin-bottom: 1.5rem; color: $red;
+  strong { display: block; font-size: 0.9rem; margin-bottom: 0.25rem; }
+  p { font-size: 0.82rem; opacity: 0.85; margin: 0; }
+}
+
+// ─── Section confirm: card detail transaction ──────────────
+.transaction-detail-card {
+  background: $bg; border: 1px solid $border; border-radius: 10px;
+  padding: 1.25rem; margin-bottom: 1.5rem;
+  h4 { font-size: 0.85rem; font-weight: 700; color: $text-medium; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.5px; }
+}
+.detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.detail-item {}
+.detail-label { font-size: 0.72rem; color: $text-light; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.3rem; }
+.detail-value { font-size: 0.9rem; font-weight: 600; color: $text-dark; }
+.mono { font-family: 'Consolas', monospace; font-size: 0.82rem; }
+
+// ─── Section rejet dans confirmation ──────────────────────
+.rejet-section {
+  background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 10px;
+  padding: 1.25rem; margin-bottom: 1.25rem;
+}
+
+// ─── Ligne Metro ── bandeau header ─────────────────────────
+.lm-header-cards {
+  display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.75rem;
+}
+.lm-card {
+  background: $white; border: 1px solid $border; border-radius: 10px;
+  padding: 0.875rem 1.25rem; flex: 1; min-width: 120px;
+  &--wide { flex: 2; min-width: 280px; }
+}
+.lm-card-label { font-size: 0.7rem; font-weight: 700; color: $text-light; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem; }
+.lm-card-value { font-size: 1.05rem; font-weight: 800; color: $text-dark; margin: 0; }
+.lm-card-sub   { font-size: 0.72rem; color: $text-light; margin: 0.25rem 0 0; }
+.lm-card-uetr  { font-family: 'Consolas', monospace; font-size: 0.82rem; color: $text-dark; font-weight: 600; margin: 0; word-break: break-all; }
+
+// ─── Timeline simple ───────────────────────────────────────
+.lm-timeline {
+  display: flex; align-items: center; justify-content: center;
+  margin: 1.75rem 0; gap: 0;
+}
+.lm-dot {
+  width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+  &--active  { background: $green; box-shadow: 0 0 0 4px rgba(22,163,74,0.2); }
+  &--pending { background: $orange; box-shadow: 0 0 0 4px rgba(249,115,22,0.2); }
+  &--empty   { background: $text-light; border: 2px solid $border; }
+}
+.lm-line {
+  height: 3px; width: 140px;
+  &--done    { background: $green; }
+  &--pending { background: $border; background: repeating-linear-gradient(90deg,$border 0,$border 6px,transparent 6px,transparent 12px); }
+}
+
+// ─── Banques emetteur / recepteur ─────────────────────────
+.lm-banques { display: flex; gap: 1.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+.lm-banque-card {
+  background: $white; border: 1px solid $border; border-radius: 10px;
+  padding: 1.25rem 1.5rem; flex: 1; min-width: 240px;
+}
+.lm-banque-title { font-size: 0.7rem; font-weight: 800; color: $text-light; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.75rem; }
+.lm-banque-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+.lm-bl { font-size: 0.72rem; color: $text-light; min-width: 40px; }
+.lm-bv { font-size: 0.875rem; font-weight: 700; color: $text-dark;
+  &--sent    { color: $green; font-weight: 700; }
+  &--pending { color: $text-light; font-style: italic; }
+  &--ref     { font-family: 'Consolas', monospace; font-size: 0.8rem; color: $blue; }
+}
+.lm-banque-date { font-size: 0.72rem; color: $text-light; margin: 0.5rem 0; }
+
+// ─── Timeline Messages MX ──────────────────────────────────
+.msg-timeline-section { margin-bottom: 2rem; }
+.msg-timeline { display: flex; flex-direction: column; gap: 0; padding: 0.5rem 0; }
+.msg-step {
+  display: flex; align-items: flex-start; gap: 1rem; position: relative;
+  padding-bottom: 1.5rem;
+  &:last-child { padding-bottom: 0; }
+}
+.msg-step-icon {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid transparent; margin-top: 2px;
+  // hérite des classes badge pour la couleur de fond adaptée
+  &.badge-pdng { background: $blue-light;  border-color: $blue;    svg { stroke: $blue; } }
+  &.badge-accp { background: $orange-light; border-color: $orange; svg { stroke: $orange; } }
+  &.badge-acsp { background: $orange-light; border-color: $orange; svg { stroke: $orange; } }
+  &.badge-acsc { background: #f0fdf4;       border-color: $green;  svg { stroke: $green; } }
+  &.badge-rjct { background: #fef2f2;       border-color: $red;    svg { stroke: $red;   } }
+  &.badge-canc { background: $bg;           border-color: $text-light; svg { stroke: $text-light; } }
+}
+.msg-step-line {
+  position: absolute; left: 17px; top: 40px; bottom: 0;
+  width: 2px; background: $border;
+}
+.msg-step-body { flex: 1; background: $white; border: 1px solid $border; border-radius: 8px; padding: 0.75rem 1rem; }
+.msg-step-top { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+.msg-type-tag {
+  font-size: 0.75rem; font-weight: 800; color: $text-dark;
+  font-family: 'Consolas', monospace;
+  background: $bg; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid $border;
+}
+.msg-date { font-size: 0.72rem; color: $text-light; margin-left: auto; }
+.msg-ref  { font-family: 'Consolas', monospace; font-size: 0.75rem; color: $blue; margin-bottom: 0.25rem; }
+.msg-detail { font-size: 0.8rem; color: $text-medium; }
+
+// ─── Charges section ───────────────────────────────────────
+.charges-section { margin-top: 0.5rem; }
+.charges-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 1rem; font-weight: 700; color: $text-dark;
+  margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid $border;
+}
+.charges-table-wrapper {
+  background: $white; border: 1px solid $border; border-radius: 10px;
+  overflow: hidden; margin-bottom: 1rem;
+}
+.charges-table {
+  width: 100%; border-collapse: collapse; font-size: 0.85rem;
+  th {
+    padding: 0.65rem 1rem; font-size: 0.68rem; font-weight: 800; color: $text-dark;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    background: $bg; border-bottom: 1px solid $border; border-right: 1px solid $border;
+    &:last-child { border-right: none; }
+  }
+  td {
+    padding: 0.7rem 1rem; border-bottom: 1px solid $border;
+    border-right: 1px solid $border; color: $text-dark; vertical-align: middle;
+    &:last-child { border-right: none; }
+  }
+  tr:last-child td { border-bottom: none; }
+}
+.rang-cell { font-weight: 800; color: $text-light; text-align: center; width: 44px; }
+.charge-bic { font-family: 'Consolas', monospace; font-size: 0.82rem; font-weight: 700; }
+.charge-montant { text-align: right; font-weight: 600; }
+.montant-charge { color: $red; font-weight: 700; }
+.montant-zero   { color: $green; font-style: italic; font-size: 0.78rem; }
+.empty-charges  { color: $text-light; font-style: italic; text-align: center; }
+.total-row td { background: $bg; border-top: 2px solid $border !important; font-size: 0.82rem; }
+
+.badge-type {
+  display: inline-block; padding: 0.2rem 0.55rem; border-radius: 4px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px;
+  &--sha, &--our, &--ben { background: transparent; color: $text-dark; border: 1px solid #cbd5e1; }
+}
+
+.chain-role-badge {
+  display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px;
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 0.3px;
+  text-transform: uppercase; background: transparent; color: $text-dark;
+}
+.chain-statut-badge {
+  display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px;
+  font-size: 0.72rem; font-weight: 600;
+}
+.agent-confirme { background: transparent; color: $green;        border: 1px solid $green;        }
+.agent-transit  { background: transparent; color: $orange;       border: 1px solid $orange;       }
+.agent-attente  { background: transparent; color: $text-light;   border: 1px solid $border;       }
+
+.charges-recap {
+  display: flex; gap: 1rem; flex-wrap: wrap;
+  background: $white; border: 1px solid $border; border-radius: 10px;
+  padding: 1.25rem 1.5rem; margin-top: 0.5rem;
+}
+.recap-item {
+  display: flex; flex-direction: column; gap: 0.3rem; flex: 1; min-width: 160px;
+  padding-right: 1.5rem; border-right: 1px solid $border;
+  &:last-child { border-right: none; padding-right: 0; }
+  &--net { background: $orange-light; border-radius: 8px; padding: 0.75rem 1rem; border-right: none; }
+}
+.recap-label { font-size: 0.72rem; color: $text-light; text-transform: uppercase; letter-spacing: 0.4px; }
+.recap-value { font-size: 1rem; font-weight: 700; color: $text-dark;
+  &--orange { color: $orange; font-size: 1.1rem; }
+}
+
+// ─── Suivi annulations ─────────────────────────────────────
+.annul-statut-accp { background: transparent; color: $green;  border: 1px solid $green;  }
+.annul-statut-pdng { background: transparent; color: $blue;   border: 1px solid $blue;   }
+.annul-statut-rjct { background: transparent; color: $red;    border: 1px solid $red;    }
+
+// ─── Historique ────────────────────────────────────────────
+.charges-cell { white-space: nowrap; }
+.charges-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: transparent; color: $red; border: 1px solid $red;
+  font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.6rem;
+  border-radius: 5px; white-space: nowrap;
+}
+.charges-badge-zero { color: $text-light; font-size: 0.85rem; }
+.montant-net { font-weight: 700; color: $green; }
+.montant-cell { text-align: right; font-weight: 700; color: $text-dark; }
+
+// ─── Misc ──────────────────────────────────────────────────
+.pays-label { font-size: 0.72rem; color: $text-light; font-weight: 400; }
+.uetr-cell  { font-family: 'Consolas', monospace; font-size: 0.78rem; color: $text-medium; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

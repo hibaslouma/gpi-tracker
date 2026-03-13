@@ -25,6 +25,13 @@ export const appRoutes: Routes = [
       }
     ]
   },
+
+  // ✅ Backoffice en dehors du AppLayout = pas de sidebar Admin
+  { 
+    path: 'backoffice', 
+    loadComponent: () => import('./app/pages/backoffice/backoffice').then(m => m.BackofficeComponent) 
+  },
+
   {
     path: 'auth',
     loadChildren: () => import('./app/pages/auth/auth.routes')

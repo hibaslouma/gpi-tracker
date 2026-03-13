@@ -112,29 +112,34 @@ export class Login {
     return !!c && c.invalid && c.touched;
   }
 
-  onSubmit() {
-    this.submitted = true;
+onSubmit() {
+  this.submitted = true;
 
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.loading = true;
-
-    const { email, password } = this.form.value;
-
-    this.authService.login(email!, password!).subscribe({
-      next: (res) => {
-        localStorage.setItem('token', res.token);
-        localStorage.setItem('role', res.role);
-        this.loading = false;
-        this.router.navigateByUrl('/admin/utilisateurs');
-      },
-      error: (err) => {
-        console.error('Erreur login:', err);
-        this.loading = false;
-      }
-    });
+  if (this.form.invalid) {
+    this.form.markAllAsTouched();
+    return;
   }
+
+  this.loading = true;
+
+  const { email, password } = this.form.value;
+
+  this.authService.login(email!, password!).subscribe({
+    next: (res) => {
+      localStorage.setItem('token', res.token);
+      localStorage.setItem('role', res.role);
+      this.loading = false;
+
+      if (res.role === 'backoffice') {
+        this.router.navigateByUrl('/backoffice');
+      } else {
+        this.router.navigateByUrl('/admin');
+      }
+    },
+    error: (err) => {
+      console.error('Erreur login:', err);
+      this.loading = false;
+    }
+  });
+}
 }
