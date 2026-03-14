@@ -1,0 +1,448 @@
+<div class="param-container">
+
+  <div class="param-header">
+    <div>
+      <h1>Paramétrage</h1>
+      <p>Configuration générale de la plateforme GPI Tracker</p>
+    </div>
+    <div class="header-actions" *ngIf="hasChanges">
+      <button class="btn-cancel" (click)="annuler()">Annuler</button>
+      <button class="btn-save" (click)="sauvegarder()">
+        <i class="pi pi-check"></i> Enregistrer
+      </button>
+    </div>
+    <button class="btn-save" *ngIf="!hasChanges" (click)="sauvegarder()">
+      <i class="pi pi-check"></i> Enregistrer
+    </button>
+  </div>
+
+  <div class="success-banner" *ngIf="successMessage">
+    <i class="pi pi-check-circle"></i> {{ successMessage }}
+  </div>
+
+  <div class="param-layout">
+
+    <aside class="param-sidebar">
+      <nav>
+        <button *ngFor="let s of sections"
+                class="nav-item"
+                [class.active]="activeSection === s.id"
+                (click)="setSection(s.id)">
+          <i [class]="'pi ' + s.icon"></i>
+          <span>{{ s.label }}</span>
+          <i class="pi pi-chevron-right chevron"></i>
+        </button>
+      </nav>
+    </aside>
+
+    <main class="param-content">
+
+      <!-- 1. INFORMATIONS DE LA BANQUE -->
+      <section *ngIf="activeSection === 'banque'" class="section-panel">
+        <div class="section-title">
+          <div class="section-icon orange"><i class="pi pi-building"></i></div>
+          <div>
+            <h2>Informations de la banque</h2>
+            <p>Données d'identification de votre institution</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group span-2">
+            <label>Nom de la banque *</label>
+            <input type="text" [(ngModel)]="banque.nom" (ngModelChange)="markChanged()" placeholder="Ex: Banque Nationale de Tunisie" />
+          </div>
+          <div class="form-group">
+            <label>BIC principal *</label>
+            <input type="text" [(ngModel)]="banque.bic" (ngModelChange)="markChanged()" placeholder="Ex: BNTNTNTXXXX" class="mono" maxlength="11" />
+            <small>8 ou 11 caractères</small>
+          </div>
+          <div class="form-group">
+            <label>Pays</label>
+            <select [(ngModel)]="banque.pays" (ngModelChange)="markChanged()">
+              <option *ngFor="let p of pays" [value]="p.code">{{ p.code }} — {{ p.nom }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fuseau horaire</label>
+            <select [(ngModel)]="banque.fuseau" (ngModelChange)="markChanged()">
+              <option *ngFor="let f of fuseaux" [value]="f">{{ f }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Téléphone</label>
+            <input type="text" [(ngModel)]="banque.telephone" (ngModelChange)="markChanged()" placeholder="+216 71 000 000" />
+          </div>
+          <div class="form-group span-2">
+            <label>Adresse</label>
+            <input type="text" [(ngModel)]="banque.adresse" (ngModelChange)="markChanged()" placeholder="Rue, Ville, Code postal" />
+          </div>
+          <div class="form-group">
+            <label>Email de contact</label>
+            <input type="email" [(ngModel)]="banque.email" (ngModelChange)="markChanged()" placeholder="contact@banque.tn" />
+          </div>
+          <div class="form-group">
+            <label>Site web</label>
+            <input type="url" [(ngModel)]="banque.site" (ngModelChange)="markChanged()" placeholder="https://www.banque.tn" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. PARAMÈTRES SLA -->
+      <section *ngIf="activeSection === 'sla'" class="section-panel">
+        <div class="section-title">
+          <div class="section-icon blue"><i class="pi pi-clock"></i></div>
+          <div>
+            <h2>Paramètres SLA</h2>
+            <p>Délais de traitement des paiements SWIFT GPI</p>
+          </div>
+        </div>
+        <div class="info-banner">
+          <i class="pi pi-info-circle"></i>
+          Les SLA définissent les délais maximum imposés par SWIFT GPI. Un dépassement génère une alerte automatique.
+        </div>
+        <div class="sla-grid">
+          <div class="sla-card">
+            <div class="sla-header">
+              <span class="sla-label">Confirmation de paiement</span>
+              <span class="sla-tag blue">pacs.002</span>
+            </div>
+            <div class="sla-control">
+              <input type="range" min="5" max="120" step="5" [(ngModel)]="sla.delaiConfirmation" (ngModelChange)="markChanged()" />
+              <span class="sla-value">{{ formatMinutes(sla.delaiConfirmation) }}</span>
+            </div>
+            <small>Délai max pour envoyer la confirmation après réception d'un pacs.008</small>
+          </div>
+          <div class="sla-card">
+            <div class="sla-header">
+              <span class="sla-label">Alerte avant dépassement</span>
+              <span class="sla-tag amber">Alerte</span>
+            </div>
+            <div class="sla-control">
+              <input type="range" min="5" max="60" step="5" [(ngModel)]="sla.delaiAlerte" (ngModelChange)="markChanged()" />
+              <span class="sla-value">{{ formatMinutes(sla.delaiAlerte) }}</span>
+            </div>
+            <small>Délai avant la limite SLA pour déclencher une alerte préventive</small>
+          </div>
+          <div class="sla-card">
+            <div class="sla-header">
+              <span class="sla-label">Réponse Stop & Recall</span>
+              <span class="sla-tag red">camt.029</span>
+            </div>
+            <div class="sla-control">
+              <input type="range" min="30" max="480" step="30" [(ngModel)]="sla.delaiRecall" (ngModelChange)="markChanged()" />
+              <span class="sla-value">{{ formatMinutes(sla.delaiRecall) }}</span>
+            </div>
+            <small>Délai max pour répondre à une demande d'annulation camt.056</small>
+          </div>
+          <div class="sla-card">
+            <div class="sla-header">
+              <span class="sla-label">Crédit bénéficiaire max</span>
+              <span class="sla-tag green">GPI</span>
+            </div>
+            <div class="sla-control">
+              <input type="range" min="60" max="2880" step="60" [(ngModel)]="sla.delaiCreditMax" (ngModelChange)="markChanged()" />
+              <span class="sla-value">{{ formatMinutes(sla.delaiCreditMax) }}</span>
+            </div>
+            <small>Délai maximum total pour que le bénéficiaire soit crédité</small>
+          </div>
+        </div>
+        <div class="toggle-group">
+          <div class="toggle-row">
+            <div>
+              <span class="toggle-label">Alerte dépassement SLA</span>
+              <span class="toggle-desc">Notification automatique si le délai de confirmation est dépassé</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="sla.alerteDepassement" (ngModelChange)="markChanged()">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <span class="toggle-label">Alerte retard de traitement</span>
+              <span class="toggle-desc">Notification si un paiement reste en transit plus de 4h</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="sla.alerteRetard" (ngModelChange)="markChanged()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. NOTIFICATIONS -->
+      <section *ngIf="activeSection === 'notifications'" class="section-panel">
+        <div class="section-title">
+          <div class="section-icon purple"><i class="pi pi-bell"></i></div>
+          <div>
+            <h2>Notifications & alertes</h2>
+            <p>Choisissez quand et comment être notifié</p>
+          </div>
+        </div>
+        <h3 class="subsection">Déclencheurs d'alerte email</h3>
+        <div class="toggle-group">
+          <div class="toggle-row">
+            <div>
+              <span class="toggle-label">Paiement rejeté</span>
+              <span class="toggle-desc">Envoyer un email à chaque rejet de paiement</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="notifications.emailPaiementRejet" (ngModelChange)="markChanged()">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <span class="toggle-label">Dépassement SLA</span>
+              <span class="toggle-desc">Alerte si un paiement dépasse le délai configuré</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="notifications.emailDepassementSLA" (ngModelChange)="markChanged()">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <span class="toggle-label">Stop & Recall en attente</span>
+              <span class="toggle-desc">Rappel si une demande d'annulation est sans réponse</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="notifications.emailRecallEnAttente" (ngModelChange)="markChanged()">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <span class="toggle-label">Nouveau paiement reçu</span>
+              <span class="toggle-desc">Notification à chaque pacs.008 entrant</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="notifications.emailNouveauPaiement" (ngModelChange)="markChanged()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        <h3 class="subsection">Destinataires</h3>
+        <div class="form-grid">
+          <div class="form-group span-2">
+            <label>Adresse email principale</label>
+            <input type="email" [(ngModel)]="notifications.emailAdresse" (ngModelChange)="markChanged()" placeholder="admin@banque.tn" />
+          </div>
+          <div class="form-group span-2">
+            <label>Email en copie (CC)</label>
+            <input type="email" [(ngModel)]="notifications.emailCopie" (ngModelChange)="markChanged()" placeholder="direction@banque.tn (optionnel)" />
+          </div>
+        </div>
+        <h3 class="subsection">Rapport périodique</h3>
+        <div class="form-group" style="max-width:300px">
+          <label>Fréquence d'envoi du rapport</label>
+          <select [(ngModel)]="notifications.frequenceRapport" (ngModelChange)="markChanged()">
+            <option *ngFor="let f of frequences" [value]="f">{{ frequencesLabels[f] }}</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 4. DEVISES ET LIMITES -->
+      <section *ngIf="activeSection === 'devises'" class="section-panel">
+        <div class="section-title">
+          <div class="section-icon green"><i class="pi pi-dollar"></i></div>
+          <div>
+            <h2>Devises et limites</h2>
+            <p>Devises acceptées et seuils de transaction</p>
+          </div>
+        </div>
+        <h3 class="subsection">Devises activées</h3>
+        <div class="devises-grid">
+          <div *ngFor="let d of toutesDevises"
+               class="devise-chip"
+               [class.active]="isDeviseActive(d)"
+               (click)="toggleDevise(d)">
+            <span>{{ d }}</span>
+            <i [class]="isDeviseActive(d) ? 'pi pi-check' : 'pi pi-plus'"></i>
+          </div>
+        </div>
+        <small style="display:block;margin-top:.5rem">
+          Devises actives : <strong>{{ devisesActives.join(', ') }}</strong>
+        </small>
+        <h3 class="subsection">Limites de transaction</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Montant minimum ({{ limites.deviseDefaut }})</label>
+            <input type="number" [(ngModel)]="limites.montantMin" (ngModelChange)="markChanged()" min="0" />
+            <small>Montant minimum par transaction</small>
+          </div>
+          <div class="form-group">
+            <label>Montant maximum ({{ limites.deviseDefaut }})</label>
+            <input type="number" [(ngModel)]="limites.montantMax" (ngModelChange)="markChanged()" min="0" />
+            <small>Montant maximum par transaction</small>
+          </div>
+          <div class="form-group">
+            <label>Seuil d'alerte ({{ limites.deviseDefaut }})</label>
+            <input type="number" [(ngModel)]="limites.seuilAlerte" (ngModelChange)="markChanged()" min="0" />
+            <small>Alerte pour les transactions dépassant ce montant</small>
+          </div>
+          <div class="form-group">
+            <label>Devise par défaut</label>
+            <select [(ngModel)]="limites.deviseDefaut" (ngModelChange)="markChanged()">
+              <option *ngFor="let d of devisesActives" [value]="d">{{ d }}</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. GESTION FICHIERS XML -->
+      <section *ngIf="activeSection === 'xml'" class="section-panel">
+        <div class="section-title">
+          <div class="section-icon teal"><i class="pi pi-file"></i></div>
+          <div>
+            <h2>Gestion des fichiers XML</h2>
+            <p>Configuration du traitement des messages ISO 20022</p>
+          </div>
+        </div>
+        <div class="statut-xml-grid">
+          <div class="statut-card" [class.on]="statutXml.actif">
+            <span class="statut-dot"></span>
+            <span>{{ statutXml.actif ? 'Traitement actif' : 'Traitement arrêté' }}</span>
+          </div>
+          <div class="statut-card info">
+            <i class="pi pi-calendar"></i>
+            <span>Dernière exécution : <strong>{{ statutXml.derniereExec }}</strong></span>
+          </div>
+          <div class="statut-card success">
+            <i class="pi pi-check-circle"></i>
+            <span>Fichiers traités : <strong>{{ statutXml.fichiersTraites }}</strong></span>
+          </div>
+          <div class="statut-card error">
+            <i class="pi pi-times-circle"></i>
+            <span>Fichiers en erreur : <strong>{{ statutXml.fichiersErreur }}</strong></span>
+          </div>
+        </div>
+        <h3 class="subsection">Dossiers de traitement</h3>
+        <div class="form-grid">
+          <div class="form-group span-2">
+            <label>Dossier entrant</label>
+            <input type="text" [(ngModel)]="xml.dossierEntrant" (ngModelChange)="markChanged()" class="mono" placeholder="/opt/gpi/incoming" />
+            <small>Dossier surveillé pour les fichiers pacs.008, pacs.009, pacs.002, camt.056, camt.029</small>
+          </div>
+          <div class="form-group span-2">
+            <label>Dossier d'archive</label>
+            <input type="text" [(ngModel)]="xml.dossierArchive" (ngModelChange)="markChanged()" class="mono" placeholder="/opt/gpi/archive" />
+            <small>Fichiers traités avec succès déplacés ici</small>
+          </div>
+          <div class="form-group span-2">
+            <label>Dossier des erreurs</label>
+            <input type="text" [(ngModel)]="xml.dossierErreur" (ngModelChange)="markChanged()" class="mono" placeholder="/opt/gpi/error" />
+            <small>Fichiers ayant échoué au traitement</small>
+          </div>
+        </div>
+        <h3 class="subsection">Options de traitement</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Fréquence de lecture (secondes)</label>
+            <input type="number" [(ngModel)]="xml.frequenceLecture" (ngModelChange)="markChanged()" min="5" max="300" step="5" />
+            <small>Intervalle de vérification du dossier entrant</small>
+          </div>
+          <div class="form-group">
+            <label>Rétention des archives (jours)</label>
+            <input type="number" [(ngModel)]="xml.retentionJours" (ngModelChange)="markChanged()" min="30" max="3650" />
+            <small>Durée de conservation des fichiers archivés</small>
+          </div>
+          <div class="form-group span-2">
+            <label>Format de date</label>
+            <input type="text" [(ngModel)]="xml.formatDate" (ngModelChange)="markChanged()" class="mono" placeholder="dd/MM/yyyy HH:mm:ss" />
+          </div>
+        </div>
+        <div class="toggle-group">
+          <div class="toggle-row">
+            <div>
+              <span class="toggle-label">Traitement automatique</span>
+              <span class="toggle-desc">Traiter les fichiers entrants automatiquement</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="xml.traitementAuto" (ngModelChange)="markChanged()">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <span class="toggle-label">Archivage automatique</span>
+              <span class="toggle-desc">Déplacer automatiquement les fichiers traités vers l'archive</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="xml.archivageAuto" (ngModelChange)="markChanged()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. SÉCURITÉ & SESSIONS -->
+      <section *ngIf="activeSection === 'securite'" class="section-panel">
+        <div class="section-title">
+          <div class="section-icon red"><i class="pi pi-shield"></i></div>
+          <div>
+            <h2>Sécurité & sessions</h2>
+            <p>Politique de sécurité et gestion des accès</p>
+          </div>
+        </div>
+
+        <h3 class="subsection">Sessions utilisateur</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Durée de session (minutes)</label>
+            <input type="number" [(ngModel)]="securite.dureeSession" (ngModelChange)="markChanged()" min="5" max="480" step="5" />
+            <small>Déconnexion automatique après inactivité</small>
+          </div>
+        </div>
+
+        <h3 class="subsection">Politique de connexion</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Tentatives max avant blocage</label>
+            <input type="number" [(ngModel)]="securite.tentativesMax" (ngModelChange)="markChanged()" min="3" max="10" />
+          </div>
+          <div class="form-group">
+            <label>Durée de blocage (minutes)</label>
+            <input type="number" [(ngModel)]="securite.blocageDuree" (ngModelChange)="markChanged()" min="5" max="1440" />
+          </div>
+        </div>
+
+        <h3 class="subsection">Options avancées</h3>
+
+        <div class="keycloak-banner">
+          <div class="keycloak-icon">
+            <i class="pi pi-shield"></i>
+          </div>
+          <div>
+            <span class="keycloak-title">Authentification gérée par Keycloak</span>
+            <span class="keycloak-desc">
+              La politique des mots de passe, le double facteur (2FA) et la gestion
+              avancée des sessions sont configurés directement dans la console Keycloak
+              (OAuth2 / OpenID Connect).
+            </span>
+          </div>
+        </div>
+
+        <div class="toggle-group">
+          <div class="toggle-row">
+            <div>
+              <span class="toggle-label">Journalisation des accès</span>
+              <span class="toggle-desc">Enregistrer toutes les actions dans les logs d'audit GPI Tracker</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="securite.journalisation" (ngModelChange)="markChanged()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group" style="max-width:300px;margin-top:1.5rem">
+          <label>Rétention des logs (jours)</label>
+          <input type="number" [(ngModel)]="securite.retentionLogsJours" (ngModelChange)="markChanged()" min="30" max="3650" />
+          <small>Durée de conservation des journaux d'audit</small>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>

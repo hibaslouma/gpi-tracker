@@ -22,16 +22,19 @@ export const appRoutes: Routes = [
       { 
         path: 'admin/annuaire', 
         loadComponent: () => import('./app/pages/admin/annuaire/annuaire').then(m => m.Annuaire) 
-      }
+      },
+      // ✅ CORRECTION : loadComponent + chemin admin/parametrage
+      { 
+        path: 'admin/parametrage', 
+        loadComponent: () => import('./app/pages/admin/parametrage/parametrage').then(m => m.Parametrage) 
+      },
     ]
   },
 
-  // ✅ Backoffice en dehors du AppLayout = pas de sidebar Admin
   { 
     path: 'backoffice', 
     loadComponent: () => import('./app/pages/backoffice/backoffice').then(m => m.BackofficeComponent) 
   },
-
   {
     path: 'auth',
     loadChildren: () => import('./app/pages/auth/auth.routes')

@@ -1,23 +1,102 @@
-/* You can add global styles to this file, and also import other style files */
 @use 'primeicons/primeicons.css';
 @use '@/assets/layout/layout.scss';
 @use '@/assets/demo/demo.scss';
+
+/* ═══════════════════════════════════════════════════
+   GTI FINANCIAL SOFTWARE — Design System
+   Couleurs extraites du logo GTI
+   Bleu marine #1B2A4A + Orange #E8421A
+═══════════════════════════════════════════════════ */
+
+:root {
+
+  /* ── Variables GTI custom ─────────────────────── */
+  --gti-navy:           #1B2A4A;
+  --gti-navy-light:     #2D4A7A;
+  --gti-navy-dark:      #111D33;
+  --gti-orange:         #E8421A;
+  --gti-orange-hover:   #CC3815;
+  --gti-orange-light:   #FFF3F0;
+
+  --gti-bg-page:        #F5F7FA;
+  --gti-bg-card:        #FFFFFF;
+  --gti-bg-navy-soft:   #EBF0F8;
+
+  --gti-text-primary:   #1B2A4A;
+  --gti-text-secondary: #64748B;
+  --gti-text-hint:      #94A3B8;
+
+  --gti-border:         #E2E8F0;
+  --gti-border-focus:   #E8421A;
+
+  --gti-success:        #16A34A;
+  --gti-success-bg:     #F0FDF4;
+  --gti-success-border: #BBF7D0;
+  --gti-danger:         #DC2626;
+  --gti-danger-bg:      #FEF2F2;
+  --gti-danger-border:  #FECACA;
+  --gti-warning:        #D97706;
+  --gti-warning-bg:     #FFFBEB;
+  --gti-warning-border: #FDE68A;
+  --gti-info:           #2D4A7A;
+  --gti-info-bg:        #EBF0F8;
+  --gti-info-border:    #BFDBFE;
+
+  --gti-radius-sm:      6px;
+  --gti-radius-md:      8px;
+  --gti-radius-lg:      12px;
+  --gti-radius-xl:      16px;
+
+  --gti-shadow-sm:      0 1px 3px rgba(27, 42, 74, 0.08);
+  --gti-shadow-md:      0 4px 12px rgba(27, 42, 74, 0.10);
+  --gti-shadow-lg:      0 8px 24px rgba(27, 42, 74, 0.12);
+}
+
+
 :root,
 :root[data-p-theme],
 [data-p-theme] {
-      --p-primary-color: #f97316 !important;
 
-  --p-primary-50:  #f97316 !important;
-  --p-primary-100: #f97316 !important;
-  --p-primary-200: #f97316 !important;
-  --p-primary-300: #f97316 !important;
-  --p-primary-400: #f97316 !important;
-  --p-primary-500: #f97316 !important;
-  --p-primary-600: #f97316 !important;
-  --p-primary-700: #f97316 !important;
-  --p-primary-800: #f97316 !important;
-  --p-primary-900: #f97316 !important;
+ 
+  --p-primary-color:  #E8421A !important;
+  --p-primary-50:     #FFF3F0 !important;
+  --p-primary-100:    #FDDDD6 !important;
+  --p-primary-200:    #FAB8A8 !important;
+  --p-primary-300:    #F5897A !important;
+  --p-primary-400:    #F06050 !important;
+  --p-primary-500:    #E8421A !important;
+  --p-primary-600:    #CC3815 !important;
+  --p-primary-700:    #A82D10 !important;
+  --p-primary-800:    #85220C !important;
+  --p-primary-900:    #611808 !important;
 
+  
+  --p-surface-0:      #FFFFFF !important;
+  --p-surface-50:     #F5F7FA !important;
+  --p-surface-100:    #EBF0F8 !important;
+  --p-surface-200:    #D6E0F0 !important;
+  --p-surface-300:    #B0C2DE !important;
+  --p-surface-400:    #7A94BE !important;
+  --p-surface-500:    #4A6A9E !important;
+  --p-surface-600:    #2D4A7A !important;
+  --p-surface-700:    #1B2A4A !important;
+  --p-surface-800:    #111D33 !important;
+  --p-surface-900:    #0A1220 !important;
 
+  
+  --p-text-color:           #1B2A4A !important;
+  --p-text-muted-color:     #64748B !important;
+  --p-text-color-secondary: #64748B !important;
 
+ 
+  --p-content-border-color: #E2E8F0 !important;
+  --p-border-radius:        8px     !important;
+
+  
+  --p-focus-ring-color:     rgba(232, 66, 26, 0.25) !important;
+  --p-focus-ring-shadow:    0 0 0 3px rgba(232, 66, 26, 0.25) !important;
+
+  
+  --p-highlight-background: #EBF0F8 !important;
+  --p-highlight-color:      #1B2A4A !important;
 }

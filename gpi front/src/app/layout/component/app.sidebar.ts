@@ -12,13 +12,13 @@ import { AppMenu } from './app.menu';
     template: `
         <div class="layout-sidebar">
 
-            <!-- Infos Admin -->
             <div class="sidebar-user">
                 <div class="user-avatar">
                     <i class="pi pi-user"></i>
                 </div>
-                <div class="user-info">
-                    <span class="user-name">Super Admin</span>
+                <div class="user-greeting">
+                    <span class="greeting-text">Bienvenue,</span>
+                    <span class="user-name">Super Administrateur</span>
                     <span class="user-role">Administrateur</span>
                 </div>
             </div>
@@ -29,7 +29,6 @@ import { AppMenu } from './app.menu';
 
             <div class="sidebar-divider"></div>
 
-            <!-- Déconnexion -->
             <div class="sidebar-logout" (click)="logout()">
                 <i class="pi pi-sign-out"></i>
                 <span>Déconnexion</span>
@@ -46,31 +45,41 @@ import { AppMenu } from './app.menu';
         }
 
         .user-avatar {
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
-            background: #F97316;
+            background: #E8421A;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-size: 1.1rem;
+            flex-shrink: 0;
         }
 
-        .user-info {
+        .user-greeting {
             display: flex;
             flex-direction: column;
+            gap: 0.1rem;
+        }
+
+        .greeting-text {
+            font-size: 0.75rem;
+            color: #94A3B8;
+            font-weight: 400;
         }
 
         .user-name {
             font-weight: 700;
-            font-size: 0.9rem;
-            color: #1e293b;
+            font-size: 0.88rem;
+            color: #1B2A4A;
+            line-height: 1.2;
         }
 
         .user-role {
             font-size: 0.75rem;
-            color: #F97316;
+            color: #E8421A;
+            font-weight: 600;
         }
 
         .sidebar-divider {
@@ -89,15 +98,11 @@ import { AppMenu } from './app.menu';
             font-weight: 600;
             font-size: 0.9rem;
             transition: background 0.2s;
+        }
 
-            &:hover {
-                background: #fef2f2;
-                border-radius: 8px;
-            }
-
-            i {
-                font-size: 1rem;
-            }
+        .sidebar-logout:hover {
+            background: #fef2f2;
+            border-radius: 8px;
         }
     `]
 })
