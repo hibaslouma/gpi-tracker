@@ -11,6 +11,13 @@
   margin-bottom: 1.5rem;
 }
 
+.underline {
+  width: 50px; height: 4px;
+  background: linear-gradient(90deg, var(--gti-orange), var(--gti-navy));
+  border-radius: 2px;
+}
+
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

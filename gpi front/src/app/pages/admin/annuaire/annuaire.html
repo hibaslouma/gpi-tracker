@@ -1,24 +1,18 @@
 <div class="annuaire-container">
 
-  <!-- TITRE -->
   <div class="annuaire-header">
     <div class="header-top">
-      <div>
-        <div class="annuaire-title">ANNUAIRE</div>
-        <div class="underline"></div>
-      </div>
-      <button class="btn-add" (click)="openAddModal()">
-         Ajouter une banque
+      <div class="annuaire-title page-title">ANNUAIRE</div>
+      <button class="btn-add" type="button" (click)="openAddModal()">
+        <i class="pi pi-plus"></i> Ajouter une banque
       </button>
     </div>
   </div>
 
-  <!-- Message succès -->
   <div class="success-banner" *ngIf="successMessage">
     <i class="pi pi-check-circle"></i> {{ successMessage }}
   </div>
 
-  <!-- RECHERCHE -->
   <div class="search-section">
     <input type="text"
            placeholder="Rechercher par Participant, Banque, Pays ou Devise"
@@ -26,7 +20,6 @@
            class="search-input">
   </div>
 
-  <!-- TABLEAU -->
   <div class="table-wrapper">
     <table class="annuaire-table">
       <thead>
@@ -53,30 +46,25 @@
             </span>
           </td>
           <td class="bic-cell">{{ bank.bic }}</td>
-          <td>
-            <span class="devise-badge">{{ bank.devises }}</span>
-          </td>
+          <td><span class="devise-badge">{{ bank.devises }}</span></td>
           <td>
             <span [class]="'statut-badge ' + bank.statut.toLowerCase()">
-              {{ bank.statut === 'ACTIF' ? '✓ ACTIF' : '✗ INACTIF' }}
+              {{ bank.statut === 'ACTIF' ? 'ACTIF' : 'INACTIF' }}
             </span>
           </td>
           <td>{{ bank.cutOff }}</td>
           <td>{{ bank.reseau }}</td>
-          <!-- NOUVEAU : Actions Modifier / Supprimer -->
           <td>
             <div class="actions">
-              <button class="btn-action edit"   (click)="openEditModal(bank)"  title="Modifier">
+              <button class="btn-action edit" type="button" (click)="openEditModal(bank)" title="Modifier">
                 <i class="pi pi-pencil"></i>
               </button>
-              <button class="btn-action delete" (click)="confirmDelete(bank)"  title="Supprimer">
+              <button class="btn-action delete" type="button" (click)="confirmDelete(bank)" title="Supprimer">
                 <i class="pi pi-trash"></i>
               </button>
             </div>
           </td>
         </tr>
-
-        <!-- Message si aucun résultat -->
         <tr *ngIf="filteredBanks.length === 0">
           <td colspan="9" class="empty-state">
             <i class="pi pi-inbox"></i>
@@ -87,67 +75,57 @@
     </table>
   </div>
 
-  <!-- PAGINATION — CORRECTION : pages dynamiques -->
   <div class="pagination">
     <div class="page-info">
       <span>{{ filteredBanks.length }} enregistrement(s) | Page {{ currentPage }} / {{ totalPages }}</span>
     </div>
     <div class="pagination-controls">
-      <button (click)="previousPage()" [disabled]="currentPage === 1">←</button>
+      <button type="button" (click)="previousPage()" [disabled]="currentPage === 1">←</button>
       <span *ngFor="let page of pagesArray"
             [class.active]="page === currentPage"
             (click)="goToPage(page)"
             class="page-number">{{ page }}</span>
-      <button (click)="nextPage()" [disabled]="currentPage === totalPages">→</button>
+      <button type="button" (click)="nextPage()" [disabled]="currentPage === totalPages">→</button>
     </div>
   </div>
 
-  <!-- ─── MODAL AJOUTER / MODIFIER BANQUE ──────────────────────── -->
+  <!-- MODAL AJOUTER / MODIFIER -->
   <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>{{ isEditing ? 'Modifier la banque' : 'Ajouter une banque' }}</h2>
-        <button class="close-btn" (click)="closeModal()">✕</button>
+        <button class="close-btn" type="button" (click)="closeModal()">✕</button>
       </div>
       <div class="modal-body">
 
-        <!-- NOUVEAU : message d'erreur inline (remplace alert()) -->
         <div class="error-banner" *ngIf="formError">
           <i class="pi pi-exclamation-triangle"></i> {{ formError }}
         </div>
 
-        <!-- SECTION 1: IDENTIFICATION -->
         <div class="form-section">
-          <h3 class="section-title"> Identification de la banque</h3>
-
+          <h3 class="section-title">Identification de la banque</h3>
           <div class="form-group">
             <label>Code PARTICIPANT (SWIFT) *</label>
             <input type="text" [(ngModel)]="newBank.participant"
-                   placeholder="Ex: BNRSIBRXXX"
-                   maxlength="11"
-                   class="swift-code"
+                   placeholder="Ex: BNRSIBRXXX" maxlength="11" class="swift-code"
                    [class.input-error]="formError && !newBank.participant" />
             <small>Identifiant unique SWIFT (11 caractères)</small>
           </div>
-
           <div class="form-group">
             <label>Nom de la Banque *</label>
             <input type="text" [(ngModel)]="newBank.nomBanque"
                    placeholder="Ex: Belfius Bank"
                    [class.input-error]="formError && !newBank.nomBanque" />
           </div>
-
           <div class="form-group">
             <label>BIC (Bank Identifier Code) *</label>
             <input type="text" [(ngModel)]="newBank.bic"
                    placeholder="Ex: BNRSIBRX (8) ou BNRSIBRXXX (11)"
-                   maxlength="11"
-                   class="swift-code"
-                   [class.input-error]="formError && newBank.bic && newBank.bic.length !== 8 && newBank.bic.length !== 11" />
-            <!-- NOUVEAU : compteur de caractères pour le BIC -->
+                   maxlength="11" class="swift-code" />
             <small>
               Code bancaire international — 8 ou 11 caractères
-              <span class="bic-counter" [class.valid]="newBank.bic?.length === 8 || newBank.bic?.length === 11"
+              <span class="bic-counter"
+                    [class.valid]="newBank.bic?.length === 8 || newBank.bic?.length === 11"
                     [class.invalid]="newBank.bic && newBank.bic.length > 0 && newBank.bic.length !== 8 && newBank.bic.length !== 11">
                 ({{ newBank.bic?.length || 0 }} / 8 ou 11)
               </span>
@@ -155,15 +133,12 @@
           </div>
         </div>
 
-        <!-- SECTION 2: LOCALISATION -->
         <div class="form-section">
-          <h3 class="section-title"> Localisation</h3>
-
+          <h3 class="section-title">Localisation</h3>
           <div class="form-group">
             <label>Pays *</label>
             <div class="searchable-select">
-              <input type="text"
-                     [(ngModel)]="searchCountry"
+              <input type="text" [(ngModel)]="searchCountry"
                      placeholder="Tapez pour rechercher (ex: T, FR, FRANCE)"
                      class="search-input-select">
               <div class="select-options" *ngIf="searchCountry !== '' && filteredCountries.length > 0">
@@ -183,13 +158,10 @@
           </div>
         </div>
 
-        <!-- SECTION 3: CAPACITÉS DE PAIEMENT -->
         <div class="form-section">
-          <h3 class="section-title"> Capacités de paiement</h3>
-
+          <h3 class="section-title">Capacités de paiement</h3>
           <div class="form-group">
             <label>Devises supportées *</label>
-            <!-- CORRECTION : checkboxes avec état géré proprement -->
             <div class="multi-select">
               <div *ngFor="let devise of devises" class="checkbox-item">
                 <input type="checkbox"
@@ -205,10 +177,8 @@
           </div>
         </div>
 
-        <!-- SECTION 4: CONNECTIVITÉ -->
         <div class="form-section">
           <h3 class="section-title">Connectivité et horaires</h3>
-
           <div class="form-group">
             <label>Réseau de paiement</label>
             <select [(ngModel)]="newBank.reseau">
@@ -216,7 +186,6 @@
               <option *ngFor="let res of reseaux" [value]="res">{{ res }}</option>
             </select>
           </div>
-
           <div class="form-group">
             <label>Heure de Cut-Off</label>
             <input type="time" [(ngModel)]="newBank.cutOff" />
@@ -224,50 +193,50 @@
           </div>
         </div>
 
-        <!-- SECTION 5: STATUT -->
         <div class="form-section">
           <h3 class="section-title">Statut opérationnel</h3>
-
           <div class="form-group">
             <label>Statut</label>
             <div class="radio-group">
               <div class="radio-item">
                 <input type="radio" id="statut-actif" value="ACTIF" [(ngModel)]="newBank.statut" />
-                <label for="statut-actif"> ACTIF (Banque opérationnelle)</label>
+                <label for="statut-actif">ACTIF (Banque opérationnelle)</label>
               </div>
               <div class="radio-item">
                 <input type="radio" id="statut-inactif" value="INACTIF" [(ngModel)]="newBank.statut" />
-                <label for="statut-inactif"> INACTIF (En maintenance ou suspendue)</label>
+                <label for="statut-inactif">INACTIF (En maintenance ou suspendue)</label>
               </div>
             </div>
           </div>
         </div>
 
       </div>
-
       <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeModal()">Annuler</button>
-        <button class="btn-primary" (click)="saveBank()">
+        <button class="btn-secondary" type="button" (click)="closeModal()">Annuler</button>
+        <button class="btn-primary" type="button" (click)="saveBank()" [disabled]="isSubmitting">
           {{ isEditing ? 'Enregistrer les modifications' : 'Créer la banque' }}
         </button>
       </div>
     </div>
   </div>
 
-  <!-- ─── MODAL SUPPRIMER ───────────────────────────────────────── -->
+  <!-- MODAL SUPPRIMER -->
   <div class="modal-overlay" *ngIf="showDeleteModal" (click)="showDeleteModal = false">
     <div class="modal modal-sm" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Confirmer la suppression</h2>
-        <button class="close-btn" (click)="showDeleteModal = false">✕</button>
+        <button class="close-btn" type="button" (click)="showDeleteModal = false">✕</button>
       </div>
       <div class="modal-body">
         <p>Voulez-vous vraiment supprimer la banque <strong>{{ selectedBank?.nomBanque }}</strong> ?<br>
-        <span class="warning-text">Cette action est irréversible.</span></p>
+          <span class="warning-text">Cette action est irréversible.</span>
+        </p>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" (click)="showDeleteModal = false">Annuler</button>
-        <button class="btn-danger" (click)="deleteBank()">Supprimer</button>
+        <button class="btn-secondary" type="button" (click)="showDeleteModal = false">Annuler</button>
+        <button class="btn-danger" type="button" (click)="deleteBank()" [disabled]="isDeleting">
+          Supprimer
+        </button>
       </div>
     </div>
   </div>

@@ -1,36 +1,28 @@
 <div class="users-container">
 
-  <!-- Header -->
   <div class="page-header">
-    <div>
-      <h1>Gestion des utilisateurs</h1>
-      <p>{{ filteredUsers.length }} utilisateur(s) trouvé(s)</p>
-    </div>
-    <button class="btn-add" (click)="openAddModal()">
+    <div class="page-title">Gestion des utilisateurs</div>
+    <button class="btn-add" type="button" (click)="openAddModal()">
       <i class="pi pi-plus"></i> Ajouter un utilisateur
     </button>
   </div>
 
-  <!-- Message succès -->
   <div class="success-banner" *ngIf="successMessage">
     <i class="pi pi-check-circle"></i> {{ successMessage }}
   </div>
 
-  <!-- Filtres -->
   <div class="filters">
     <div class="search-box">
       <i class="pi pi-search"></i>
       <input type="text" placeholder="Rechercher par nom ou email..." [(ngModel)]="searchQuery" />
     </div>
     <div class="role-filters">
-      <!-- CORRECTION : utilise filterByRole() pour reset la pagination -->
-      <button [class.active]="selectedRole === 'Tous'"       (click)="filterByRole('Tous')">Tous</button>
-      <button [class.active]="selectedRole === 'Backoffice'" (click)="filterByRole('Backoffice')">Backoffice</button>
-      <button [class.active]="selectedRole === 'Client'"     (click)="filterByRole('Client')">Client</button>
+      <button type="button" [class.active]="selectedRole === 'Tous'"       (click)="filterByRole('Tous')">Tous</button>
+      <button type="button" [class.active]="selectedRole === 'Backoffice'" (click)="filterByRole('Backoffice')">Backoffice</button>
+      <button type="button" [class.active]="selectedRole === 'Client'"     (click)="filterByRole('Client')">Client</button>
     </div>
   </div>
 
-  <!-- Tableau -->
   <div class="table-card">
     <table class="users-table">
       <thead>
@@ -45,7 +37,6 @@
         </tr>
       </thead>
       <tbody>
-        <!-- CORRECTION : utilise paginatedUsers au lieu de filteredUsers -->
         <tr *ngFor="let user of paginatedUsers">
           <td>
             <div class="user-cell">
@@ -63,7 +54,6 @@
             </span>
           </td>
           <td>
-            <!-- AMÉLIORATION : statut visible dans le tableau -->
             <span class="status-badge" [class.active]="user.active">
               {{ user.active ? 'Actif' : 'Inactif' }}
             </span>
@@ -72,25 +62,22 @@
           <td class="text-secondary">{{ user.lastLogin }}</td>
           <td>
             <div class="actions">
-              <button class="btn-action edit"    (click)="openEditModal(user)"  title="Modifier">
+              <button class="btn-action edit"    type="button" (click)="openEditModal(user)"  title="Modifier">
                 <i class="pi pi-pencil"></i>
               </button>
-              <button class="btn-action history" (click)="openLogs(user)"       title="Historique">
+              <button class="btn-action history" type="button" (click)="openLogs(user)"       title="Historique">
                 <i class="pi pi-history"></i>
               </button>
-              <!-- NOUVEAU : bouton toggle actif/inactif -->
-              <button class="btn-action toggle"  (click)="toggleActive(user)"
+              <button class="btn-action toggle"  type="button" (click)="toggleActive(user)"
                       [title]="user.active ? 'Désactiver' : 'Activer'">
                 <i [class]="user.active ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
               </button>
-              <button class="btn-action delete"  (click)="confirmDelete(user)"  title="Supprimer">
+              <button class="btn-action delete"  type="button" (click)="confirmDelete(user)"  title="Supprimer">
                 <i class="pi pi-trash"></i>
               </button>
             </div>
           </td>
         </tr>
-
-        <!-- Message si aucun résultat -->
         <tr *ngIf="filteredUsers.length === 0">
           <td colspan="7" class="empty-state">
             <i class="pi pi-inbox"></i>
@@ -101,30 +88,29 @@
     </table>
   </div>
 
-  <!-- Pagination -->
   <div class="pagination" *ngIf="totalPages > 1">
     <span class="page-info">Page {{ currentPage }} / {{ totalPages }}</span>
     <div class="pagination-controls">
-      <button (click)="previousPage()" [disabled]="currentPage === 1">←</button>
-      <!-- CORRECTION : pages dynamiques -->
+      <button type="button" (click)="previousPage()" [disabled]="currentPage === 1">←</button>
       <span *ngFor="let page of pagesArray"
             [class.active]="page === currentPage"
             (click)="goToPage(page)"
             class="page-number">{{ page }}</span>
-      <button (click)="nextPage()" [disabled]="currentPage === totalPages">→</button>
+      <button type="button" (click)="nextPage()" [disabled]="currentPage === totalPages">→</button>
     </div>
   </div>
 
-  <!-- ─── Modal Ajouter / Modifier ─────────────────────────────── -->
-  <div class="modal-overlay" *ngIf="showModal" (click)="showModal = false">
+  <!-- MODAL AJOUTER / MODIFIER -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>{{ isEditing ? 'Modifier' : 'Ajouter' }} un utilisateur</h2>
-        <button (click)="showModal = false"><i class="pi pi-times"></i></button>
+        <button type="button" (click)="closeModal()">
+          <i class="pi pi-times"></i>
+        </button>
       </div>
       <div class="modal-body">
 
-        <!-- NOUVEAU : message d'erreur inline (remplace alert()) -->
         <div class="error-banner" *ngIf="formError">
           <i class="pi pi-exclamation-triangle"></i> {{ formError }}
         </div>
@@ -151,7 +137,6 @@
           </select>
         </div>
 
-        <!-- Mot de passe — mode Ajouter -->
         <div class="form-group" *ngIf="!isEditing">
           <label>Mot de passe généré</label>
           <div class="password-display-inline">
@@ -159,14 +144,14 @@
             <button type="button" class="btn-refresh" (click)="newUser.password = generatePassword()">
               <i class="pi pi-refresh"></i>
             </button>
-            <button type="button" class="btn-copy" [class.copied]="copied" (click)="copyPasswordText(newUser.password || '')">
+            <button type="button" class="btn-copy" [class.copied]="copied"
+                    (click)="copyPasswordText(newUser.password || '')">
               <i [class]="copied ? 'pi pi-check' : 'pi pi-copy'"></i>
               {{ copied ? 'Copié !' : 'Copier' }}
             </button>
           </div>
         </div>
 
-        <!-- Réinitialiser mdp — mode Modifier -->
         <div class="form-group reset-section" *ngIf="isEditing">
           <label>Réinitialiser le mot de passe</label>
           <div class="password-display-inline">
@@ -175,8 +160,8 @@
               <i class="pi pi-refresh"></i>
             </button>
             <button type="button" class="btn-copy" [class.copied]="copied"
-              (click)="copyPasswordText(generatedPassword)"
-              [disabled]="!generatedPassword">
+                    (click)="copyPasswordText(generatedPassword)"
+                    [disabled]="!generatedPassword">
               <i [class]="copied ? 'pi pi-check' : 'pi pi-copy'"></i>
               {{ copied ? 'Copié !' : 'Copier' }}
             </button>
@@ -185,34 +170,37 @@
 
       </div>
       <div class="modal-footer">
-        <button class="btn-cancel" (click)="showModal = false">Annuler</button>
-        <button class="btn-save" (click)="saveUser()">
+        <button class="btn-cancel" type="button" (click)="closeModal()">Annuler</button>
+        <button class="btn-save" type="button" (click)="saveUser()" [disabled]="isSubmitting">
           {{ isEditing ? 'Modifier' : 'Ajouter' }}
         </button>
       </div>
     </div>
   </div>
 
-  <!-- ─── Modal Supprimer ───────────────────────────────────────── -->
-  <div class="modal-overlay" *ngIf="showDeleteModal" (click)="showDeleteModal = false">
+  <!-- MODAL SUPPRIMER -->
+  <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
     <div class="modal modal-sm" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Confirmer la suppression</h2>
-        <button (click)="showDeleteModal = false"><i class="pi pi-times"></i></button>
+        <button type="button" (click)="closeDeleteModal()">
+          <i class="pi pi-times"></i>
+        </button>
       </div>
       <div class="modal-body">
         <p>Voulez-vous vraiment supprimer <strong>{{ selectedUser?.name }}</strong> ?<br>
-        <span class="warning-text">Cette action est irréversible.</span></p>
+          <span class="warning-text">Cette action est irréversible.</span>
+        </p>
       </div>
       <div class="modal-footer">
-        <button class="btn-cancel" (click)="showDeleteModal = false">Annuler</button>
-        <button class="btn-delete" (click)="deleteUser()">Supprimer</button>
+        <button class="btn-cancel" type="button" (click)="closeDeleteModal()">Annuler</button>
+        <button class="btn-delete" type="button" (click)="deleteUser()" [disabled]="isDeleting">Supprimer</button>
       </div>
     </div>
   </div>
 
-  <!-- ─── Modal Historique ──────────────────────────────────────── -->
-  <div class="modal-overlay" *ngIf="showLogsModal" (click)="showLogsModal = false">
+  <!-- MODAL HISTORIQUE -->
+  <div class="modal-overlay" *ngIf="showLogsModal" (click)="closeLogsModal()">
     <div class="modal modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div class="logs-modal-title">
@@ -222,7 +210,9 @@
             <span class="logs-subtitle">{{ selectedUser?.email }}</span>
           </div>
         </div>
-        <button (click)="showLogsModal = false"><i class="pi pi-times"></i></button>
+        <button type="button" (click)="closeLogsModal()">
+          <i class="pi pi-times"></i>
+        </button>
       </div>
       <div class="modal-body">
         <div class="timeline">
@@ -243,7 +233,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-save" (click)="showLogsModal = false">Fermer</button>
+        <button class="btn-save" type="button" (click)="closeLogsModal()">Fermer</button>
       </div>
     </div>
   </div>

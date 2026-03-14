@@ -12,10 +12,12 @@
 }
 
 .annuaire-header h1 {
-  font-size: 1.25rem; font-weight: 800;
-  color: var(--gti-text-primary);
-  letter-spacing: 2px; margin: 0 0 0.75rem 0;
-  text-transform: uppercase;
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  color: var(--gti-text-primary) !important;
+  letter-spacing: 2px !important;
+  margin: 0 0 0.75rem 0 !important;
+  text-transform: uppercase !important;
 }
 
 .underline {

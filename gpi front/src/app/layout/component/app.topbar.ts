@@ -16,7 +16,9 @@ import { LayoutService } from '@/app/layout/service/layout.service';
                 <i class="pi pi-bars"></i>
             </button>
             <a class="layout-topbar-logo" routerLink="/">
-                <img src="logo-gpi.png" alt="GPI" style="height: 35px;" />
+                <img src="logo-gpi.png" alt="GPI Tracker"
+                     style="height: 40px; width: auto; object-fit: contain;"
+                     onerror="this.style.display='none'" />
             </a>
         </div>
 
@@ -27,12 +29,12 @@ import { LayoutService } from '@/app/layout/service/layout.service';
                 </button>
             </div>
 
-            <button class="layout-topbar-menu-button layout-topbar-action" 
-                pStyleClass="@next" 
-                enterFromClass="hidden" 
-                enterActiveClass="animate-scalein" 
-                leaveToClass="hidden" 
-                leaveActiveClass="animate-fadeout" 
+            <button class="layout-topbar-menu-button layout-topbar-action"
+                pStyleClass="@next"
+                enterFromClass="hidden"
+                enterActiveClass="animate-scalein"
+                leaveToClass="hidden"
+                leaveActiveClass="animate-fadeout"
                 [hideOnOutsideClick]="true">
                 <i class="pi pi-ellipsis-v"></i>
             </button>
@@ -50,7 +52,15 @@ import { LayoutService } from '@/app/layout/service/layout.service';
                 </div>
             </div>
         </div>
-    </div>`
+    </div>`,
+    styles: [`
+        .layout-topbar-logo img {
+            height: 40px !important;
+            width: auto !important;
+            object-fit: contain !important;
+            display: block !important;
+        }
+    `]
 })
 export class AppTopbar {
     items!: MenuItem[];

@@ -4,8 +4,6 @@ import com.gpi.gpi_backend.dto.*;
 import com.gpi.gpi_backend.service.AdminUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -23,25 +21,20 @@ public class AdminUserController {
     }
 
     @PostMapping
-    public ResponseEntity<UserDTO> create(
-            @RequestBody UserRequest req,
-            @AuthenticationPrincipal UserDetails admin) {
-        return ResponseEntity.ok(adminUserService.createUser(req, admin.getUsername()));
+    public ResponseEntity<UserDTO> create(@RequestBody UserRequest req) {
+        return ResponseEntity.ok(adminUserService.createUser(req, "Super Admin"));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<UserDTO> update(
             @PathVariable Long id,
-            @RequestBody UserRequest req,
-            @AuthenticationPrincipal UserDetails admin) {
-        return ResponseEntity.ok(adminUserService.updateUser(id, req, admin.getUsername()));
+            @RequestBody UserRequest req) {
+        return ResponseEntity.ok(adminUserService.updateUser(id, req, "Super Admin"));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
-            @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails admin) {
-        adminUserService.deleteUser(id, admin.getUsername());
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        adminUserService.deleteUser(id, "Super Admin");
         return ResponseEntity.noContent().build();
     }
 

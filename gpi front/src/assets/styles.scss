@@ -100,3 +100,37 @@
   --p-highlight-background: #EBF0F8 !important;
   --p-highlight-color:      #1B2A4A !important;
 }
+/* ── Fix titres écrasés par PrimeNG ─────────── */
+.annuaire-header .annuaire-title,
+.annuaire-title {
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  color: #1B2A4A !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  margin: 0 0 0.75rem 0 !important;
+  line-height: 1.2 !important;
+  font-family: inherit !important;
+}
+/* ── Titre de page uniforme toutes les interfaces ── */
+.page-title {
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  color: var(--gti-text-primary) !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  margin: 0 0 0.75rem 0 !important;
+  line-height: 1.2 !important;
+  position: relative;
+  display: inline-block;
+}
+
+.page-title::after {
+  content: '';
+  display: block;
+  width: 50px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--gti-orange), var(--gti-navy));
+  border-radius: 2px;
+  margin-top: 0.5rem;
+}

@@ -6,8 +6,11 @@ import com.gpi.gpi_backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +24,10 @@ public class AdminUserService {
     private static final DateTimeFormatter D_FMT  = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public List<UserDTO> getAllUsers() {
-        return userRepository.findAll().stream().map(this::toDTO).collect(java.util.stream.Collectors.toList());
+        return userRepository.findAll()
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     public UserDTO createUser(UserRequest req, String adminName) {
@@ -60,10 +66,14 @@ public class AdminUserService {
         return toDTO(user);
     }
 
+    @Transactional
     public void deleteUser(Long id, String adminName) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
-        logAction(user, "Suppression", adminName);
+
+        // Supprimer les logs liés AVANT de supprimer l'utilisateur
+        userLogRepository.deleteByUserId(id);
+
         userRepository.delete(user);
     }
 
@@ -71,7 +81,7 @@ public class AdminUserService {
         return userLogRepository.findByUserIdOrderByDateDesc(userId)
                 .stream()
                 .map(this::toLogDTO)
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     private UserDTO toDTO(User u) {

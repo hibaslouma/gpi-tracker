@@ -13,25 +13,25 @@ import java.time.LocalDateTime;
 public class UserLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "log_seq")
+    @SequenceGenerator(name = "log_seq", sequenceName = "LOG_SEQ", allocationSize = 1)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "USER_ID", nullable = false)
     private User user;
 
-    @Column(name = "LOG_DATE")
-    private LocalDateTime date;
-
-    @Column(name = "ACTION", length = 100)
+    @Column(name = "ACTION")
     private String action;
 
-    @Column(name = "ADMIN_NAME", length = 100)
+    @Column(name = "ADMIN")
     private String admin;
 
+    @Column(name = "DATE_ACTION")
+    private LocalDateTime date;
+
     @PrePersist
-    protected void onCreate() {
-        if (this.date == null) this.date = LocalDateTime.now();
+    public void prePersist() {
+        this.date = LocalDateTime.now();
     }
 }

@@ -1,21 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-
-interface Bank {
-  id: number;
-  participant: string;
-  nomBanque: string;
-  paysCode: string;
-  paysNom: string;
-  flagUrl: string;
-  bic: string;
-  devises: string;
-  statut: 'ACTIF' | 'INACTIF';
-  cutOff: string;
-  reseau: string;
-}
+import { BanqueService, Bank } from '../../../services/banque.service';
 
 const COUNTRIES = [
   { code: 'BE', nom: 'BELGIQUE' },
@@ -37,20 +24,14 @@ const COUNTRIES = [
 ];
 
 const RESEAUX = [
-  'SWIFT Network',
-  'T2S (Target2-Securities)',
-  'CHIPS (Clearing House)',
-  'RTGS (Real-Time Gross Settlement)',
-  'ACH (Automated Clearing House)',
-  'Fedwire',
-  'CIPS (Cross-border Interbank Payment System)',
-  'BOJ-NET (Bank of Japan)',
+  'SWIFT Network', 'T2S (Target2-Securities)', 'CHIPS (Clearing House)',
+  'RTGS (Real-Time Gross Settlement)', 'ACH (Automated Clearing House)',
+  'Fedwire', 'CIPS (Cross-border Interbank Payment System)', 'BOJ-NET (Bank of Japan)',
 ];
 
 const DEVISES_LIST = [
   'TND', 'EUR', 'USD', 'GBP', 'JPY', 'CNY',
-  'CAD', 'CHF', 'AUD', 'NZD', 'SEK', 'NOK',
-  'DKK', 'INR', 'BRL',
+  'CAD', 'CHF', 'AUD', 'NZD', 'SEK', 'NOK', 'DKK', 'INR', 'BRL',
 ];
 
 @Component({
@@ -62,7 +43,6 @@ const DEVISES_LIST = [
 })
 export class Annuaire implements OnInit {
 
-  // ─── État UI ──────────────────────────────────────────────
   private _searchQuery = '';
   searchCountry = '';
   currentPage = 1;
@@ -74,83 +54,18 @@ export class Annuaire implements OnInit {
   countries = COUNTRIES;
   reseaux = RESEAUX;
   devises = DEVISES_LIST;
-
-  // ─── Messages feedback (remplace alert()) ─────────────────
   formError = '';
   successMessage = '';
-
-  // ─── Recherche avec reset pagination ──────────────────────
-  get searchQuery(): string { return this._searchQuery; }
-  set searchQuery(val: string) {
-    this._searchQuery = val;
-    this.currentPage = 1;
-  }
-
-  // ─── Devises sélectionnées (tableau pour les checkboxes) ──
+  isLoading = false;
+  isSubmitting = false;
+  isDeleting = false;
   selectedDevises: string[] = [];
-
-  // ─── Formulaire nouvelle banque ───────────────────────────
+  banks: Bank[] = [];
   newBank: Partial<Bank> = this.emptyBank();
 
-  private emptyBank(): Partial<Bank> {
-    return {
-      participant: '',
-      nomBanque: '',
-      paysCode: '',
-      paysNom: '',
-      flagUrl: '',
-      bic: '',
-      devises: '',
-      statut: 'ACTIF',
-      cutOff: '',
-      reseau: ''
-    };
-  }
+  get searchQuery(): string { return this._searchQuery; }
+  set searchQuery(val: string) { this._searchQuery = val; this.currentPage = 1; this.cdr.detectChanges(); }
 
-  // ─── Données banques ──────────────────────────────────────
-  banks: Bank[] = [
-    {
-      id: 1,
-      participant: 'BNRSIBRXXX',
-      nomBanque: 'Belfius Bank',
-      paysCode: 'BE',
-      paysNom: 'BELGIQUE',
-      flagUrl: 'https://flagcdn.com/w80/be.png',
-      bic: 'BNRSIBRXXX',
-      devises: 'EUR, USD',
-      statut: 'ACTIF',
-      cutOff: '16:00+0100',
-      reseau: 'SWIFT Network'
-    },
-    {
-      id: 2,
-      participant: 'BNPAFRPPXXX',
-      nomBanque: 'BNP Paribas',
-      paysCode: 'FR',
-      paysNom: 'FRANCE',
-      flagUrl: 'https://flagcdn.com/w80/fr.png',
-      bic: 'BNPAFRPPXXX',
-      devises: 'EUR, USD, GBP',
-      statut: 'ACTIF',
-      cutOff: '17:00+0100',
-      reseau: 'SWIFT Network'
-    },
-    {
-      id: 3,
-      participant: 'DEUTDEDBXXX',
-      nomBanque: 'Deutsche Bank',
-      paysCode: 'DE',
-      paysNom: 'ALLEMAGNE',
-      flagUrl: 'https://flagcdn.com/w80/de.png',
-      bic: 'DEUTDEDBXXX',
-      devises: 'EUR, USD, CHF',
-      statut: 'INACTIF',
-      cutOff: '15:30+0100',
-      reseau: 'TARGET2'
-    },
-  ];
-
-  // ─── Getters ──────────────────────────────────────────────
   get filteredCountries(): any[] {
     if (!this.searchCountry) return this.countries;
     return this.countries.filter(c =>
@@ -177,16 +92,43 @@ export class Annuaire implements OnInit {
     return Math.max(1, Math.ceil(this.filteredBanks.length / this.itemsPerPage));
   }
 
-  // CORRECTION : pages dynamiques (plus de [1,2,3] hardcodé)
   get pagesArray(): number[] {
     return Array.from({ length: this.totalPages }, (_, i) => i + 1);
   }
 
-  constructor(private router: Router) {}
+  private emptyBank(): Partial<Bank> {
+    return {
+      participant: '', nomBanque: '', paysCode: '', paysNom: '',
+      flagUrl: '', bic: '', devises: '', statut: 'ACTIF', cutOff: '', reseau: ''
+    };
+  }
 
-  ngOnInit() {}
+  constructor(
+    private router: Router,
+    private banqueService: BanqueService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-  // ─── Modales ──────────────────────────────────────────────
+  ngOnInit() { this.loadBanks(); }
+
+  loadBanks() {
+    this.isLoading = true;
+    this.banks = [];
+    this.cdr.detectChanges();
+    this.banqueService.getAll().subscribe({
+      next: (data) => {
+        this.banks = data;
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Erreur chargement banques', err);
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   openAddModal() {
     this.isEditing = false;
     this.selectedBank = null;
@@ -194,39 +136,115 @@ export class Annuaire implements OnInit {
     this.selectedDevises = [];
     this.searchCountry = '';
     this.formError = '';
+    this.isSubmitting = false;
     this.showModal = true;
+    this.cdr.detectChanges();
   }
 
   openEditModal(bank: Bank) {
     this.isEditing = true;
     this.selectedBank = bank;
     this.newBank = { ...bank };
-    // Restaurer les devises cochées
     this.selectedDevises = bank.devises.split(', ').map(d => d.trim()).filter(d => d);
     this.searchCountry = '';
     this.formError = '';
+    this.isSubmitting = false;
     this.showModal = true;
+    this.cdr.detectChanges();
   }
 
   closeModal() {
     this.showModal = false;
     this.formError = '';
+    this.isSubmitting = false;
+    this.cdr.detectChanges();
   }
 
   confirmDelete(bank: Bank) {
     this.selectedBank = bank;
+    this.isDeleting = false;
     this.showDeleteModal = true;
+    this.cdr.detectChanges();
+  }
+
+  saveBank() {
+    if (!this.validateBank()) return;
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
+    this.cdr.detectChanges();
+
+    const bankData: Bank = {
+      ...this.newBank as Bank,
+      bic: (this.newBank.bic || '').trim().toUpperCase(),
+      participant: (this.newBank.participant || '').trim().toUpperCase(),
+    };
+
+    if (this.isEditing && this.selectedBank) {
+      this.banqueService.update(this.selectedBank.id!, bankData).subscribe({
+        next: () => {
+          this.isSubmitting = false;
+          this.showModal = false;
+          this.cdr.detectChanges();
+          this.loadBanks();
+          this.showSuccess('Banque modifiée !');
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          const msg = err?.error?.message || err?.message || '';
+          this.formError = msg.toLowerCase().includes('bic')
+            ? 'Ce BIC existe déjà. Veuillez en saisir un autre.'
+            : 'Erreur lors de la modification.';
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.banqueService.create(bankData).subscribe({
+        next: () => {
+          this.isSubmitting = false;
+          this.showModal = false;
+          this.cdr.detectChanges();
+          this.loadBanks();
+          this.showSuccess('Banque ajoutée !');
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          const msg = err?.error?.message || err?.message || '';
+          this.formError = msg.toLowerCase().includes('bic')
+            ? 'Ce BIC existe déjà. Veuillez en saisir un autre.'
+            : 'Erreur lors de la création.';
+          this.cdr.detectChanges();
+        }
+      });
+    }
   }
 
   deleteBank() {
-    if (!this.selectedBank) return;
-    this.banks = this.banks.filter(b => b.id !== this.selectedBank!.id);
-    this.showDeleteModal = false;
-    if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
-    this.showSuccess('Banque supprimée avec succès.');
+    if (!this.selectedBank || !this.selectedBank.id) return;
+    if (this.isDeleting) return;
+    this.isDeleting = true;
+    this.cdr.detectChanges();
+
+    this.banqueService.delete(this.selectedBank.id).subscribe({
+      next: () => {
+        this.isDeleting = false;
+        this.showDeleteModal = false;
+        this.selectedBank = null;
+        this.cdr.detectChanges();
+        this.loadBanks();
+        if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+        this.showSuccess('Banque supprimée !');
+      },
+      error: (err) => {
+        this.isDeleting = false;
+        this.showDeleteModal = false;
+        this.selectedBank = null;
+        this.cdr.detectChanges();
+        this.loadBanks();
+        console.error('Erreur suppression:', err);
+      }
+    });
   }
 
-  // ─── Pays ─────────────────────────────────────────────────
   getFlagUrl(code: string): string {
     return `https://flagcdn.com/w80/${code.toLowerCase()}.png`;
   }
@@ -239,105 +257,65 @@ export class Annuaire implements OnInit {
       this.newBank.flagUrl = this.getFlagUrl(code);
     }
     this.searchCountry = '';
+    this.cdr.detectChanges();
   }
 
-  // ─── Devises (checkboxes) ─────────────────────────────────
   toggleDevise(devise: string, checked: boolean) {
     if (checked) {
-      if (!this.selectedDevises.includes(devise)) {
-        this.selectedDevises.push(devise);
-      }
+      if (!this.selectedDevises.includes(devise)) this.selectedDevises.push(devise);
     } else {
       this.selectedDevises = this.selectedDevises.filter(d => d !== devise);
     }
     this.newBank.devises = this.selectedDevises.join(', ');
+    this.cdr.detectChanges();
   }
 
   isDeviseSelected(devise: string): boolean {
     return this.selectedDevises.includes(devise);
   }
 
-  // ─── Validation ───────────────────────────────────────────
   private validateBank(): boolean {
-    if (!this.newBank.participant || this.newBank.participant.trim() === '') {
+    if (!this.newBank.participant?.trim()) {
       this.formError = 'Le code participant est obligatoire.';
-      return false;
+      this.cdr.detectChanges(); return false;
     }
-    if (!this.newBank.nomBanque || this.newBank.nomBanque.trim() === '') {
+    if (!this.newBank.nomBanque?.trim()) {
       this.formError = 'Le nom de la banque est obligatoire.';
-      return false;
+      this.cdr.detectChanges(); return false;
     }
-
-    // CORRECTION : validation BIC (8 ou 11 caractères)
     const bic = (this.newBank.bic || '').trim();
     if (bic.length !== 8 && bic.length !== 11) {
-      this.formError = 'Le BIC doit contenir exactement 8 ou 11 caractères (ex: BNPAFRPP ou BNPAFRPPXXX).';
-      return false;
+      this.formError = 'Le BIC doit contenir 8 ou 11 caractères.';
+      this.cdr.detectChanges(); return false;
     }
-
     if (!this.newBank.paysCode) {
       this.formError = 'Veuillez sélectionner un pays.';
-      return false;
+      this.cdr.detectChanges(); return false;
     }
     if (!this.newBank.devises || this.selectedDevises.length === 0) {
       this.formError = 'Veuillez sélectionner au moins une devise.';
-      return false;
+      this.cdr.detectChanges(); return false;
     }
-
     this.formError = '';
     return true;
   }
 
-  // ─── Sauvegarde ───────────────────────────────────────────
-  saveBank() {
-    if (!this.validateBank()) return;
-
-    if (this.isEditing && this.selectedBank) {
-      // Modifier banque existante
-      const index = this.banks.findIndex(b => b.id === this.selectedBank!.id);
-      this.banks[index] = {
-        ...this.selectedBank,
-        ...this.newBank,
-        bic: (this.newBank.bic || '').trim().toUpperCase(),
-        participant: (this.newBank.participant || '').trim().toUpperCase(),
-      } as Bank;
-      this.showModal = false;
-      this.showSuccess('Banque modifiée avec succès.');
-    } else {
-      // Ajouter nouvelle banque
-      const newId = Math.max(...this.banks.map(b => b.id), 0) + 1;
-      const bank: Bank = {
-        id: newId,
-        participant: (this.newBank.participant || '').trim().toUpperCase(),
-        nomBanque:   this.newBank.nomBanque   || '',
-        paysCode:    this.newBank.paysCode    || '',
-        paysNom:     this.newBank.paysNom     || '',
-        flagUrl:     this.newBank.flagUrl     || '',
-        bic:         (this.newBank.bic || '').trim().toUpperCase(),
-        devises:     this.newBank.devises     || '',
-        statut:      this.newBank.statut      || 'ACTIF',
-        cutOff:      this.newBank.cutOff      || '',
-        reseau:      this.newBank.reseau      || ''
-      };
-      this.banks.push(bank);
-      this.showModal = false;
-      this.currentPage = 1;
-      this.showSuccess('Banque ajoutée avec succès.');
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.cdr.detectChanges();
     }
   }
-
-  // ─── Pagination ────────────────────────────────────────────
-  goToPage(page: number) {
-    if (page >= 1 && page <= this.totalPages) this.currentPage = page;
-  }
   previousPage() { this.goToPage(this.currentPage - 1); }
-  nextPage()     { this.goToPage(this.currentPage + 1); }
-
+  nextPage() { this.goToPage(this.currentPage + 1); }
   navigate(route: string) { this.router.navigate([route]); }
 
-  // ─── Message succès temporaire ────────────────────────────
   private showSuccess(msg: string) {
     this.successMessage = msg;
-    setTimeout(() => this.successMessage = '', 3000);
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.successMessage = '';
+      this.cdr.detectChanges();
+    }, 3000);
   }
 }
