@@ -1,17 +1,49 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import Keycloak from 'keycloak-js';
 
-@Injectable({
-  providedIn: 'root'
-})
+// Instance partagée — une seule dans toute l'app
+const keycloakInstance = new Keycloak({
+  url: 'http://localhost:8180',
+  realm: 'gpi-realm',
+  clientId: 'gpi-backend'
+});
+
+let initialized = false;
+
+export async function initKeycloak(): Promise<boolean> {
+  if (initialized) return keycloakInstance.authenticated ?? false;
+  const authenticated = await keycloakInstance.init({
+    onLoad: 'login-required',
+    checkLoginIframe: false
+  });
+  initialized = true;
+  return authenticated;
+}
+
+@Injectable({ providedIn: 'root' })
 export class AuthService {
 
-  private apiUrl = 'http://localhost:8080/api/auth';
+  getToken(): string | undefined {
+    return keycloakInstance.token;
+  }
 
-  constructor(private http: HttpClient) {}
+  getRole(): string {
+    const roles = keycloakInstance.realmAccess?.roles ?? [];
+    if (roles.includes('Backoffice')) return 'backoffice';
+    return 'admin';
+  }
 
-  login(email: string, password: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/login`, { email, password });
+  getUsername(): string {
+    return keycloakInstance.idTokenParsed?.['preferred_username'] ?? '';
+  }
+
+  isAuthenticated(): boolean {
+    return !!keycloakInstance.authenticated;
+  }
+
+  async logout(): Promise<void> {
+    await keycloakInstance.logout({
+      redirectUri: window.location.origin
+    });
   }
 }

@@ -4,6 +4,7 @@ import { Component, effect, ElementRef, inject, OnDestroy, OnInit } from '@angul
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subject, takeUntil } from 'rxjs';
 import { AppMenu } from './app.menu';
+import { AuthService } from '@/app/services/auth.service';
 
 @Component({
     selector: 'app-sidebar',
@@ -18,7 +19,7 @@ import { AppMenu } from './app.menu';
                 </div>
                 <div class="user-greeting">
                     <span class="greeting-text">Bienvenue,</span>
-                    <span class="user-name">Super Administrateur</span>
+                    <span class="user-name">{{ username }}</span>
                     <span class="user-role">Administrateur</span>
                 </div>
             </div>
@@ -110,6 +111,9 @@ export class AppSidebar implements OnInit, OnDestroy {
     layoutService = inject(LayoutService);
     router = inject(Router);
     el = inject(ElementRef);
+    authService = inject(AuthService);
+
+    username = '';
 
     private outsideClickListener: ((event: MouseEvent) => void) | null = null;
     private destroy$ = new Subject<void>();
@@ -134,6 +138,9 @@ export class AppSidebar implements OnInit, OnDestroy {
     }
 
     ngOnInit() {
+        // Récupérer le nom de l'utilisateur connecté via Keycloak
+        this.username = this.authService.getUsername() || 'Super Administrateur';
+
         this.router.events
             .pipe(
                 filter((event) => event instanceof NavigationEnd),
@@ -152,8 +159,8 @@ export class AppSidebar implements OnInit, OnDestroy {
         this.unbindOutsideClickListener();
     }
 
-    logout() {
-        this.router.navigate(['/auth/login']);
+    async logout() {
+        await this.authService.logout();  // ← Keycloak logout
     }
 
     private onRouteChange(path: string) {

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-
+import { AuthService } from '../../services/auth.service';
 // ─── Statuts ISO MX ──────────────────────────────────────────
 export type StatutISO = 'PDNG' | 'ACCP' | 'ACSP' | 'ACSC' | 'RJCT' | 'CANC';
 
@@ -109,7 +109,7 @@ export interface NouveauPaiement {
 })
 export class BackofficeComponent implements OnInit {
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private authService: AuthService) {}
 
   activeTab = 'vue-transactionnelle';
   selectedTransaction: Transaction | null = null;
@@ -293,7 +293,7 @@ export class BackofficeComponent implements OnInit {
 
   // ── Navigation ─────────────────────────────────────────────
   setActiveTab(tab: string): void { this.activeTab = tab; this.selectedTransaction = null; }
-  logout(): void { localStorage.removeItem('token'); localStorage.removeItem('role'); this.router.navigateByUrl('/auth/login'); }
+  async logout(): Promise<void> { await this.authService.logout(); }
   ouvrirDetailLigne(t: Transaction): void { this.selectedTransaction = t; }
 
   // ── Statuts ISO ────────────────────────────────────────────
