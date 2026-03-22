@@ -8,14 +8,13 @@ import lombok.*;
 @Builder
 public class BanqueDTO {
     private Long id;
-    private String participant;
+    private String bic;
     private String nomBanque;
     private String paysCode;
     private String paysNom;
     private String flagUrl;
-    private String bic;
-    private String devises;
-    private String statut;
+    private String typeBanque;
+    private String devise;
     private String cutOff;
-    private String reseau;
+    private String fuseauHoraire;
 }

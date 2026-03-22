@@ -8,8 +8,7 @@ import java.util.List;
 
 @Repository
 public interface BanqueRepository extends JpaRepository<Banque, Long> {
-    List<Banque> findByStatut(String statut);
-    List<Banque> findByPaysCode(String paysCode);
     boolean existsByBic(String bic);
     List<Banque> findByNomBanqueContainingIgnoreCase(String nom);
+    List<Banque> findByPaysCode(String paysCode);
 }

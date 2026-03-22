@@ -36,16 +36,15 @@ public class BanqueService {
     public BanqueDTO update(Long id, BanqueDTO dto) {
         Banque b = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Banque non trouvée : " + id));
-        b.setParticipant(dto.getParticipant());
+        b.setBic(dto.getBic());
         b.setNomBanque(dto.getNomBanque());
         b.setPaysCode(dto.getPaysCode());
         b.setPaysNom(dto.getPaysNom());
         b.setFlagUrl(dto.getFlagUrl());
-        b.setBic(dto.getBic());
-        b.setDevises(dto.getDevises());
-        b.setStatut(dto.getStatut());
+        b.setTypeBanque(dto.getTypeBanque());
+        b.setDevise(dto.getDevise());
         b.setCutOff(dto.getCutOff());
-        b.setReseau(dto.getReseau());
+        b.setFuseauHoraire(dto.getFuseauHoraire());
         return toDTO(repository.save(b));
     }
 
@@ -58,20 +57,30 @@ public class BanqueService {
 
     private BanqueDTO toDTO(Banque b) {
         return BanqueDTO.builder()
-                .id(b.getId()).participant(b.getParticipant())
-                .nomBanque(b.getNomBanque()).paysCode(b.getPaysCode())
-                .paysNom(b.getPaysNom()).flagUrl(b.getFlagUrl())
-                .bic(b.getBic()).devises(b.getDevises())
-                .statut(b.getStatut()).cutOff(b.getCutOff())
-                .reseau(b.getReseau()).build();
+                .id(b.getId())
+                .bic(b.getBic())
+                .nomBanque(b.getNomBanque())
+                .paysCode(b.getPaysCode())
+                .paysNom(b.getPaysNom())
+                .flagUrl(b.getFlagUrl())
+                .typeBanque(b.getTypeBanque())
+                .devise(b.getDevise())
+                .cutOff(b.getCutOff())
+                .fuseauHoraire(b.getFuseauHoraire())
+                .build();
     }
 
     private Banque toEntity(BanqueDTO dto) {
         return Banque.builder()
-                .participant(dto.getParticipant()).nomBanque(dto.getNomBanque())
-                .paysCode(dto.getPaysCode()).paysNom(dto.getPaysNom())
-                .flagUrl(dto.getFlagUrl()).bic(dto.getBic())
-                .devises(dto.getDevises()).statut(dto.getStatut())
-                .cutOff(dto.getCutOff()).reseau(dto.getReseau()).build();
+                .bic(dto.getBic())
+                .nomBanque(dto.getNomBanque())
+                .paysCode(dto.getPaysCode())
+                .paysNom(dto.getPaysNom())
+                .flagUrl(dto.getFlagUrl())
+                .typeBanque(dto.getTypeBanque())
+                .devise(dto.getDevise())
+                .cutOff(dto.getCutOff())
+                .fuseauHoraire(dto.getFuseauHoraire())
+                .build();
     }
 }

@@ -19,6 +19,7 @@ public class AdminUserService {
     private final UserRepository userRepository;
     private final UserLogRepository userLogRepository;
     private final PasswordEncoder passwordEncoder;
+    private final KeycloakAdminService keycloakAdminService;
 
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final DateTimeFormatter D_FMT  = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -42,6 +43,15 @@ public class AdminUserService {
         user.setActive(true);
         user.setPassword(passwordEncoder.encode(req.getPassword()));
         user = userRepository.save(user);
+
+        // Créer dans Keycloak
+        keycloakAdminService.createUser(
+                req.getEmail(),
+                req.getName(),
+                req.getPassword(),
+                req.getRole()
+        );
+
         logAction(user, "Création compte", adminName);
         return toDTO(user);
     }
@@ -58,10 +68,21 @@ public class AdminUserService {
 
         if (req.getPassword() != null && !req.getPassword().trim().isEmpty()) {
             user.setPassword(passwordEncoder.encode(req.getPassword()));
+
+            // Réinitialiser le mot de passe dans Keycloak aussi
+            try {
+                String userId = keycloakAdminService.getUserIdByEmail(user.getEmail());
+                keycloakAdminService.resetPassword(userId, req.getPassword());
+            } catch (Exception e) {
+                System.err.println("❌ Erreur reset mdp Keycloak: " + e.getMessage());
+            }
+
             logAction(user, "Réinitialisation mdp", adminName);
         }
 
         user = userRepository.save(user);
+        // Synchroniser le statut avec Keycloak
+        keycloakAdminService.updateUserStatus(user.getEmail(), user.isActive());
         logAction(user, "Modification", adminName);
         return toDTO(user);
     }
@@ -70,6 +91,9 @@ public class AdminUserService {
     public void deleteUser(Long id, String adminName) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        // Supprimer dans Keycloak
+        keycloakAdminService.deleteUser(user.getEmail());
 
         // Supprimer les logs liés AVANT de supprimer l'utilisateur
         userLogRepository.deleteByUserId(id);
