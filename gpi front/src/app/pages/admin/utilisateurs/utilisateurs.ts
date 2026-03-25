@@ -35,15 +35,15 @@ export class Utilisateurs implements OnInit {
   get searchQuery(): string { return this._searchQuery; }
   set searchQuery(val: string) { this._searchQuery = val; this.currentPage = 1; this.cdr.detectChanges(); }
 
-  get filteredUsers(): User[] {
-    return this.users.filter(u => {
-      const matchSearch =
-        u.name.toLowerCase().includes(this._searchQuery.toLowerCase()) ||
-        u.email.toLowerCase().includes(this._searchQuery.toLowerCase());
-      const matchRole = this.selectedRole === 'Tous' || u.role === this.selectedRole;
-      return matchSearch && matchRole;
-    });
-  }
+ get filteredUsers(): User[] {
+  return this.users.filter(u => {
+    const matchSearch =
+      (u.name || '').toLowerCase().includes(this._searchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(this._searchQuery.toLowerCase());
+    const matchRole = this.selectedRole === 'Tous' || u.role === this.selectedRole;
+    return matchSearch && matchRole;
+  });
+}
 
   get paginatedUsers(): User[] {
     const start = (this.currentPage - 1) * this.itemsPerPage;
@@ -59,7 +59,16 @@ export class Utilisateurs implements OnInit {
   }
 
   private emptyUser(): Partial<User> {
-    return { name: '', email: '', phone: '', role: 'Client', active: true, password: '' };
+    return { 
+      firstName: '', 
+      lastName: '', 
+      name: '',
+      email: '', 
+      phone: '', 
+      role: 'Client', 
+      active: true, 
+      password: '' 
+    };
   }
 
   constructor(
@@ -117,7 +126,11 @@ export class Utilisateurs implements OnInit {
 
   openEditModal(user: User) {
     this.isEditing = true;
-    this.newUser = { ...user };
+    this.newUser = { 
+      ...user,
+      firstName: user.name?.split(' ')[0] || '',
+      lastName: user.name?.split(' ').slice(1).join(' ') || ''
+    };
     this.selectedUser = user;
     this.generatedPassword = '';
     this.copied = false;
@@ -158,6 +171,7 @@ export class Utilisateurs implements OnInit {
 
     const userData: User = {
       ...this.newUser as User,
+      name: `${this.newUser.firstName} ${this.newUser.lastName}`.trim(),
       password: this.isEditing ? (this.generatedPassword || undefined as any) : this.newUser.password
     };
 
@@ -233,14 +247,81 @@ export class Utilisateurs implements OnInit {
   }
 
   private validateForm(): boolean {
-    if (!this.newUser.name || this.newUser.name.trim().length < 3) {
-      this.formError = 'Le nom doit contenir au moins 3 caractères.';
+
+    // ── Prénom ───────────────────────────────────────────
+    if (!this.newUser.firstName || this.newUser.firstName.trim().length === 0) {
+      this.formError = 'Le prénom est obligatoire.';
       this.cdr.detectChanges(); return false;
     }
-    if (!this.newUser.email || !this.newUser.email.includes('@')) {
-      this.formError = 'Veuillez saisir une adresse email valide.';
+    if (this.newUser.firstName.trim().length < 2) {
+      this.formError = 'Le prénom doit contenir au moins 2 caractères.';
       this.cdr.detectChanges(); return false;
     }
+    if (this.newUser.firstName.trim().length > 50) {
+      this.formError = 'Le prénom ne peut pas dépasser 50 caractères.';
+      this.cdr.detectChanges(); return false;
+    }
+    if (!/^[a-zA-ZÀ-ÿ\s\-']+$/.test(this.newUser.firstName.trim())) {
+      this.formError = 'Le prénom ne doit contenir que des lettres.';
+      this.cdr.detectChanges(); return false;
+    }
+
+    // ── Nom ──────────────────────────────────────────────
+    if (!this.newUser.lastName || this.newUser.lastName.trim().length === 0) {
+      this.formError = 'Le nom est obligatoire.';
+      this.cdr.detectChanges(); return false;
+    }
+    if (this.newUser.lastName.trim().length < 2) {
+      this.formError = 'Le nom doit contenir au moins 2 caractères.';
+      this.cdr.detectChanges(); return false;
+    }
+    if (this.newUser.lastName.trim().length > 50) {
+      this.formError = 'Le nom ne peut pas dépasser 50 caractères.';
+      this.cdr.detectChanges(); return false;
+    }
+    if (!/^[a-zA-ZÀ-ÿ\s\-']+$/.test(this.newUser.lastName.trim())) {
+      this.formError = 'Le nom ne doit contenir que des lettres.';
+      this.cdr.detectChanges(); return false;
+    }
+
+    // ── Email ────────────────────────────────────────────
+    if (!this.newUser.email || this.newUser.email.trim().length === 0) {
+      this.formError = 'L\'adresse email est obligatoire.';
+      this.cdr.detectChanges(); return false;
+    }
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(this.newUser.email.trim())) {
+      this.formError = 'Format email invalide. Exemple : nom@domaine.com';
+      this.cdr.detectChanges(); return false;
+    }
+
+    // ── Téléphone tunisien ───────────────────────────────
+    if (this.newUser.phone && this.newUser.phone.trim().length > 0) {
+      const phone = this.newUser.phone.trim();
+      if (!/^[0-9]{8}$/.test(phone)) {
+        this.formError = 'Le téléphone doit contenir exactement 8 chiffres sans espaces.';
+        this.cdr.detectChanges(); return false;
+      }
+      if (!/^[24579]/.test(phone)) {
+        this.formError = 'Numéro invalide. Mobile : commence par 2, 4, 5 ou 9. Fixe : commence par 7.';
+        this.cdr.detectChanges(); return false;
+      }
+    }
+
+    // ── Rôle ─────────────────────────────────────────────
+    if (!this.newUser.role || !['Backoffice', 'Client'].includes(this.newUser.role)) {
+      this.formError = 'Veuillez sélectionner un rôle valide.';
+      this.cdr.detectChanges(); return false;
+    }
+
+    // ── Mot de passe (création uniquement) ───────────────
+    if (!this.isEditing) {
+      if (!this.newUser.password || this.newUser.password.length < 8) {
+        this.formError = 'Le mot de passe doit contenir au moins 8 caractères.';
+        this.cdr.detectChanges(); return false;
+      }
+    }
+
     this.formError = '';
     return true;
   }

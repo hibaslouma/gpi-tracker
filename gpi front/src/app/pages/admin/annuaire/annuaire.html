@@ -15,7 +15,7 @@
 
   <div class="search-section">
     <input type="text"
-           placeholder="Rechercher par Participant, Banque, Pays ou Devise"
+           placeholder="Rechercher par BIC, Banque, Pays, Type ou Devise..."
            [(ngModel)]="searchQuery"
            class="search-input">
   </div>
@@ -24,20 +24,19 @@
     <table class="annuaire-table">
       <thead>
         <tr>
-          <th>PARTICIPANT</th>
+          <th>BIC / SWIFT</th>
           <th>NOM BANQUE</th>
           <th>PAYS</th>
-          <th>BIC</th>
-          <th>DEVISES</th>
-          <th>STATUT</th>
+          <th>TYPE</th>
+          <th>DEVISE</th>
           <th>CUT-OFF</th>
-          <th>RÉSEAU</th>
+          <th>FUSEAU HORAIRE</th>
           <th>ACTIONS</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let bank of paginatedBanks">
-          <td><strong>{{ bank.participant }}</strong></td>
+          <td><strong class="bic-cell">{{ bank.bic }}</strong></td>
           <td>{{ bank.nomBanque }}</td>
           <td>
             <span class="pays-badge">
@@ -45,15 +44,10 @@
               <span>{{ bank.paysNom }} ({{ bank.paysCode }})</span>
             </span>
           </td>
-          <td class="bic-cell">{{ bank.bic }}</td>
-          <td><span class="devise-badge">{{ bank.devises }}</span></td>
-          <td>
-            <span [class]="'statut-badge ' + bank.statut.toLowerCase()">
-              {{ bank.statut === 'ACTIF' ? 'ACTIF' : 'INACTIF' }}
-            </span>
-          </td>
+          <td>{{ bank.typeBanque }}</td>
+          <td><span class="devise-badge">{{ bank.devise }}</span></td>
           <td>{{ bank.cutOff }}</td>
-          <td>{{ bank.reseau }}</td>
+          <td>{{ bank.fuseauHoraire }}</td>
           <td>
             <div class="actions">
               <button class="btn-action edit" type="button" (click)="openEditModal(bank)" title="Modifier">
@@ -66,7 +60,7 @@
           </td>
         </tr>
         <tr *ngIf="filteredBanks.length === 0">
-          <td colspan="9" class="empty-state">
+          <td colspan="8" class="empty-state">
             <i class="pi pi-inbox"></i>
             <p>Aucune banque trouvée</p>
           </td>
@@ -102,49 +96,60 @@
           <i class="pi pi-exclamation-triangle"></i> {{ formError }}
         </div>
 
+        <!-- BIC -->
         <div class="form-section">
-          <h3 class="section-title">Identification de la banque</h3>
+          <h3 class="section-title">Identification</h3>
+
           <div class="form-group">
-            <label>Code PARTICIPANT (SWIFT) *</label>
-            <input type="text" [(ngModel)]="newBank.participant"
-                   placeholder="Ex: BNRSIBRXXX" maxlength="11" class="swift-code"
-                   [class.input-error]="formError && !newBank.participant" />
-            <small>Identifiant unique SWIFT (11 caractères)</small>
-          </div>
-          <div class="form-group">
-            <label>Nom de la Banque *</label>
-            <input type="text" [(ngModel)]="newBank.nomBanque"
-                   placeholder="Ex: Belfius Bank"
-                   [class.input-error]="formError && !newBank.nomBanque" />
-          </div>
-          <div class="form-group">
-            <label>BIC (Bank Identifier Code) *</label>
+            <label>BIC / SWIFT *</label>
             <input type="text" [(ngModel)]="newBank.bic"
-                   placeholder="Ex: BNRSIBRX (8) ou BNRSIBRXXX (11)"
-                   maxlength="11" class="swift-code" />
+                   placeholder="Ex: BIATTNTT ou BIATTNTTXXX"
+                   maxlength="11"
+                   style="text-transform: uppercase"
+                   [class.input-error]="formError && (!newBank.bic || (newBank.bic.length !== 8 && newBank.bic.length !== 11))" />
             <small>
-              Code bancaire international — 8 ou 11 caractères
-              <span class="bic-counter"
-                    [class.valid]="newBank.bic?.length === 8 || newBank.bic?.length === 11"
-                    [class.invalid]="newBank.bic && newBank.bic.length > 0 && newBank.bic.length !== 8 && newBank.bic.length !== 11">
+              4 lettres (banque) + 2 lettres (pays) + 2 caractères (ville) + 3 optionnels (agence)
+              <span [class.valid]="newBank.bic?.length === 8 || newBank.bic?.length === 11"
+                    [class.invalid]="!!newBank.bic && newBank.bic.length > 0 && newBank.bic.length !== 8 && newBank.bic.length !== 11"
+                    style="font-weight:600; margin-left:4px;">
                 ({{ newBank.bic?.length || 0 }} / 8 ou 11)
               </span>
             </small>
           </div>
+
+          <div class="form-group">
+            <label>Nom de la banque *</label>
+            <input type="text" [(ngModel)]="newBank.nomBanque"
+                   placeholder="Ex: Banque Internationale Arabe de Tunisie"
+                   maxlength="100"
+                   [class.input-error]="formError && !newBank.nomBanque" />
+            <small>{{ newBank.nomBanque?.length || 0 }}/100 caractères</small>
+          </div>
+
+          <div class="form-group">
+            <label>Type de banque *</label>
+            <select [(ngModel)]="newBank.typeBanque"
+                    [class.input-error]="formError && !newBank.typeBanque">
+              <option value="">-- Sélectionner --</option>
+              <option *ngFor="let t of typesBanque" [value]="t">{{ t }}</option>
+            </select>
+          </div>
         </div>
 
+        <!-- Pays -->
         <div class="form-section">
           <h3 class="section-title">Localisation</h3>
           <div class="form-group">
             <label>Pays *</label>
             <div class="searchable-select">
               <input type="text" [(ngModel)]="searchCountry"
-                     placeholder="Tapez pour rechercher (ex: T, FR, FRANCE)"
+                     placeholder="Tapez pour rechercher (ex: TN, FRANCE)"
                      class="search-input-select">
               <div class="select-options" *ngIf="searchCountry !== '' && filteredCountries.length > 0">
                 <div *ngFor="let country of filteredCountries"
                      class="option"
                      (click)="selectCountry(country.code)">
+                  <img [src]="getFlagUrl(country.code)" style="width:20px; margin-right:8px;">
                   {{ country.code }} - {{ country.nom }}
                 </div>
               </div>
@@ -153,15 +158,16 @@
               </div>
             </div>
             <div *ngIf="newBank.paysCode" class="selected-country-box">
+              <img [src]="newBank.flagUrl" style="width:24px; margin-right:8px;">
               {{ newBank.paysCode }} - {{ newBank.paysNom }}
             </div>
           </div>
         </div>
 
+        <!-- Devise -->
         <div class="form-section">
-          <h3 class="section-title">Capacités de paiement</h3>
+          <h3 class="section-title">Devises supportées *</h3>
           <div class="form-group">
-            <label>Devises supportées *</label>
             <div class="multi-select">
               <div *ngFor="let devise of devises" class="checkbox-item">
                 <input type="checkbox"
@@ -172,41 +178,30 @@
               </div>
             </div>
             <div class="selected-devises">
-              {{ newBank.devises || 'Aucune devise sélectionnée' }}
+              <strong>Sélectionnées :</strong> {{ newBank.devise || 'Aucune' }}
             </div>
           </div>
         </div>
 
+        <!-- Horaires -->
         <div class="form-section">
-          <h3 class="section-title">Connectivité et horaires</h3>
+          <h3 class="section-title">Horaires</h3>
+
           <div class="form-group">
-            <label>Réseau de paiement</label>
-            <select [(ngModel)]="newBank.reseau">
-              <option value="">-- Sélectionner un réseau --</option>
-              <option *ngFor="let res of reseaux" [value]="res">{{ res }}</option>
+            <label>Heure de Cut-Off *</label>
+            <input type="time" [(ngModel)]="newBank.cutOff"
+                   [class.input-error]="formError && !newBank.cutOff" />
+            <small>Heure limite pour envoyer des paiements ce jour-là</small>
+          </div>
+
+          <div class="form-group">
+            <label>Fuseau horaire *</label>
+            <select [(ngModel)]="newBank.fuseauHoraire"
+                    [class.input-error]="formError && !newBank.fuseauHoraire">
+              <option value="">-- Sélectionner --</option>
+              <option *ngFor="let f of fuseaux" [value]="f">{{ f }}</option>
             </select>
-          </div>
-          <div class="form-group">
-            <label>Heure de Cut-Off</label>
-            <input type="time" [(ngModel)]="newBank.cutOff" />
-            <small>Heure limite pour les paiements du jour</small>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3 class="section-title">Statut opérationnel</h3>
-          <div class="form-group">
-            <label>Statut</label>
-            <div class="radio-group">
-              <div class="radio-item">
-                <input type="radio" id="statut-actif" value="ACTIF" [(ngModel)]="newBank.statut" />
-                <label for="statut-actif">ACTIF (Banque opérationnelle)</label>
-              </div>
-              <div class="radio-item">
-                <input type="radio" id="statut-inactif" value="INACTIF" [(ngModel)]="newBank.statut" />
-                <label for="statut-inactif">INACTIF (En maintenance ou suspendue)</label>
-              </div>
-            </div>
+            <small>Fuseau horaire local de la banque — permet de calculer le Cut-Off réel</small>
           </div>
         </div>
 
@@ -214,7 +209,7 @@
       <div class="modal-footer">
         <button class="btn-secondary" type="button" (click)="closeModal()">Annuler</button>
         <button class="btn-primary" type="button" (click)="saveBank()" [disabled]="isSubmitting">
-          {{ isEditing ? 'Enregistrer les modifications' : 'Créer la banque' }}
+          {{ isEditing ? 'Enregistrer' : 'Créer la banque' }}
         </button>
       </div>
     </div>
@@ -228,7 +223,7 @@
         <button class="close-btn" type="button" (click)="showDeleteModal = false">✕</button>
       </div>
       <div class="modal-body">
-        <p>Voulez-vous vraiment supprimer la banque <strong>{{ selectedBank?.nomBanque }}</strong> ?<br>
+        <p>Voulez-vous vraiment supprimer <strong>{{ selectedBank?.nomBanque }}</strong> ({{ selectedBank?.bic }}) ?<br>
           <span class="warning-text">Cette action est irréversible.</span>
         </p>
       </div>

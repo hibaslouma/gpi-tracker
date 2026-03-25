@@ -1,103 +1,52 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
-// ─── Statuts ISO MX ──────────────────────────────────────────
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
+
 export type StatutISO = 'PDNG' | 'ACCP' | 'ACSP' | 'ACSC' | 'RJCT' | 'CANC';
-
-// ─── Codes motif rejet pacs.002 ──────────────────────────────
 export type MotifRejet = 'AC01' | 'AC04' | 'AG01' | 'FF01' | 'MS03' | 'NARR';
-
-// ─── Codes motif refus camt.029 ──────────────────────────────
 export type MotifRefusCamt = 'LEGL' | 'CUST' | 'AGET' | 'NARR';
 
 export interface Charge {
-  bic: string;
-  pays: string;
-  montant: number;
-  devise: string;
-  type: 'SHA' | 'OUR' | 'BEN';
+  bic: string; pays: string; montant: number; devise: string; type: 'SHA' | 'OUR' | 'BEN';
 }
-
 export interface Agent {
-  bic: string;
-  pays: string;
+  bic: string; pays: string;
   role: 'emetteur' | 'intermediaire' | 'recepteur';
   statut: 'confirme' | 'en-transit' | 'en-attente';
-  dateHeure?: string;
-  ref?: string;
-  charges: Charge[];
+  dateHeure?: string; ref?: string; charges: Charge[];
 }
-
 export interface MessageTrace {
   type: 'pacs.008' | 'pacs.002' | 'camt.056' | 'camt.029';
-  dateHeure: string;
-  statut: StatutISO;
-  ref: string;
-  detail?: string;
+  dateHeure: string; statut: StatutISO; ref: string; detail?: string;
 }
-
 export interface Transaction {
-  statutISO: StatutISO;
-  uetr: string;
-  bicEmetteur: string;
-  bicRecepteur: string;
-  montant: number;
-  devise: string;
-  date: string;
-  agents: Agent[];
-  messages: MessageTrace[];
-  motifRejet?: MotifRejet;
-  motifRejetDetail?: string;
-  delaiGPI?: number; // heures ecoulees
+  statutISO: StatutISO; uetr: string; bicEmetteur: string; bicRecepteur: string;
+  montant: number; devise: string; date: string;
+  agents: Agent[]; messages: MessageTrace[];
+  motifRejet?: MotifRejet; motifRejetDetail?: string; delaiGPI?: number;
 }
-
 export interface PaiementEntrant {
-  statutISO: StatutISO;
-  uetr: string;
-  bicEmetteur: string;
-  montant: number;
-  devise: string;
-  date: string;
-  motif: string;
+  statutISO: StatutISO; uetr: string; bicEmetteur: string;
+  montant: number; devise: string; date: string; motif: string;
   typeCharges: 'SHA' | 'OUR' | 'BEN';
-  motifRejet?: MotifRejet;
-  motifRejetDetail?: string;
+  motifRejet?: MotifRejet; motifRejetDetail?: string;
 }
-
 export interface Annulation {
-  reference: string;
-  uetr: string;
-  bicEmetteur: string;
-  motif: string;
-  motifDetail?: string;
-  date: string;
+  reference: string; uetr: string; bicEmetteur: string;
+  motif: string; motifDetail?: string; date: string;
   statutReponse: 'PDNG' | 'ACCP' | 'RJCT';
-  motifRefus?: MotifRefusCamt;
-  reponse: string;
+  motifRefus?: MotifRefusCamt; reponse: string;
 }
-
 export interface Historique {
   type: 'pacs.008' | 'pacs.002' | 'camt.056' | 'camt.029';
-  reference: string;
-  uetr: string;
-  bicEmetteur: string;
-  bicRecepteur: string;
-  montant: number;
-  devise: string;
-  date: string;
-  totalCharges: number;
-  statutISO: StatutISO;
+  reference: string; uetr: string; bicEmetteur: string; bicRecepteur: string;
+  montant: number; devise: string; date: string; totalCharges: number; statutISO: StatutISO;
 }
-
 export interface NouveauPaiement {
-  bicDestinataire: string;
-  iban: string;
-  montant: number;
-  devise: 'TND' | 'EUR' | 'USD' | 'GBP';
-  typeCharges: 'SHA' | 'OUR' | 'BEN';
-  motif: string;
+  bicDestinataire: string; iban: string; montant: number;
+  devise: 'TND' | 'EUR' | 'USD' | 'GBP'; typeCharges: 'SHA' | 'OUR' | 'BEN'; motif: string;
 }
 
 @Component({
@@ -107,194 +56,105 @@ export interface NouveauPaiement {
   templateUrl: './backoffice.html',
   styleUrls: ['./backoffice.scss']
 })
-export class BackofficeComponent implements OnInit {
+export class BackofficeComponent implements OnInit, OnDestroy {
 
-  constructor(private router: Router, private authService: AuthService) {}
+  private destroy$ = new Subject<void>();
 
-  activeTab = 'vue-transactionnelle';
+  constructor(private router: Router, private route: ActivatedRoute) {}
+
+  activeTab = 'dashboard';
   selectedTransaction: Transaction | null = null;
 
   toastMessage = '';
   toastType: 'success' | 'error' | 'info' = 'info';
   showToast = false;
 
-  // Filtres Vue Transactionnelle
   filterStatut = '';
   filterDevise = '';
   filterDate = '';
 
-  // Confirmation
   confirmationUetr = '';
   confirmationNouveauStatut: StatutISO = 'ACSC';
   confirmationMotifRejet: MotifRejet = 'AC01';
   confirmationMotifRejetDetail = '';
   confirmationTransaction: Transaction | null = null;
 
-  // Annulation
   annulationUetr = '';
   annulationMotif = 'Erreur Beneficiaire';
   annulationRaison = '';
 
-  // Recherche
   searchAnnulations = '';
   searchHistorique = '';
   searchEntrants = '';
 
-  // Pagination
   currentPage = 1;
   pageSize = 10;
 
-  // Formulaire initiation paiement
   showFormInitiation = false;
   nouveauPaiement: NouveauPaiement = {
     bicDestinataire: '', iban: '', montant: 0,
     devise: 'TND', typeCharges: 'SHA', motif: ''
   };
 
-  // ── Transactions sortantes (pacs.008 initiés) ──────────────
-  transactions: Transaction[] = [
-    {
-      statutISO: 'ACSC',
-      uetr: 'a1b2c3d4-1111-4aaa-b111-111111111001',
-      bicEmetteur: 'BIATTNTTXXX',
-      bicRecepteur: 'BNPAFRPPXXX',
-      montant: 85000.00, devise: 'TND', date: '15/03/2024',
-      delaiGPI: 18,
-      agents: [
-        { bic: 'BIATTNTTXXX', pays: 'Tunisie', role: 'emetteur', statut: 'confirme', dateHeure: '15/03/2024 08:42:11', ref: 'BIAT-2024-00381', charges: [{ bic: 'BIATTNTTXXX', pays: 'Tunisie', montant: 22.00, devise: 'TND', type: 'SHA' }] },
-        { bic: 'UBSWCHZHXXX', pays: 'Suisse',  role: 'intermediaire', statut: 'confirme', dateHeure: '15/03/2024 10:15:00', ref: 'UBS-2024-44210', charges: [{ bic: 'UBSWCHZHXXX', pays: 'Suisse', montant: 14.50, devise: 'TND', type: 'SHA' }] },
-        { bic: 'BNPAFRPPXXX', pays: 'France',  role: 'recepteur', statut: 'confirme', dateHeure: '15/03/2024 14:22:00', ref: 'BNP-2024-77001', charges: [{ bic: 'BNPAFRPPXXX', pays: 'France', montant: 18.00, devise: 'TND', type: 'SHA' }] }
-      ],
-      messages: [
-        { type: 'pacs.008', dateHeure: '15/03/2024 08:42:11', statut: 'ACCP', ref: 'BIAT-2024-00381', detail: 'Paiement initie' },
-        { type: 'pacs.002', dateHeure: '15/03/2024 14:22:00', statut: 'ACSC', ref: 'BNP-2024-77001',  detail: 'Credit confirme par BNPAFRPPXXX' }
-      ]
-    },
-    {
-      statutISO: 'ACSP',
-      uetr: 'b2c3d4e5-2222-4bbb-c222-222222222002',
-      bicEmetteur: 'BIATTNTTXXX',
-      bicRecepteur: 'DEUTDEDBXXX',
-      montant: 210000.00, devise: 'EUR', date: '18/03/2024',
-      delaiGPI: 6,
-      agents: [
-        { bic: 'BIATTNTTXXX', pays: 'Tunisie',   role: 'emetteur', statut: 'confirme', dateHeure: '18/03/2024 09:15:00', ref: 'BIAT-2024-00712', charges: [{ bic: 'BIATTNTTXXX', pays: 'Tunisie', montant: 35.00, devise: 'EUR', type: 'SHA' }] },
-        { bic: 'UBSWCHZHXXX', pays: 'Suisse',    role: 'intermediaire', statut: 'confirme', dateHeure: '18/03/2024 11:00:00', ref: 'UBS-2024-55310', charges: [{ bic: 'UBSWCHZHXXX', pays: 'Suisse', montant: 12.00, devise: 'EUR', type: 'SHA' }] },
-        { bic: 'DEUTDEDBXXX', pays: 'Allemagne', role: 'recepteur', statut: 'en-attente', dateHeure: undefined, ref: undefined, charges: [{ bic: 'DEUTDEDBXXX', pays: 'Allemagne', montant: 10.00, devise: 'EUR', type: 'SHA' }] }
-      ],
-      messages: [
-        { type: 'pacs.008', dateHeure: '18/03/2024 09:15:00', statut: 'ACCP', ref: 'BIAT-2024-00712', detail: 'Paiement initie' },
-        { type: 'pacs.002', dateHeure: '18/03/2024 11:00:00', statut: 'ACSP', ref: 'UBS-2024-55310',  detail: 'Reglement en cours' }
-      ]
-    },
-    {
-      statutISO: 'PDNG',
-      uetr: 'c3d4e5f6-3333-4ccc-d333-333333333003',
-      bicEmetteur: 'BIATTNTTXXX',
-      bicRecepteur: 'HSBCGB2LXXX',
-      montant: 50000.00, devise: 'USD', date: '20/03/2024',
-      delaiGPI: 2,
-      agents: [
-        { bic: 'BIATTNTTXXX', pays: 'Tunisie',       role: 'emetteur', statut: 'confirme', dateHeure: '20/03/2024 07:30:00', ref: 'BIAT-2024-00155', charges: [{ bic: 'BIATTNTTXXX', pays: 'Tunisie', montant: 18.00, devise: 'USD', type: 'OUR' }] },
-        { bic: 'HSBCGB2LXXX', pays: 'Royaume-Uni',  role: 'recepteur', statut: 'en-attente', dateHeure: undefined, ref: undefined, charges: [] }
-      ],
-      messages: [
-        { type: 'pacs.008', dateHeure: '20/03/2024 07:30:00', statut: 'PDNG', ref: 'BIAT-2024-00155', detail: 'En attente de traitement' }
-      ]
-    },
-    {
-      statutISO: 'RJCT',
-      uetr: 'd4e5f6a7-4444-4ddd-e444-444444444004',
-      bicEmetteur: 'BIATTNTTXXX',
-      bicRecepteur: 'CITIUS33XXX',
-      montant: 7300.00, devise: 'USD', date: '22/03/2024',
-      delaiGPI: 4,
-      motifRejet: 'AC04',
-      motifRejetDetail: 'Compte beneficiaire cloture',
-      agents: [
-        { bic: 'BIATTNTTXXX', pays: 'Tunisie',     role: 'emetteur', statut: 'confirme', dateHeure: '22/03/2024 08:10:00', ref: 'BIAT-2024-00402', charges: [{ bic: 'BIATTNTTXXX', pays: 'Tunisie', montant: 12.00, devise: 'USD', type: 'BEN' }] },
-        { bic: 'CITIUS33XXX', pays: 'Etats-Unis',  role: 'recepteur', statut: 'en-attente', dateHeure: undefined, ref: undefined, charges: [] }
-      ],
-      messages: [
-        { type: 'pacs.008', dateHeure: '22/03/2024 08:10:00', statut: 'ACCP', ref: 'BIAT-2024-00402', detail: 'Paiement initie' },
-        { type: 'pacs.002', dateHeure: '22/03/2024 09:55:00', statut: 'RJCT', ref: 'CITI-REJ-00881',  detail: 'AC04 — Compte beneficiaire cloture' }
-      ]
+  transactions: Transaction[] = [];
+  paiementsEntrants: PaiementEntrant[] = [];
+  annulations: Annulation[] = [];
+  historique: Historique[] = [];
+
+  userName = '';
+  userInitials = '';
+
+  ngOnInit(): void {
+    this.loadUserFromToken();
+
+    // Lire le tab depuis l'URL à chaque changement
+    this.route.queryParams
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        if (params['tab']) {
+          this.activeTab = params['tab'];
+          this.selectedTransaction = null;
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private loadUserFromToken(): void {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        this.userName = payload.name || payload.preferred_username || 'Utilisateur';
+        const parts = this.userName.trim().split(' ');
+        this.userInitials = parts.length >= 2
+          ? (parts[0][0] + parts[1][0]).toUpperCase()
+          : this.userName.substring(0, 2).toUpperCase();
+      } catch (e) {
+        this.userName = 'Utilisateur';
+        this.userInitials = 'U';
+      }
     }
-  ];
-
-  // ── Paiements entrants (pacs.008 recus) ───────────────────
-  paiementsEntrants: PaiementEntrant[] = [
-    {
-      statutISO: 'PDNG',
-      uetr: 'e5f6a7b8-5555-4eee-f555-555555555005',
-      bicEmetteur: 'SGSGFRPPXXX',
-      montant: 42000.00, devise: 'EUR', date: '21/03/2024 10:30',
-      motif: 'Paiement fournisseur — INV-2024-0088',
-      typeCharges: 'SHA'
-    },
-    {
-      statutISO: 'PDNG',
-      uetr: 'f6a7b8c9-6666-4fff-a666-666666666006',
-      bicEmetteur: 'BARCGB22XXX',
-      montant: 15500.00, devise: 'USD', date: '22/03/2024 14:15',
-      motif: 'Remboursement contrat — CTR-44821',
-      typeCharges: 'OUR'
-    },
-    {
-      statutISO: 'ACSC',
-      uetr: 'a7b8c9d0-7777-4aaa-b777-777777777007',
-      bicEmetteur: 'DEUTDEDBXXX',
-      montant: 98000.00, devise: 'EUR', date: '19/03/2024 09:00',
-      motif: 'Virement salaires expatries Q1-2024',
-      typeCharges: 'SHA'
-    },
-    {
-      statutISO: 'RJCT',
-      uetr: 'b8c9d0e1-8888-4bbb-c888-888888888008',
-      bicEmetteur: 'CHASUS33XXX',
-      montant: 5200.00, devise: 'USD', date: '18/03/2024 16:45',
-      motif: 'Payment ref TN-20240318',
-      typeCharges: 'BEN',
-      motifRejet: 'AC01',
-      motifRejetDetail: 'IBAN incorrect'
-    }
-  ];
-
-  // ── Annulations (camt.056 / camt.029) ─────────────────────
-  annulations: Annulation[] = [
-    {
-      reference: 'ANN-2024-001', uetr: 'd4e5f6a7-4444-4ddd', bicEmetteur: 'BIATTNTTXXX',
-      motif: 'Erreur Beneficiaire', motifDetail: 'Mauvais IBAN saisi',
-      date: '22/03/2024 10:00', statutReponse: 'ACCP', reponse: 'Annulation acceptee par CITIUS33XXX'
-    },
-    {
-      reference: 'ANN-2024-002', uetr: 'b2c3d4e5-2222-4bbb', bicEmetteur: 'BIATTNTTXXX',
-      motif: 'Montant Incorrect', motifDetail: 'Montant superieur au prevu',
-      date: '18/03/2024 15:00', statutReponse: 'PDNG', reponse: 'En attente de reponse DEUTDEDBXXX'
-    },
-    {
-      reference: 'ANN-2024-003', uetr: 'a1b2c3d4-1111-4aaa', bicEmetteur: 'BIATTNTTXXX',
-      motif: 'Paiement en Double', motifDetail: '',
-      date: '15/03/2024 16:00', statutReponse: 'RJCT', motifRefus: 'LEGL',
-      reponse: 'Refus LEGL — Transaction deja reglee'
-    }
-  ];
-
-  // ── Historique ─────────────────────────────────────────────
-  historique: Historique[] = [
-    { type: 'pacs.008', reference: 'BIAT-2024-00381', uetr: 'a1b2c3d4-1111', bicEmetteur: 'BIATTNTTXXX', bicRecepteur: 'BNPAFRPPXXX',  montant: 85000.00,  devise: 'TND', date: '15/03/2024 08:42', totalCharges: 54.50, statutISO: 'ACSC' },
-    { type: 'pacs.002', reference: 'BNP-2024-77001',  uetr: 'a1b2c3d4-1111', bicEmetteur: 'BNPAFRPPXXX',  bicRecepteur: 'BIATTNTTXXX', montant: 85000.00,  devise: 'TND', date: '15/03/2024 14:22', totalCharges: 0,     statutISO: 'ACSC' },
-    { type: 'pacs.008', reference: 'BIAT-2024-00712', uetr: 'b2c3d4e5-2222', bicEmetteur: 'BIATTNTTXXX', bicRecepteur: 'DEUTDEDBXXX',  montant: 210000.00, devise: 'EUR', date: '18/03/2024 09:15', totalCharges: 57.00, statutISO: 'ACSP' },
-    { type: 'camt.056', reference: 'ANN-2024-001',    uetr: 'd4e5f6a7-4444', bicEmetteur: 'BIATTNTTXXX', bicRecepteur: 'CITIUS33XXX',   montant: 7300.00,   devise: 'USD', date: '22/03/2024 10:00', totalCharges: 12.00, statutISO: 'CANC' },
-    { type: 'camt.029', reference: 'ANN-2024-001-R',  uetr: 'd4e5f6a7-4444', bicEmetteur: 'CITIUS33XXX',  bicRecepteur: 'BIATTNTTXXX', montant: 7300.00,   devise: 'USD', date: '22/03/2024 11:30', totalCharges: 0,     statutISO: 'CANC' }
-  ];
-
-  ngOnInit(): void {}
+  }
 
   // ── Navigation ─────────────────────────────────────────────
-  setActiveTab(tab: string): void { this.activeTab = tab; this.selectedTransaction = null; }
-  async logout(): Promise<void> { await this.authService.logout(); }
+  setActiveTab(tab: string): void {
+    this.activeTab = tab;
+    this.selectedTransaction = null;
+    this.router.navigate(['/backoffice'], { queryParams: { tab } });
+  }
+
+  logout(): void {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    this.router.navigateByUrl('/auth/login');
+  }
+
   ouvrirDetailLigne(t: Transaction): void { this.selectedTransaction = t; }
+  ouvrirDetailDashboard(t: Transaction): void { this.activeTab = 'vue-transactionnelle'; this.selectedTransaction = t; }
 
   // ── Statuts ISO ────────────────────────────────────────────
   getStatutLabel(s: StatutISO): string {
@@ -322,14 +182,10 @@ export class BackofficeComponent implements OnInit {
 
   // ── Delai GPI ──────────────────────────────────────────────
   getDelaiClass(h: number | undefined): string {
-    if (!h) return '';
-    if (h <= 24) return 'delai-ok';
-    return 'delai-retard';
+    if (!h) return ''; return h <= 24 ? 'delai-ok' : 'delai-retard';
   }
   getDelaiLabel(h: number | undefined): string {
-    if (!h) return '—';
-    if (h < 1) return '< 1h';
-    return `${h}h`;
+    if (!h) return '—'; if (h < 1) return '< 1h'; return `${h}h`;
   }
 
   // ── Helpers agents ─────────────────────────────────────────
@@ -342,7 +198,7 @@ export class BackofficeComponent implements OnInit {
   get allCharges(): Charge[] { return this.selectedTransaction?.agents.flatMap(a => a.charges) ?? []; }
   totalChargesAll(): number { return this.allCharges.reduce((s, c) => s + c.montant, 0); }
 
-  // ── Filtres ────────────────────────────────────────────────
+  // ── Filtres & pagination ───────────────────────────────────
   get filteredTransactions(): Transaction[] {
     return this.transactions.filter(t => {
       const matchStatut = !this.filterStatut || t.statutISO === this.filterStatut;
@@ -361,10 +217,10 @@ export class BackofficeComponent implements OnInit {
   get filteredEntrants(): PaiementEntrant[] {
     if (!this.searchEntrants) return this.paiementsEntrants;
     const q = this.searchEntrants.toLowerCase();
-    return this.paiementsEntrants.filter(p => p.bicEmetteur.toLowerCase().includes(q) || p.uetr.toLowerCase().includes(q) || p.motif.toLowerCase().includes(q));
+    return this.paiementsEntrants.filter(p =>
+      p.bicEmetteur.toLowerCase().includes(q) || p.uetr.toLowerCase().includes(q) || p.motif.toLowerCase().includes(q)
+    );
   }
-  get entrantsEnAttente(): number { return this.paiementsEntrants.filter(p => p.statutISO === 'PDNG').length; }
-
   get filteredAnnulations(): Annulation[] {
     if (!this.searchAnnulations) return this.annulations;
     const q = this.searchAnnulations.toLowerCase();
@@ -380,7 +236,7 @@ export class BackofficeComponent implements OnInit {
   accepterPaiement(p: PaiementEntrant): void {
     p.statutISO = 'ACSC';
     this.historique.unshift({ type: 'pacs.002', reference: `BIA-ACK-${Date.now().toString().slice(-4)}`, uetr: p.uetr, bicEmetteur: 'BIATTNTTXXX', bicRecepteur: p.bicEmetteur, montant: p.montant, devise: p.devise, date: new Date().toLocaleDateString('fr-FR'), totalCharges: 0, statutISO: 'ACSC' });
-    this.displayToast(`Paiement ${p.uetr.slice(0,8)}... accepte — pacs.002 ACSC envoye`, 'success');
+    this.displayToast(`Paiement ${p.uetr.slice(0, 8)}... accepte — pacs.002 ACSC envoye`, 'success');
   }
   rejeterPaiement(p: PaiementEntrant, motif: MotifRejet): void {
     p.statutISO = 'RJCT';
@@ -431,7 +287,7 @@ export class BackofficeComponent implements OnInit {
   initierPaiement(): void {
     const { bicDestinataire, iban, montant, devise, typeCharges, motif } = this.nouveauPaiement;
     if (!bicDestinataire || !iban || !montant || !motif) { this.displayToast('Veuillez remplir tous les champs obligatoires', 'error'); return; }
-    const uetr = `biat-${Date.now().toString(16)}-${Math.random().toString(16).slice(2,6)}`;
+    const uetr = `biat-${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 6)}`;
     const ref = `BIAT-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`;
     this.transactions.unshift({
       statutISO: 'PDNG', uetr, bicEmetteur: 'BIATTNTTXXX', bicRecepteur: bicDestinataire,
@@ -442,13 +298,13 @@ export class BackofficeComponent implements OnInit {
     this.historique.unshift({ type: 'pacs.008', reference: ref, uetr, bicEmetteur: 'BIATTNTTXXX', bicRecepteur: bicDestinataire, montant, devise, date: new Date().toLocaleDateString('fr-FR'), totalCharges: 0, statutISO: 'PDNG' });
     this.showFormInitiation = false;
     this.nouveauPaiement = { bicDestinataire: '', iban: '', montant: 0, devise: 'TND', typeCharges: 'SHA', motif: '' };
-    this.displayToast(`pacs.008 envoye — UETR ${uetr.slice(0,16)}...`, 'success');
+    this.displayToast(`pacs.008 envoye — UETR ${uetr.slice(0, 16)}...`, 'success');
   }
 
   // ── Helpers annulations ────────────────────────────────────
   getAnnulStatutClass(s: string): string { return ({ ACCP: 'badge-acsc', PDNG: 'badge-pdng', RJCT: 'badge-rjct' } as any)[s] || ''; }
   getAnnulStatutLabel(s: string): string { return ({ ACCP: 'ACCP — Acceptee', PDNG: 'PDNG — En attente', RJCT: 'RJCT — Refusee' } as any)[s] || s; }
-  getMsgTypeClass(t: string): string { return t.startsWith('pacs') ? 'badge-acsp' : t === 'camt.056' ? 'badge-rjct' : 'badge-acsc'; }
+  getMsgTypeClass(t: string): string { return t.startsWith('pacs') ? 'badge-msg-pacs' : t === 'camt.056' ? 'badge-msg-camt056' : 'badge-msg-camt029'; }
 
   // ── Toast ──────────────────────────────────────────────────
   displayToast(msg: string, type: 'success' | 'error' | 'info'): void {
@@ -457,6 +313,20 @@ export class BackofficeComponent implements OnInit {
   }
   formatMontant(n: number): string { return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-  // ── Stat badges entrants (pour sidebar badge) ─────────────
+  // ── Getters stats ──────────────────────────────────────────
   get nbEntrantsEnAttente(): number { return this.paiementsEntrants.filter(p => p.statutISO === 'PDNG').length; }
+  get nbAnnulationsPdng(): number { return this.annulations.filter(a => a.statutReponse === 'PDNG').length; }
+  get nbEnCours(): number { return this.transactions.filter(t => ['PDNG', 'ACCP', 'ACSP'].includes(t.statutISO)).length; }
+  get nbAcsc(): number { return this.transactions.filter(t => t.statutISO === 'ACSC').length; }
+  get nbRejets(): number { return this.transactions.filter(t => t.statutISO === 'RJCT').length; }
+
+  get statutsRepartition(): { statut: StatutISO; count: number; pct: number }[] {
+    const total = this.transactions.length;
+    if (total === 0) return [];
+    const statuts: StatutISO[] = ['PDNG', 'ACCP', 'ACSP', 'ACSC', 'RJCT', 'CANC'];
+    return statuts
+      .map(s => ({ statut: s, count: this.transactions.filter(t => t.statutISO === s).length, pct: 0 }))
+      .filter(item => item.count > 0)
+      .map(item => ({ ...item, pct: Math.round((item.count / total) * 100) }));
+  }
 }

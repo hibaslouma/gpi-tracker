@@ -118,7 +118,7 @@ export class Parametrage {
     fichiersErreur:  3,
   };
 
-  // Keycloak gère : mdp, 2FA, politique de session
+  // loak gère : mdp, 2FA, politique de session
   securite = {
     dureeSession:       30,
     tentativesMax:      5,

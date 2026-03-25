@@ -4,16 +4,15 @@ import { Observable } from 'rxjs';
 
 export interface Bank {
   id?: number;
-  participant: string;
+  bic: string;
   nomBanque: string;
   paysCode: string;
   paysNom: string;
   flagUrl: string;
-  bic: string;
-  devises: string;
-  statut: 'ACTIF' | 'INACTIF';
+  typeBanque: string;
+  devise: string;
   cutOff: string;
-  reseau: string;
+  fuseauHoraire: string;
 }
 
 @Injectable({ providedIn: 'root' })

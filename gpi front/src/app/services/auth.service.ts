@@ -1,49 +1,73 @@
 import { Injectable } from '@angular/core';
-import Keycloak from 'keycloak-js';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
 
-// Instance partagée — une seule dans toute l'app
-const keycloakInstance = new Keycloak({
-  url: 'http://localhost:8180',
-  realm: 'gpi-realm',
-  clientId: 'gpi-backend'
-});
-
-let initialized = false;
-
-export async function initKeycloak(): Promise<boolean> {
-  if (initialized) return keycloakInstance.authenticated ?? false;
-  const authenticated = await keycloakInstance.init({
-    onLoad: 'login-required',
-    checkLoginIframe: false
-  });
-  initialized = true;
-  return authenticated;
-}
-
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class AuthService {
 
-  getToken(): string | undefined {
-    return keycloakInstance.token;
+  private keycloakUrl = 'http://localhost:8180/realms/gpi/protocol/openid-connect/token';
+
+  constructor(private http: HttpClient) {}
+
+  login(email: string, password: string): Observable<any> {
+    const body = new HttpParams()
+      .set('grant_type', 'password')
+      .set('client_id', 'gpi-frontend')
+      .set('username', email)
+      .set('password', password);
+
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/x-www-form-urlencoded'
+    });
+
+    return this.http.post<any>(this.keycloakUrl, body.toString(), {
+      headers,
+      observe: 'response'
+    }).pipe(
+      map(response => {
+        const res = response.body;
+        const role = this.extractRole(res.access_token);
+
+        
+        sessionStorage.setItem('token', res.access_token);
+        sessionStorage.setItem('role', role);
+
+        return { token: res.access_token, role };
+      })
+    );
+  }
+
+  private extractRole(token: string): string {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const roles: string[] = payload?.realm_access?.roles || [];
+      if (roles.includes('SuperAdmin')) return 'admin';
+      if (roles.includes('Backoffice')) return 'backoffice';
+      return 'client';
+    } catch (e) {
+      return 'client';
+    }
+  }
+
+  logout() {
+    // ✅ sessionStorage
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
+  }
+
+  getToken(): string | null {
+    // ✅ sessionStorage
+    return sessionStorage.getItem('token');
   }
 
   getRole(): string {
-    const roles = keycloakInstance.realmAccess?.roles ?? [];
-    if (roles.includes('Backoffice')) return 'backoffice';
-    return 'admin';
-  }
-
-  getUsername(): string {
-    return keycloakInstance.idTokenParsed?.['preferred_username'] ?? '';
+    // ✅ Méthode centralisée — plus de lecture directe partout
+    return sessionStorage.getItem('role') || '';
   }
 
   isAuthenticated(): boolean {
-    return !!keycloakInstance.authenticated;
-  }
-
-  async logout(): Promise<void> {
-    await keycloakInstance.logout({
-      redirectUri: window.location.origin
-    });
+    return !!this.getToken();
   }
 }

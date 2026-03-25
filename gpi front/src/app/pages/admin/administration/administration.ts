@@ -1,14 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-
-interface RecentUser {
-  initials: string;
-  name: string;
-  email: string;
-  role: string;
-  active: boolean;
-}
+import { UserService, User } from '../../../services/user.service';
 
 @Component({
   selector: 'app-administration',
@@ -17,38 +10,56 @@ interface RecentUser {
   templateUrl: './administration.html',
   styleUrl: './administration.scss'
 })
-export class Administration {
+export class Administration implements OnInit {
 
-  private allUsers = [
-    { initials: 'AB', name: 'Ahmed Ben Ali',  email: 'ahmed@gpi.tn', role: 'Backoffice', active: true  },
-    { initials: 'SM', name: 'Sara Mansouri',  email: 'sara@gpi.tn',  role: 'Client',     active: true  },
-    { initials: 'KT', name: 'Karim Trabelsi', email: 'karim@gpi.tn', role: 'Client',     active: false },
-    { initials: 'LB', name: 'Leila Bouaziz',  email: 'leila@gpi.tn', role: 'Backoffice', active: true  },
-    { initials: 'MH', name: 'Mohamed Hamdi',  email: 'med@gpi.tn',   role: 'Client',     active: true  },
-    { initials: 'RK', name: 'Rim Khelifi',    email: 'rim@gpi.tn',   role: 'Backoffice', active: true  },
-  ];
+  users: User[] = [];
+  isLoading = false;
 
   get backofficeCount(): number {
-    return this.allUsers.filter(u => u.role === 'Backoffice').length;
+    return this.users.filter(u => u.role === 'Backoffice').length;
   }
 
   get clientCount(): number {
-    return this.allUsers.filter(u => u.role === 'Client').length;
+    return this.users.filter(u => u.role === 'Client').length;
   }
 
   get totalCount(): number {
-    return this.allUsers.length;
+    return this.users.length;
   }
 
   get activeCount(): number {
-    return this.allUsers.filter(u => u.active).length;
+    return this.users.filter(u => u.active).length;
   }
 
-  get recentUsers(): RecentUser[] {
-    return this.allUsers.slice(-5).reverse();
+  get recentUsers(): User[] {
+    return this.users.slice(-5).reverse();
   }
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private userService: UserService,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  ngOnInit() {
+    this.loadUsers();
+  }
+
+  loadUsers() {
+    this.isLoading = true;
+    this.userService.getAll().subscribe({
+      next: (data) => {
+        this.users = data;
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Erreur chargement', err);
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
 
   navigate(route: string) {
     this.router.navigate([route]);

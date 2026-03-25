@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface User {
   id?: number;
   initials?: string;
-  name: string;
+  firstName: string;
+lastName: string;
+name?: string;
   email: string;
   phone: string;
   role: string;
@@ -27,23 +29,30 @@ export class UserService {
 
   constructor(private http: HttpClient) {}
 
+  private getHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token');
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+  }
+
   getAll(): Observable<User[]> {
-    return this.http.get<User[]>(this.api);
+    return this.http.get<User[]>(this.api, { headers: this.getHeaders() });
   }
 
   create(user: User): Observable<User> {
-    return this.http.post<User>(this.api, user);
+    return this.http.post<User>(this.api, user, { headers: this.getHeaders() });
   }
 
   update(id: number, user: User): Observable<User> {
-    return this.http.put<User>(`${this.api}/${id}`, user);
+    return this.http.put<User>(`${this.api}/${id}`, user, { headers: this.getHeaders() });
   }
 
   delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.api}/${id}`);
+    return this.http.delete<void>(`${this.api}/${id}`, { headers: this.getHeaders() });
   }
 
   getLogs(id: number): Observable<LogDTO[]> {
-    return this.http.get<LogDTO[]>(`${this.api}/${id}/logs`);
+    return this.http.get<LogDTO[]>(`${this.api}/${id}/logs`, { headers: this.getHeaders() });
   }
 }
