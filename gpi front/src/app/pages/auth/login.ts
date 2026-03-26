@@ -142,13 +142,13 @@ export class Login {
         localStorage.setItem('role', res.role);
         this.loading = false;
 
-        if (res.role === 'admin') {
-          this.router.navigateByUrl('/admin');
-        } else if (res.role === 'backoffice') {
-          this.router.navigateByUrl('/backoffice');
-        } else {
-          this.router.navigateByUrl('/client');
-        }
+        if (res.role === 'Admin') {
+    this.router.navigateByUrl('/admin');
+} else if (res.role === 'Backoffice') {
+    this.router.navigateByUrl('/backoffice');
+} else {
+    this.router.navigateByUrl('/client');
+}
       },
       error: (err) => {
         this.loading = false;

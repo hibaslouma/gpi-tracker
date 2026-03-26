@@ -55,7 +55,7 @@ public class User {
     }
 
     public enum Role {
-        Backoffice, Client
+        Admin, Backoffice, Client
     }
 
     public String getInitials() {

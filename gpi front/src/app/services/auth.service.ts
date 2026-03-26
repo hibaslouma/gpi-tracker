@@ -40,15 +40,13 @@ export class AuthService {
   }
 
   private extractRole(token: string): string {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const roles: string[] = payload?.realm_access?.roles || [];
-      if (roles.includes('SuperAdmin')) return 'admin';
-      if (roles.includes('Backoffice')) return 'backoffice';
-      return 'client';
-    } catch (e) {
-      return 'client';
-    }
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const roles: string[] = payload?.realm_access?.roles || [];
+    if (roles.includes('Admin')) return 'Admin';
+    if (roles.includes('Backoffice')) return 'Backoffice';
+    if (roles.includes('Client')) return 'Client';
+    return 'Client';
+
   }
 
   logout() {

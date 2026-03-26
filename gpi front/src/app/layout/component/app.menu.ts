@@ -38,7 +38,7 @@ export class AppMenu implements OnInit, OnChanges {
 
     private buildMenu(role: string) {
         switch (role) {
-            case 'admin':
+            case 'Admin':
                 this.model = [
                     {
                         label: 'Administration',
@@ -52,7 +52,7 @@ export class AppMenu implements OnInit, OnChanges {
                 ];
                 break;
 
-            case 'backoffice':
+            case 'Backoffice':
                 this.model = [
                     {
                         label: 'Vue générale',
@@ -84,7 +84,7 @@ export class AppMenu implements OnInit, OnChanges {
                 ];
                 break;
 
-            case 'client':
+            case 'Client':
                 this.model = [
                     {
                         label: 'Vue générale',
