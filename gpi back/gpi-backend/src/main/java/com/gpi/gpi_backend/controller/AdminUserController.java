@@ -4,13 +4,14 @@ import com.gpi.gpi_backend.dto.*;
 import com.gpi.gpi_backend.service.AdminUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
@@ -21,20 +22,25 @@ public class AdminUserController {
     }
 
     @PostMapping
-    public ResponseEntity<UserDTO> create(@RequestBody UserRequest req) {
-        return ResponseEntity.ok(adminUserService.createUser(req, "Super Admin"));
+    public ResponseEntity<UserDTO> create(
+            @RequestBody UserRequest req,
+            @AuthenticationPrincipal Jwt jwt) {
+        String adminName = jwt.getClaimAsString("preferred_username");
+        return ResponseEntity.ok(adminUserService.createUser(req, adminName));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<UserDTO> update(
             @PathVariable Long id,
-            @RequestBody UserRequest req) {
-        return ResponseEntity.ok(adminUserService.updateUser(id, req, "Super Admin"));
+            @RequestBody UserRequest req,
+            @AuthenticationPrincipal Jwt jwt) {
+        String adminName = jwt.getClaimAsString("preferred_username");
+        return ResponseEntity.ok(adminUserService.updateUser(id, req, adminName));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        adminUserService.deleteUser(id, "Super Admin");
+        adminUserService.deleteUser(id, "SuperAdmin");
         return ResponseEntity.noContent().build();
     }
 

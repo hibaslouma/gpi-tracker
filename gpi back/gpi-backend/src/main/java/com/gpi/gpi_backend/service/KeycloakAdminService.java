@@ -25,7 +25,6 @@ public class KeycloakAdminService {
 
     @Value("${keycloak.admin.client-secret}")
     private String clientSecret;
-
     private final RestTemplate restTemplate;
 
     private String getAdminToken() {
@@ -166,5 +165,35 @@ public class KeycloakAdminService {
         } catch (Exception e) {
             System.err.println("❌ Erreur update statut Keycloak: " + e.getMessage());
         }
+    }
+    public String getAccessToken() {
+        String tokenUrl = serverUrl + "/realms/" + realm + "/protocol/openid-connect/token";
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(
+                MediaType.APPLICATION_FORM_URLENCODED
+        );
+
+        MultiValueMap<String, String> body =
+                new LinkedMultiValueMap<>();
+
+        body.add("grant_type", "client_credentials");
+        body.add("client_id", clientId);
+        body.add("client_secret", clientSecret);
+
+        HttpEntity<MultiValueMap<String, String>> request =
+                new HttpEntity<>(body, headers);
+
+        ResponseEntity<Map> response =
+                restTemplate.postForEntity(
+                        tokenUrl,
+                        request,
+                        Map.class
+                );
+
+        return (String) response
+                .getBody()
+                .get("access_token");
     }
 }

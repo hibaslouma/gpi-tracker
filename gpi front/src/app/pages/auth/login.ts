@@ -33,7 +33,7 @@ import { AuthService } from '../../services/auth.service';
               <span class="text-muted-color font-medium">Continuer vers la plateforme</span>
             </div>
 
-            <!-- MESSAGE ERREUR -->
+            <!-- Error message -->
             <div *ngIf="errorMessage"
                  style="background:#fff0f0; border:1px solid #ffcccc; color:#cc0000; border-radius:8px; padding:12px 16px; margin-bottom:16px; text-align:center; font-size:14px;">
               ⚠️ {{ errorMessage }}
@@ -85,7 +85,7 @@ import { AuthService } from '../../services/auth.service';
                 </a>
               </div>
 
-              <!-- BUTTON -->
+              <!-- SUBMIT -->
               <p-button
                 label="Se connecter"
                 styleClass="w-full login-orange-btn"
@@ -101,31 +101,28 @@ import { AuthService } from '../../services/auth.service';
   `
 })
 export class Login {
-  loading = false;
-  submitted = false;
+  loading      = false;
   errorMessage = '';
-  form;
+
+  form = this.fb.group({
+    email:    ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
+    remember: [false]
+  });
 
   constructor(
-    private fb: FormBuilder,
-    private router: Router,
+    private fb:          FormBuilder,
+    private router:      Router,
     private authService: AuthService,
-    private cdr: ChangeDetectorRef
-  ) {
-    this.form = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
-      remember: [false]
-    });
-  }
+    private cdr:         ChangeDetectorRef
+  ) {}
 
-  isInvalid(controlName: 'email' | 'password') {
-    const c = this.form.get(controlName);
+  isInvalid(field: 'email' | 'password'): boolean {
+    const c = this.form.get(field);
     return !!c && c.invalid && c.touched;
   }
 
-  onSubmit() {
-    this.submitted = true;
+  onSubmit(): void {
     this.errorMessage = '';
 
     if (this.form.invalid) {
@@ -137,36 +134,33 @@ export class Login {
     const { email, password } = this.form.value;
 
     this.authService.login(email!, password!).subscribe({
-      next: (res) => {
-        localStorage.setItem('token', res.token);
-        localStorage.setItem('role', res.role);
+      next: ({ role }) => {
         this.loading = false;
 
-        if (res.role === 'admin') {
-          this.router.navigateByUrl('/admin');
-        } else if (res.role === 'backoffice') {
-          this.router.navigateByUrl('/backoffice');
-        } else {
-          this.router.navigateByUrl('/client');
-        }
+        // AuthService already saved token + role to sessionStorage
+        // Just navigate based on role
+        const destinations: Record<string, string> = {
+          admin:      '/admin',
+          backoffice: '/backoffice',
+          client:     '/client'
+        };
+        this.router.navigateByUrl(destinations[role] ?? '/client');
       },
       error: (err) => {
         this.loading = false;
 
-        let errDesc = '';
+        let desc = '';
         try {
-          const errorObj = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
-          errDesc = errorObj?.error_description || '';
-        } catch (e) {
-          errDesc = '';
-        }
+          const body = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
+          desc = body?.error_description ?? '';
+        } catch { /* ignore */ }
 
         if (err.status === 401 || err.status === 400) {
-          if (errDesc.includes('Invalid user credentials')) {
+          if (desc.includes('Invalid user credentials')) {
             this.errorMessage = 'Email ou mot de passe incorrect.';
-          } else if (errDesc.includes('Account is not fully set up')) {
+          } else if (desc.includes('Account is not fully set up')) {
             this.errorMessage = 'Compte non configuré. Contactez l\'administrateur.';
-          } else if (errDesc.includes('Account disabled')) {
+          } else if (desc.includes('Account disabled')) {
             this.errorMessage = 'Votre compte a été désactivé. Contactez l\'administrateur.';
           } else {
             this.errorMessage = 'Email ou mot de passe incorrect.';
@@ -174,6 +168,7 @@ export class Login {
         } else {
           this.errorMessage = 'Erreur de connexion. Veuillez réessayer.';
         }
+
         this.cdr.detectChanges();
       }
     });

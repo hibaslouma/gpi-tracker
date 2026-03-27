@@ -10,25 +10,20 @@ export class AuthInterceptor implements HttpInterceptor {
   constructor(private router: Router) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const token = localStorage.getItem('token');
-
-    // Ne pas ajouter le token pour les requêtes Keycloak login
     if (req.url.includes('openid-connect/token')) {
       return next.handle(req);
     }
 
-    // Ajouter le token automatiquement à toutes les autres requêtes
+    const token = sessionStorage.getItem('token');
     if (token) {
-      req = req.clone({
-        setHeaders: { Authorization: `Bearer ${token}` }
-      });
+      req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
     }
 
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('role');
           this.router.navigateByUrl('/auth/login');
         }
         return throwError(() => error);

@@ -2,41 +2,51 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 
-@Injectable({
-  providedIn: 'root'
-})
-export class AuthService {
+const KEYCLOAK_URL = 'http://localhost:8180/realms/gpi/protocol/openid-connect/token';
+const CLIENT_ID    = 'gpi-frontend';
+const TOKEN_KEY    = 'token';
+const ROLE_KEY     = 'role';
 
-  private keycloakUrl = 'http://localhost:8180/realms/gpi-realm/protocol/openid-connect/token';
+@Injectable({ providedIn: 'root' })
+export class AuthService {
 
   constructor(private http: HttpClient) {}
 
-  login(email: string, password: string): Observable<any> {
+  login(email: string, password: string): Observable<{ token: string; role: string }> {
     const body = new HttpParams()
       .set('grant_type', 'password')
-      .set('client_id', 'gpi-frontend')
+      .set('client_id', CLIENT_ID)
       .set('username', email)
       .set('password', password);
 
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/x-www-form-urlencoded'
-    });
+    const headers = new HttpHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' });
 
-    return this.http.post<any>(this.keycloakUrl, body.toString(), {
-      headers,
-      observe: 'response'
-    }).pipe(
-      map(response => {
-        const res = response.body;
-        const role = this.extractRole(res.access_token);
-
-        
-        sessionStorage.setItem('token', res.access_token);
-        sessionStorage.setItem('role', role);
-
-        return { token: res.access_token, role };
+    return this.http.post<any>(KEYCLOAK_URL, body.toString(), { headers }).pipe(
+      map(res => {
+        const token: string = res.access_token;
+        const role: string  = this.extractRole(token);
+        sessionStorage.setItem(TOKEN_KEY, token);
+        sessionStorage.setItem(ROLE_KEY, role);
+        return { token, role };
       })
     );
+  }
+
+  logout(): void {
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(ROLE_KEY);
+  }
+
+  getToken(): string | null {
+    return sessionStorage.getItem(TOKEN_KEY);
+  }
+
+  getRole(): string {
+    return sessionStorage.getItem(ROLE_KEY) || '';
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.getToken();
   }
 
   private extractRole(token: string): string {
@@ -44,30 +54,11 @@ export class AuthService {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const roles: string[] = payload?.realm_access?.roles || [];
       if (roles.includes('SuperAdmin')) return 'admin';
-      if (roles.includes('Backoffice')) return 'backoffice';
+      if (roles.includes('Backoffice'))  return 'backoffice';
+      if (roles.includes('Client'))      return 'client';
       return 'client';
-    } catch (e) {
+    } catch {
       return 'client';
     }
-  }
-
-  logout() {
-    // ✅ sessionStorage
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('role');
-  }
-
-  getToken(): string | null {
-    // ✅ sessionStorage
-    return sessionStorage.getItem('token');
-  }
-
-  getRole(): string {
-    // ✅ Méthode centralisée — plus de lecture directe partout
-    return sessionStorage.getItem('role') || '';
-  }
-
-  isAuthenticated(): boolean {
-    return !!this.getToken();
   }
 }
