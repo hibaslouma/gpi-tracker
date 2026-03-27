@@ -1,0 +1,1 @@
+Erreur : Transcription empty or no speech detected

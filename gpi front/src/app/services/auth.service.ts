@@ -7,7 +7,7 @@ import { Observable, map } from 'rxjs';
 })
 export class AuthService {
 
-  private keycloakUrl = 'http://localhost:8180/realms/gpi/protocol/openid-connect/token';
+  private keycloakUrl = 'http://localhost:8180/realms/gpi-realm/protocol/openid-connect/token';
 
   constructor(private http: HttpClient) {}
 
