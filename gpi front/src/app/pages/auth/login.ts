@@ -151,31 +151,37 @@ export class Login {
 }
       },
       error: (err) => {
-        this.loading = false;
+  this.loading = false;
 
-        let errDesc = '';
-        try {
-          const errorObj = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
-          errDesc = errorObj?.error_description || '';
-        } catch (e) {
-          errDesc = '';
-        }
+  // ✅ Vérifier si c'est une erreur de type PASSWORD_CHANGE_REQUIRED
+  if (err?.type === 'PASSWORD_CHANGE_REQUIRED') {
+    this.router.navigateByUrl('/auth/change-password');
+    return;
+  }
 
-        if (err.status === 401 || err.status === 400) {
-          if (errDesc.includes('Invalid user credentials')) {
-            this.errorMessage = 'Email ou mot de passe incorrect.';
-          } else if (errDesc.includes('Account is not fully set up')) {
-            this.errorMessage = 'Compte non configuré. Contactez l\'administrateur.';
-          } else if (errDesc.includes('Account disabled')) {
-            this.errorMessage = 'Votre compte a été désactivé. Contactez l\'administrateur.';
-          } else {
-            this.errorMessage = 'Email ou mot de passe incorrect.';
-          }
-        } else {
-          this.errorMessage = 'Erreur de connexion. Veuillez réessayer.';
-        }
-        this.cdr.detectChanges();
-      }
+  let errDesc = '';
+  try {
+    const errorObj = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
+    errDesc = errorObj?.error_description || '';
+  } catch (e) {
+    errDesc = '';
+  }
+
+  if (err.status === 401 || err.status === 400) {
+    if (errDesc.includes('Invalid user credentials')) {
+      this.errorMessage = 'Email ou mot de passe incorrect.';
+    } else if (errDesc.includes('Account is not fully set up')) {
+      this.router.navigateByUrl('/auth/change-password'); // ✅ rediriger
+    } else if (errDesc.includes('Account disabled')) {
+      this.errorMessage = 'Votre compte a été désactivé. Contactez l\'administrateur.';
+    } else {
+      this.errorMessage = 'Email ou mot de passe incorrect.';
+    }
+  } else {
+    this.errorMessage = 'Erreur de connexion. Veuillez réessayer.';
+  }
+  this.cdr.detectChanges();
+}
     });
   }
 }

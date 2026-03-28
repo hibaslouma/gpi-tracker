@@ -13,6 +13,17 @@
   h1 { font-size: 1.5rem; font-weight: 700; color: var(--gti-text-primary); }
   p  { font-size: 0.82rem; color: var(--gti-text-hint); margin-top: 0.2rem; }
 }
+.field-error {
+  color: #cc0000;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+.input-error {
+  border-color: #cc0000 !important;
+  background: #fff8f8 !important;
+}
 
 .btn-add {
   background: var(--gti-navy);

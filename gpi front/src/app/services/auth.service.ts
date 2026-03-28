@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, catchError, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -29,12 +29,27 @@ export class AuthService {
       map(response => {
         const res = response.body;
         const role = this.extractRole(res.access_token);
-
-        
         sessionStorage.setItem('token', res.access_token);
         sessionStorage.setItem('role', role);
-
         return { token: res.access_token, role };
+      }),
+      catchError(error => {
+        const errorData = error.error;
+        const errorDescription = errorData?.error_description || '';
+
+        console.log('Keycloak error status:', error.status);
+        console.log('Keycloak error description:', errorDescription);
+
+        // ✅ 400 OU 401 — les deux cas possibles
+        if (error.status === 400 || error.status === 401) {
+          if (errorDescription.includes('Account is not fully set up')) {
+            sessionStorage.setItem('temp_email', email);
+            sessionStorage.setItem('temp_password', password);
+            console.log('✅ temp_email et temp_password sauvegardés');
+            return throwError(() => ({ type: 'PASSWORD_CHANGE_REQUIRED' }));
+          }
+        }
+        return throwError(() => error);
       })
     );
   }
@@ -46,22 +61,26 @@ export class AuthService {
     if (roles.includes('Backoffice')) return 'Backoffice';
     if (roles.includes('Client')) return 'Client';
     return 'Client';
-
   }
 
   logout() {
-    // ✅ sessionStorage
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('role');
-  }
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('role');
+  sessionStorage.removeItem('temp_email');
+  sessionStorage.removeItem('temp_password');
+}
+
+
+
+
 
   getToken(): string | null {
-    // ✅ sessionStorage
     return sessionStorage.getItem('token');
   }
 
   getRole(): string {
-    // ✅ Méthode centralisée — plus de lecture directe partout
     return sessionStorage.getItem('role') || '';
   }
 

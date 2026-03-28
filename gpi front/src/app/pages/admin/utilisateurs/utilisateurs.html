@@ -18,6 +18,7 @@
     </div>
     <div class="role-filters">
       <button type="button" [class.active]="selectedRole === 'Tous'"       (click)="filterByRole('Tous')">Tous</button>
+      <button type="button" [class.active]="selectedRole === 'Admin'"      (click)="filterByRole('Admin')">Admin</button>
       <button type="button" [class.active]="selectedRole === 'Backoffice'" (click)="filterByRole('Backoffice')">Backoffice</button>
       <button type="button" [class.active]="selectedRole === 'Client'"     (click)="filterByRole('Client')">Client</button>
     </div>
@@ -47,9 +48,11 @@
               </div>
             </div>
           </td>
-          <td class="text-secondary">{{ user.phone }}</td>
+          <td class="text-secondary">{{ user.phone ? '+216 ' + user.phone : '-' }}</td>
           <td>
-            <span class="role-badge" [class.backoffice]="user.role === 'Backoffice'">
+            <span class="role-badge"
+                  [class.backoffice]="user.role === 'Backoffice'"
+                  [class.admin]="user.role === 'Admin'">
               {{ user.role }}
             </span>
           </td>
@@ -62,19 +65,12 @@
           <td class="text-secondary">{{ user.lastLogin }}</td>
           <td>
             <div class="actions">
-              <button class="btn-action edit"    type="button" (click)="openEditModal(user)"  title="Modifier">
-                <i class="pi pi-pencil"></i>
-              </button>
-              <button class="btn-action history" type="button" (click)="openLogs(user)"       title="Historique">
-                <i class="pi pi-history"></i>
-              </button>
-              <button class="btn-action toggle"  type="button" (click)="toggleActive(user)"
-                      [title]="user.active ? 'Désactiver' : 'Activer'">
+              <button class="btn-action edit"    type="button" (click)="openEditModal(user)"  title="Modifier"><i class="pi pi-pencil"></i></button>
+              <button class="btn-action history" type="button" (click)="openLogs(user)"       title="Historique"><i class="pi pi-history"></i></button>
+              <button class="btn-action toggle"  type="button" (click)="toggleActive(user)"   [title]="user.active ? 'Désactiver' : 'Activer'">
                 <i [class]="user.active ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
               </button>
-              <button class="btn-action delete"  type="button" (click)="confirmDelete(user)"  title="Supprimer">
-                <i class="pi pi-trash"></i>
-              </button>
+              <button class="btn-action delete"  type="button" (click)="confirmDelete(user)"  title="Supprimer"><i class="pi pi-trash"></i></button>
             </div>
           </td>
         </tr>
@@ -92,10 +88,7 @@
     <span class="page-info">Page {{ currentPage }} / {{ totalPages }}</span>
     <div class="pagination-controls">
       <button type="button" (click)="previousPage()" [disabled]="currentPage === 1">←</button>
-      <span *ngFor="let page of pagesArray"
-            [class.active]="page === currentPage"
-            (click)="goToPage(page)"
-            class="page-number">{{ page }}</span>
+      <span *ngFor="let page of pagesArray" [class.active]="page === currentPage" (click)="goToPage(page)" class="page-number">{{ page }}</span>
       <button type="button" (click)="nextPage()" [disabled]="currentPage === totalPages">→</button>
     </div>
   </div>
@@ -105,9 +98,7 @@
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>{{ isEditing ? 'Modifier' : 'Ajouter' }} un utilisateur</h2>
-        <button type="button" (click)="closeModal()">
-          <i class="pi pi-times"></i>
-        </button>
+        <button type="button" (click)="closeModal()"><i class="pi pi-times"></i></button>
       </div>
       <div class="modal-body">
 
@@ -115,42 +106,78 @@
           <i class="pi pi-exclamation-triangle"></i> {{ formError }}
         </div>
 
+        <!-- Prénom -->
         <div class="form-group">
-          <div class="form-group">
-  <label>Prénom *</label>
-  <input type="text" [(ngModel)]="newUser.firstName"
-         placeholder="Ex: Ahmed"
-         maxlength="50"
-         [class.input-error]="formError && (!newUser.firstName || newUser.firstName.trim().length < 2)" />
-  <small class="field-hint">Lettres uniquement, 2-50 caractères</small>
-</div>
-
-<div class="form-group">
-  <label>Nom *</label>
-  <input type="text" [(ngModel)]="newUser.lastName"
-         placeholder="Ex: Ben Ali"
-         maxlength="50"
-         [class.input-error]="formError && (!newUser.lastName || newUser.lastName.trim().length < 2)" />
-  <small class="field-hint">Lettres uniquement, 2-50 caractères</small>
-</div>
+          <label>Prénom *</label>
+          <input type="text" [(ngModel)]="newUser.firstName"
+                 placeholder="Ex: Ahmed"
+                 maxlength="50"
+                 (input)="onNameInput($event, 'firstName')"
+                 (blur)="onBlur('firstName')"
+                 [class.input-error]="touched['firstName'] && errors['firstName']" />
+          <small class="field-error" *ngIf="touched['firstName'] && errors['firstName']">
+            ⚠️ {{ errors['firstName'] }}
+          </small>
+          <small class="field-hint" *ngIf="!errors['firstName']">Lettres uniquement, 2-50 caractères</small>
         </div>
+
+        <!-- Nom -->
+        <div class="form-group">
+          <label>Nom *</label>
+          <input type="text" [(ngModel)]="newUser.lastName"
+                 placeholder="Ex: Ben Ali"
+                 maxlength="50"
+                 (input)="onNameInput($event, 'lastName')"
+                 (blur)="onBlur('lastName')"
+                 [class.input-error]="touched['lastName'] && errors['lastName']" />
+          <small class="field-error" *ngIf="touched['lastName'] && errors['lastName']">
+            ⚠️ {{ errors['lastName'] }}
+          </small>
+          <small class="field-hint" *ngIf="!errors['lastName']">Lettres uniquement, 2-50 caractères</small>
+        </div>
+
+        <!-- Email -->
         <div class="form-group">
           <label>Email *</label>
-          <input type="email" [(ngModel)]="newUser.email" placeholder="Ex: ahmed@gpi.tn"
-                 [class.input-error]="formError && (!newUser.email || !newUser.email.includes('@'))" />
+          <input type="email" [(ngModel)]="newUser.email"
+                 placeholder="Ex: ahmed@gpi.tn"
+                 (blur)="onBlur('email')"
+                 [class.input-error]="touched['email'] && errors['email']" />
+          <small class="field-error" *ngIf="touched['email'] && errors['email']">
+            ⚠️ {{ errors['email'] }}
+          </small>
         </div>
+
+        <!-- Téléphone -->
         <div class="form-group">
           <label>Téléphone</label>
-          <input type="text" [(ngModel)]="newUser.phone" placeholder="Ex: +216 22 111 222" />
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="background:#f5f5f5;border:1px solid #ddd;border-radius:6px;padding:8px 12px;font-size:14px;color:#555;white-space:nowrap;">+216</span>
+            <input type="text" [(ngModel)]="newUser.phone"
+                   placeholder="22 111 222"
+                   maxlength="8"
+                   (input)="onPhoneInput($event)"
+                   (blur)="onBlur('phone')"
+                   [class.input-error]="touched['phone'] && errors['phone']"
+                   style="flex:1" />
+          </div>
+          <small class="field-error" *ngIf="touched['phone'] && errors['phone']">
+            ⚠️ {{ errors['phone'] }}
+          </small>
+          <small class="field-hint" *ngIf="!errors['phone']">8 chiffres — mobile : 2,4,5,9 / fixe : 7</small>
         </div>
+
+        <!-- Rôle -->
         <div class="form-group">
           <label>Rôle *</label>
           <select [(ngModel)]="newUser.role">
+            <option value="Admin">Admin</option>
             <option value="Backoffice">Backoffice</option>
             <option value="Client">Client</option>
           </select>
         </div>
 
+        <!-- Mot de passe (création) -->
         <div class="form-group" *ngIf="!isEditing">
           <label>Mot de passe généré</label>
           <div class="password-display-inline">
@@ -158,14 +185,14 @@
             <button type="button" class="btn-refresh" (click)="newUser.password = generatePassword()">
               <i class="pi pi-refresh"></i>
             </button>
-            <button type="button" class="btn-copy" [class.copied]="copied"
-                    (click)="copyPasswordText(newUser.password || '')">
+            <button type="button" class="btn-copy" [class.copied]="copied" (click)="copyPasswordText(newUser.password || '')">
               <i [class]="copied ? 'pi pi-check' : 'pi pi-copy'"></i>
               {{ copied ? 'Copié !' : 'Copier' }}
             </button>
           </div>
         </div>
 
+        <!-- Réinitialiser mdp (édition) -->
         <div class="form-group reset-section" *ngIf="isEditing">
           <label>Réinitialiser le mot de passe</label>
           <div class="password-display-inline">
@@ -174,8 +201,7 @@
               <i class="pi pi-refresh"></i>
             </button>
             <button type="button" class="btn-copy" [class.copied]="copied"
-                    (click)="copyPasswordText(generatedPassword)"
-                    [disabled]="!generatedPassword">
+                    (click)="copyPasswordText(generatedPassword)" [disabled]="!generatedPassword">
               <i [class]="copied ? 'pi pi-check' : 'pi pi-copy'"></i>
               {{ copied ? 'Copié !' : 'Copier' }}
             </button>
@@ -197,9 +223,7 @@
     <div class="modal modal-sm" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Confirmer la suppression</h2>
-        <button type="button" (click)="closeDeleteModal()">
-          <i class="pi pi-times"></i>
-        </button>
+        <button type="button" (click)="closeDeleteModal()"><i class="pi pi-times"></i></button>
       </div>
       <div class="modal-body">
         <p>Voulez-vous vraiment supprimer <strong>{{ selectedUser?.name }}</strong> ?<br>
@@ -224,9 +248,7 @@
             <span class="logs-subtitle">{{ selectedUser?.email }}</span>
           </div>
         </div>
-        <button type="button" (click)="closeLogsModal()">
-          <i class="pi pi-times"></i>
-        </button>
+        <button type="button" (click)="closeLogsModal()"><i class="pi pi-times"></i></button>
       </div>
       <div class="modal-body">
         <div class="timeline">

@@ -1,11 +1,10 @@
 package com.gpi.gpi_backend.controller;
 
-import com.gpi.gpi_backend.dto.AuthResponse;
-import com.gpi.gpi_backend.dto.LoginRequest;
-import com.gpi.gpi_backend.model.User;
+import com.gpi.gpi_backend.dto.ChangePasswordRequest;
+import com.gpi.gpi_backend.service.KeycloakAdminService;
 import com.gpi.gpi_backend.repository.UserRepository;
+import com.gpi.gpi_backend.model.User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -16,32 +15,22 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "http://localhost:4200")
 public class AuthController {
 
+    private final KeycloakAdminService keycloakAdminService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest req) {
-        User user = userRepository.findByEmail(req.getEmail())
-                .orElse(null);
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(@RequestBody ChangePasswordRequest req) {
+        // 1. Changer dans Keycloak
+        String userId = keycloakAdminService.getUserIdByEmail(req.getEmail());
+        keycloakAdminService.resetPassword(userId, req.getNewPassword());
 
-        if (user == null || !passwordEncoder.matches(req.getPassword(), user.getPassword())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new AuthResponse(null, null, null, "Email ou mot de passe incorrect", null));
-        }
+        // 2. Synchroniser dans Oracle
+        userRepository.findByEmail(req.getEmail()).ifPresent(user -> {
+            user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+            userRepository.save(user);
+        });
 
-        if (!user.isActive()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new AuthResponse(null, null, null, "Compte désactivé", null));
-        }
-
-        String role = user.getRole() != null ? user.getRole().name().toLowerCase() : "admin";
-
-        return ResponseEntity.ok(new AuthResponse(
-                "token-" + user.getId(), // token simple (sans JWT pour l'instant)
-                user.getEmail(),
-                user.getUsername(),
-                "Connexion réussie",
-                role
-        ));
+        return ResponseEntity.ok().build();
     }
 }

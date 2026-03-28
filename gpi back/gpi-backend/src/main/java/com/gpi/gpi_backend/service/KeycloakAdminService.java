@@ -54,7 +54,6 @@ public class KeycloakAdminService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.setBearerAuth(token);
 
-            // Créer l'utilisateur sans mot de passe
             Map<String, Object> user = new HashMap<>();
             user.put("username", email);
             user.put("email", email);
@@ -70,11 +69,9 @@ public class KeycloakAdminService {
             if (response.getStatusCode() == HttpStatus.CREATED) {
                 String userId = getUserId(token, email);
 
-                // Définir le mot de passe séparément
-                setPassword(token, userId, password);
-
-                // Assigner le rôle
-                assignRole(token, userId, role);
+                setPassword(token, userId, password);     // 1. mot de passe d'abord
+                setRequiredActions(token, userId);        // 2. forcer changement
+                assignRole(token, userId, role);          // 3. assigner rôle
             }
         } catch (Exception e) {
             System.err.println("❌ ERREUR KEYCLOAK: " + e.getMessage());
@@ -97,6 +94,20 @@ public class KeycloakAdminService {
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(credential, headers);
         restTemplate.exchange(url, HttpMethod.PUT, request, Void.class);
         System.out.println("✅ Mot de passe défini pour userId: " + userId);
+    }
+
+    private void setRequiredActions(String token, String userId) {
+        String url = serverUrl + "/admin/realms/" + realm + "/users/" + userId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("requiredActions", List.of("UPDATE_PASSWORD"));
+
+        restTemplate.exchange(url, HttpMethod.PUT, new HttpEntity<>(body, headers), Void.class);
+        System.out.println("✅ RequiredAction UPDATE_PASSWORD ajouté");
     }
 
     private String getUserId(String token, String email) {
@@ -139,6 +150,7 @@ public class KeycloakAdminService {
 
         restTemplate.exchange(url, HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
     }
+
     public String getUserIdByEmail(String email) {
         String token = getAdminToken();
         return getUserId(token, email);
@@ -146,8 +158,30 @@ public class KeycloakAdminService {
 
     public void resetPassword(String userId, String password) {
         String token = getAdminToken();
-        setPassword(token, userId, password);
+
+        // 1. Changer le mot de passe
+        String url = serverUrl + "/admin/realms/" + realm + "/users/" + userId + "/reset-password";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        Map<String, Object> credential = new HashMap<>();
+        credential.put("type", "password");
+        credential.put("value", password);
+        credential.put("temporary", false);
+
+        restTemplate.exchange(url, HttpMethod.PUT, new HttpEntity<>(credential, headers), Void.class);
+
+        // 2. ✅ Supprimer UPDATE_PASSWORD des requiredActions
+        String userUrl = serverUrl + "/admin/realms/" + realm + "/users/" + userId;
+        Map<String, Object> body = new HashMap<>();
+        body.put("requiredActions", List.of()); // liste vide = plus d'actions requises
+
+        restTemplate.exchange(userUrl, HttpMethod.PUT, new HttpEntity<>(body, headers), Void.class);
+        System.out.println("✅ RequiredActions vidées pour userId: " + userId);
     }
+
     public void updateUserStatus(String email, boolean enabled) {
         try {
             String token = getAdminToken();

@@ -20,6 +20,7 @@ public class AdminUserService {
     private final UserLogRepository userLogRepository;
     private final PasswordEncoder passwordEncoder;
     private final KeycloakAdminService keycloakAdminService;
+    private final EmailService emailService;
 
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final DateTimeFormatter D_FMT  = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -53,6 +54,8 @@ public class AdminUserService {
         );
 
         logAction(user, "Création compte", adminName);
+        emailService.sendCredentials(req.getEmail(), req.getName(), req.getPassword());
+
         return toDTO(user);
     }
 
