@@ -44,7 +44,7 @@ public class AdminUserService {
         user.setPassword(passwordEncoder.encode(req.getPassword()));
         user = userRepository.save(user);
 
-        // Créer dans Keycloak
+        // ✅ Create in Keycloak — includes emailVerified + empty requiredActions
         keycloakAdminService.createUser(
                 req.getEmail(),
                 req.getName(),
@@ -68,21 +68,24 @@ public class AdminUserService {
 
         if (req.getPassword() != null && !req.getPassword().trim().isEmpty()) {
             user.setPassword(passwordEncoder.encode(req.getPassword()));
-
-            // Réinitialiser le mot de passe dans Keycloak aussi
             try {
                 String userId = keycloakAdminService.getUserIdByEmail(user.getEmail());
                 keycloakAdminService.resetPassword(userId, req.getPassword());
             } catch (Exception e) {
                 System.err.println("❌ Erreur reset mdp Keycloak: " + e.getMessage());
             }
-
             logAction(user, "Réinitialisation mdp", adminName);
         }
 
         user = userRepository.save(user);
-        // Synchroniser le statut avec Keycloak
-        keycloakAdminService.updateUserStatus(user.getEmail(), user.isActive());
+
+        // ✅ Wrapped in try/catch — won't crash if user not found in Keycloak
+        try {
+            keycloakAdminService.updateUserStatus(user.getEmail(), user.isActive());
+        } catch (Exception e) {
+            System.err.println("❌ Erreur update statut Keycloak: " + e.getMessage());
+        }
+
         logAction(user, "Modification", adminName);
         return toDTO(user);
     }
@@ -92,12 +95,14 @@ public class AdminUserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
-        // Supprimer dans Keycloak
-        keycloakAdminService.deleteUser(user.getEmail());
+        // ✅ Delete from Keycloak first
+        try {
+            keycloakAdminService.deleteUser(user.getEmail());
+        } catch (Exception e) {
+            System.err.println("❌ Erreur suppression Keycloak: " + e.getMessage());
+        }
 
-        // Supprimer les logs liés AVANT de supprimer l'utilisateur
         userLogRepository.deleteByUserId(id);
-
         userRepository.delete(user);
     }
 

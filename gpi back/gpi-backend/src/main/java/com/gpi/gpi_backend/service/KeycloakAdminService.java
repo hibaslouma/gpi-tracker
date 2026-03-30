@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import java.util.Collections;
 
 import java.util.*;
 
@@ -25,6 +26,7 @@ public class KeycloakAdminService {
 
     @Value("${keycloak.admin.client-secret}")
     private String clientSecret;
+
     private final RestTemplate restTemplate;
 
     private String getAdminToken() {
@@ -53,13 +55,19 @@ public class KeycloakAdminService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.setBearerAuth(token);
 
-            // Créer l'utilisateur sans mot de passe
+            // ✅ Split full name into firstName + lastName
+            String[] nameParts = username.trim().split("\\s+", 2);
+            String firstName = nameParts[0];
+            String lastName  = nameParts.length > 1 ? nameParts[1] : firstName;
+
             Map<String, Object> user = new HashMap<>();
             user.put("username", email);
             user.put("email", email);
-            user.put("firstName", username);
+            user.put("firstName", firstName);
+            user.put("lastName", lastName);
             user.put("enabled", true);
             user.put("emailVerified", true);
+            user.put("requiredActions", Collections.emptyList()); // ✅ explicit empty list
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(user, headers);
             ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
@@ -68,11 +76,7 @@ public class KeycloakAdminService {
 
             if (response.getStatusCode() == HttpStatus.CREATED) {
                 String userId = getUserId(token, email);
-
-                // Définir le mot de passe séparément
                 setPassword(token, userId, password);
-
-                // Assigner le rôle
                 assignRole(token, userId, role);
             }
         } catch (Exception e) {
@@ -91,13 +95,14 @@ public class KeycloakAdminService {
         Map<String, Object> credential = new HashMap<>();
         credential.put("type", "password");
         credential.put("value", password);
-        credential.put("temporary", false);
+        credential.put("temporary", false); // ✅ Must be false
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(credential, headers);
         restTemplate.exchange(url, HttpMethod.PUT, request, Void.class);
         System.out.println("✅ Mot de passe défini pour userId: " + userId);
     }
 
+    // ✅ Fixed — handles empty list gracefully
     private String getUserId(String token, String email) {
         String url = serverUrl + "/admin/realms/" + realm + "/users?email=" + email;
 
@@ -105,39 +110,62 @@ public class KeycloakAdminService {
         headers.setBearerAuth(token);
 
         HttpEntity<Void> request = new HttpEntity<>(headers);
-        ResponseEntity<List> response = restTemplate.exchange(url, HttpMethod.GET, request, List.class);
+        ResponseEntity<List> response = restTemplate.exchange(
+                url, HttpMethod.GET, request, List.class
+        );
 
-        Map<String, Object> user = (Map<String, Object>) response.getBody().get(0);
+        List body = response.getBody();
+        if (body == null || body.isEmpty()) {
+            throw new RuntimeException("Utilisateur introuvable dans Keycloak: " + email);
+        }
+
+        Map<String, Object> user = (Map<String, Object>) body.get(0);
         return (String) user.get("id");
     }
 
     private void assignRole(String token, String userId, String roleName) {
-        String roleUrl = serverUrl + "/admin/realms/" + realm + "/roles/" + roleName;
+        try {
+            String roleUrl = serverUrl + "/admin/realms/" + realm + "/roles/" + roleName;
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(token);
 
-        HttpEntity<Void> roleRequest = new HttpEntity<>(headers);
-        ResponseEntity<Map> roleResponse = restTemplate.exchange(roleUrl, HttpMethod.GET, roleRequest, Map.class);
-        Map<String, Object> role = roleResponse.getBody();
+            HttpEntity<Void> roleRequest = new HttpEntity<>(headers);
+            ResponseEntity<Map> roleResponse = restTemplate.exchange(
+                    roleUrl, HttpMethod.GET, roleRequest, Map.class
+            );
+            Map<String, Object> role = roleResponse.getBody();
 
-        String url = serverUrl + "/admin/realms/" + realm + "/users/" + userId + "/role-mappings/realm";
-        headers.setContentType(MediaType.APPLICATION_JSON);
+            String url = serverUrl + "/admin/realms/" + realm + "/users/" + userId + "/role-mappings/realm";
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<List<Map<String, Object>>> request = new HttpEntity<>(List.of(role), headers);
-        restTemplate.postForEntity(url, request, Void.class);
+            HttpEntity<List<Map<String, Object>>> request = new HttpEntity<>(List.of(role), headers);
+            restTemplate.postForEntity(url, request, Void.class);
+
+            System.out.println("✅ Rôle assigné: " + roleName + " → userId: " + userId);
+        } catch (Exception e) {
+            System.err.println("❌ ERREUR assignRole: " + e.getMessage());
+            System.err.println("❌ Role name used: " + roleName);
+            throw new RuntimeException("Erreur assignation rôle: " + e.getMessage());
+        }
     }
 
     public void deleteUser(String email) {
-        String token = getAdminToken();
-        String userId = getUserId(token, email);
-        String url = serverUrl + "/admin/realms/" + realm + "/users/" + userId;
+        try {
+            String token = getAdminToken();
+            String userId = getUserId(token, email);
+            String url = serverUrl + "/admin/realms/" + realm + "/users/" + userId;
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(token);
 
-        restTemplate.exchange(url, HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
+            restTemplate.exchange(url, HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
+            System.out.println("✅ Utilisateur supprimé de Keycloak: " + email);
+        } catch (Exception e) {
+            System.err.println("❌ Erreur suppression Keycloak: " + e.getMessage());
+        }
     }
+
     public String getUserIdByEmail(String email) {
         String token = getAdminToken();
         return getUserId(token, email);
@@ -147,6 +175,7 @@ public class KeycloakAdminService {
         String token = getAdminToken();
         setPassword(token, userId, password);
     }
+
     public void updateUserStatus(String email, boolean enabled) {
         try {
             String token = getAdminToken();
@@ -165,35 +194,5 @@ public class KeycloakAdminService {
         } catch (Exception e) {
             System.err.println("❌ Erreur update statut Keycloak: " + e.getMessage());
         }
-    }
-    public String getAccessToken() {
-        String tokenUrl = serverUrl + "/realms/" + realm + "/protocol/openid-connect/token";
-        RestTemplate restTemplate = new RestTemplate();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(
-                MediaType.APPLICATION_FORM_URLENCODED
-        );
-
-        MultiValueMap<String, String> body =
-                new LinkedMultiValueMap<>();
-
-        body.add("grant_type", "client_credentials");
-        body.add("client_id", clientId);
-        body.add("client_secret", clientSecret);
-
-        HttpEntity<MultiValueMap<String, String>> request =
-                new HttpEntity<>(body, headers);
-
-        ResponseEntity<Map> response =
-                restTemplate.postForEntity(
-                        tokenUrl,
-                        request,
-                        Map.class
-                );
-
-        return (String) response
-                .getBody()
-                .get("access_token");
     }
 }
