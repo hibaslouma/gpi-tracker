@@ -1,94 +1,67 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, map, catchError, throwError, switchMap } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
-@Injectable({
-  providedIn: 'root'
-})
+const KEYCLOAK_URL = 'http://localhost:8180/realms/gpi/protocol/openid-connect/token';
+const CLIENT_ID    = 'gpi-frontend';
+const TOKEN_KEY    = 'token';
+const ROLE_KEY     = 'role';
+
+@Injectable({ providedIn: 'root' })
 export class AuthService {
-
-  private keycloakUrl = 'http://localhost:8180/realms/gpi/protocol/openid-connect/token';
-  private backendUrl  = 'http://localhost:8080/api/auth/me'; // ✅ nouveau endpoint
 
   constructor(private http: HttpClient) {}
 
-  login(email: string, password: string): Observable<any> {
+  login(email: string, password: string): Observable<{ token: string; role: string }> {
     const body = new HttpParams()
       .set('grant_type', 'password')
-      .set('client_id', 'gpi-frontend')
+      .set('client_id', CLIENT_ID)
       .set('username', email)
       .set('password', password);
 
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/x-www-form-urlencoded'
-    });
+    const headers = new HttpHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' });
 
-    return this.http.post<any>(this.keycloakUrl, body.toString(), {
-      headers,
-      observe: 'response'
-    }).pipe(
-      switchMap(response => {
-        const res = response.body;
-        const role = this.extractRole(res.access_token);
-
-        // ✅ sauvegarde dans localStorage uniquement
-        localStorage.setItem('token', res.access_token);
-        localStorage.setItem('role', role);
-
-        // ✅ appel Spring Boot pour récupérer firstLogin
-        return this.http.get<any>(this.backendUrl, {
-          headers: new HttpHeaders({
-            Authorization: `Bearer ${res.access_token}`
-          })
-        }).pipe(
-          map(user => ({
-            token     : res.access_token,
-            role      : role,
-            firstLogin: user.firstLogin // ✅ récupéré depuis Oracle DB
-          }))
-        );
-      }),
-      catchError(error => {
-        const errorData = error.error;
-        const errorDescription = errorData?.error_description || '';
-
-        if (error.status === 400 || error.status === 401) {
-          if (errorDescription.includes('Account is not fully set up')) {
-            localStorage.setItem('temp_email', email);
-            localStorage.setItem('temp_password', password);
-            return throwError(() => ({ type: 'PASSWORD_CHANGE_REQUIRED' }));
-          }
-        }
-        return throwError(() => error);
+    return this.http.post<any>(KEYCLOAK_URL, body.toString(), { headers }).pipe(
+      map(res => {
+        const token: string = res.access_token;
+        const role: string  = this.extractRole(token);
+        sessionStorage.setItem(TOKEN_KEY, token);
+        sessionStorage.setItem(ROLE_KEY, role);
+        return { token, role };
       })
     );
   }
 
-  private extractRole(token: string): string {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const roles: string[] = payload?.realm_access?.roles || [];
-    if (roles.includes('Admin'))      return 'Admin';
-    if (roles.includes('Backoffice')) return 'Backoffice';
-    if (roles.includes('Client'))     return 'Client';
-    return 'Client';
-  }
-
-  logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('temp_email');
-    localStorage.removeItem('temp_password');
+  logout(): void {
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(ROLE_KEY);
   }
 
   getToken(): string | null {
-    return localStorage.getItem('token');
+    return sessionStorage.getItem(TOKEN_KEY);
   }
 
   getRole(): string {
-    return localStorage.getItem('role') || '';
+    return sessionStorage.getItem(ROLE_KEY) || '';
   }
 
   isAuthenticated(): boolean {
     return !!this.getToken();
   }
+
+  private extractRole(token: string): string {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const roles: string[] = payload?.realm_access?.roles || [];
+      if (roles.includes('Admin')) return 'Admin';
+      if (roles.includes('Backoffice'))  return 'Backoffice';
+      if (roles.includes('Client'))      return 'Client';
+      return 'Client';
+    } catch {
+      return 'Client';
+    }
+  }
+  getMe(): Observable<any> {
+  return this.http.get<any>('http://localhost:8080/api/auth/me');
+}
 }

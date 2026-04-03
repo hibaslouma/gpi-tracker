@@ -102,11 +102,19 @@ export class ChangePasswordComponent {
       return;
     }
 
-    const email = localStorage.getItem('temp_email');
-    const oldPassword = localStorage.getItem('temp_password');
     const newPassword = this.form.value.newPassword!;
 
-    if (!email || !oldPassword) {
+    // ✅ Récupérer l'email depuis le token JWT dans sessionStorage
+    const token = sessionStorage.getItem('token');
+    if (!token) {
+      this.errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+      this.router.navigateByUrl('/auth/login');
+      return;
+    }
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const email = payload.email;
+
+    if (!email) {
       this.errorMessage = 'Session expirée. Veuillez vous reconnecter.';
       this.router.navigateByUrl('/auth/login');
       return;
@@ -117,7 +125,6 @@ export class ChangePasswordComponent {
     // ✅ Étape 1 — changer le mot de passe
     this.http.post<any>('http://localhost:8080/api/auth/change-password', {
       email,
-      oldPassword,
       newPassword
     }).subscribe({
       next: () => {
@@ -128,25 +135,24 @@ export class ChangePasswordComponent {
           new URLSearchParams({
             grant_type: 'password',
             client_id: 'gpi-frontend',
-            username: email!,
+            username: email,
             password: newPassword
           }).toString(),
           { headers: new HttpHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' }) }
         ).subscribe({
           next: (tokenRes) => {
             const newToken = tokenRes.access_token;
-            localStorage.setItem('token', newToken);
+            sessionStorage.setItem('token', newToken);
 
-            // ✅ extrait le rôle depuis le nouveau token JWT
-            const payload = JSON.parse(atob(newToken.split('.')[1]));
-            const roles: string[] = payload?.realm_access?.roles || [];
-            const rolesLower = roles.map((r: string) => r.toLowerCase());
+            // ✅ Extraire le rôle depuis le nouveau token JWT
+            const newPayload = JSON.parse(atob(newToken.split('.')[1]));
+            const roles: string[] = newPayload?.realm_access?.roles || [];
             let newRole = 'Client';
-            if (rolesLower.includes('admin')) newRole = 'Admin';
-            else if (rolesLower.includes('backoffice')) newRole = 'Backoffice';
-            localStorage.setItem('role', newRole); // ✅ vrai rôle
+            if (roles.includes('Admin')) newRole = 'Admin';
+            else if (roles.includes('Backoffice')) newRole = 'Backoffice';
+            sessionStorage.setItem('role', newRole);
 
-            // ✅ Étape 3 — finaliser inscription
+            // ✅ Étape 3 — finaliser inscription (first_login = false)
             this.http.patch<any>(
               'http://localhost:8080/api/auth/finaliser-inscription',
               {},
@@ -154,8 +160,6 @@ export class ChangePasswordComponent {
             ).subscribe({
               next: () => {
                 this.loading = false;
-                localStorage.removeItem('temp_email');
-                localStorage.removeItem('temp_password');
                 this.successMessage = 'Mot de passe changé avec succès !';
 
                 setTimeout(() => {
@@ -172,23 +176,19 @@ export class ChangePasswordComponent {
                 this.loading = false;
                 this.errorMessage = 'Erreur finalisation. Veuillez vous reconnecter.';
               }
-            }); // ✅ fin subscribe étape 3
-
+            });
           },
           error: () => {
-            // ✅ fin error étape 2
             this.loading = false;
             this.errorMessage = 'Erreur reconnexion. Réessayez.';
           }
-        }); // ✅ fin subscribe étape 2
-
+        });
       },
       error: (err) => {
-        // ✅ fin error étape 1
         this.loading = false;
         console.error('Erreur changement mdp:', err);
         this.errorMessage = 'Erreur lors du changement. Réessayez.';
       }
-    }); // ✅ fin subscribe étape 1
+    });
   }
 }

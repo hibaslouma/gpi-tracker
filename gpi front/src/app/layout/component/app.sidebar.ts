@@ -124,8 +124,8 @@ export class AppSidebar implements OnInit, OnDestroy {
         }
 
         switch (role) {
-            case 'Admin': this.userRoleLabel = 'Super Administrateur'; break;
-            case 'Backoffice': this.userRoleLabel = 'Opérateur Backoffice'; break;
+            case 'Admin': this.userRoleLabel = ' Administrateur'; break;
+            case 'Backoffice': this.userRoleLabel = 'Backoffice'; break;
             case 'Client': this.userRoleLabel = 'Client'; break;
             default: this.userRoleLabel = 'Utilisateur';
         }

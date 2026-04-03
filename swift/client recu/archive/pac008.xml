@@ -1,0 +1,113 @@
+<data>
+
+    <!-- UP HEADER (Business Application Header) -->
+    <AppHdr>
+        <Fr> 
+            <FIId>
+                <FinInstnId>
+                    <BICFI>BIATTNTT</BICFI>
+                </FinInstnId>
+            </FIId>
+        </Fr>
+
+        <To>
+            <FIId>
+                <FinInstnId>
+                    <BICFI>BCTNTNTT</BICFI>
+                </FinInstnId>
+            </FIId>
+        </To>
+
+        <BizMsgIdr>TN202603310001</BizMsgIdr>
+        <MsgDefIdr>pacs.008.001.08</MsgDefIdr>
+        <BizSvc>swift.cbprplus.02</BizSvc>
+        <CreDt>2026-03-31T19:00:00</CreDt>
+    </AppHdr>
+
+
+    <!-- DOCUMENT pacs.008 -->
+    <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08">
+
+        <FIToFICstmrCdtTrf>
+
+            <!-- Group Header -->
+            <GrpHdr>
+                <MsgId>MSG-TN-0001</MsgId>
+                <CreDtTm>2026-03-31T18:59:00</CreDtTm>
+                <NbOfTxs>1</NbOfTxs>
+                <SttlmInf>
+                    <SttlmMtd>CLRG</SttlmMtd>
+                </SttlmInf>
+            </GrpHdr>
+
+            <!-- Credit Transfer Transaction -->
+            <CdtTrfTxInf>
+
+                <PmtId>
+                    <InstrId>INST-TN-01</InstrId>
+                    <EndToEndId>E2E-TN-9988</EndToEndId>
+                    <TxId>TX-TN-5566</TxId>
+                </PmtId>
+
+                <PmtTpInf>
+                    <SvcLvl>
+                        <Cd>SEPA</Cd>
+                    </SvcLvl>
+                </PmtTpInf>
+
+                <IntrBkSttlmAmt Ccy="TND">1500.000</IntrBkSttlmAmt>
+                <IntrBkSttlmDt>2026-03-31</IntrBkSttlmDt>
+
+                <!-- Debtor -->
+                <Dbtr>
+                    <Nm>Mohamed Trabelsi</Nm>
+                    <PstlAdr>
+                        <Ctry>TN</Ctry>
+                        <AdrLine>10 Rue de Marseille, Tunis</AdrLine>
+                    </PstlAdr>
+                </Dbtr>
+
+                <DbtrAcct>
+                    <Id>
+                        <IBAN>TN11100000000012345678</IBAN>
+                    </Id>
+                </DbtrAcct>
+
+                <DbtrAgt>
+                    <FinInstnId>
+                        <BICFI>BIATTNTT</BICFI>
+                    </FinInstnId>
+                </DbtrAgt>
+
+                <!-- Creditor -->
+                <CdtrAgt>
+                    <FinInstnId>
+                        <BICFI>STUSTNTT</BICFI>
+                    </FinInstnId>
+                </CdtrAgt>
+
+                <Cdtr>
+                    <Nm>Entreprise Sfax Services</Nm>
+                    <PstlAdr>
+                        <Ctry>TN</Ctry>
+                        <AdrLine>Zone Industrielle, Sfax</AdrLine>
+                    </PstlAdr>
+                </Cdtr>
+
+                <CdtrAcct>
+                    <Id>
+                        <IBAN>TN22200000000087654321</IBAN>
+                    </Id>
+                </CdtrAcct>
+
+                <!-- Remittance -->
+                <RmtInf>
+                    <Ustrd>Facture 2026-03</Ustrd>
+                </RmtInf>
+
+            </CdtTrfTxInf>
+
+        </FIToFICstmrCdtTrf>
+    </Document>
+
+</data>

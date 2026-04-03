@@ -6,9 +6,7 @@
     ═══════════════════════════════════════ -->
     <div *ngIf="activeTab==='dashboard'" class="tab-content">
       <div class="page-title">Tableau de bord</div>
-      <div class="dash-welcome">
-        Bonjour <strong>{{ userName }}</strong> — voici un aperçu de vos paiements GPI.
-      </div>
+      
 
       <div class="stats-grid">
         <div class="stat-card" (click)="activeTab='paiements'" style="cursor:pointer">

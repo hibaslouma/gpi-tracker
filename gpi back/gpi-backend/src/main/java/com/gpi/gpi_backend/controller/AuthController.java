@@ -76,4 +76,5 @@ public class AuthController {
         adminUserService.finaliserInscription(email);
         return ResponseEntity.ok().build();
     }
+
 }

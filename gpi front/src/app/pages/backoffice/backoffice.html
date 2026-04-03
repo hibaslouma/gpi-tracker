@@ -16,9 +16,7 @@
     ═══════════════════════════════════════════════════ -->
     <div *ngIf="activeTab==='dashboard'" class="tab-content">
       <div class="page-title">Tableau de Bord</div>
-      <div class="dash-welcome">
-        Bonjour <strong>{{ userName }}</strong> — voici un aperçu de l'activité GPI en temps réel.
-      </div>
+      
 
       <div class="stats-grid">
         <div class="stat-card" (click)="setActiveTab('vue-transactionnelle')" style="cursor:pointer">

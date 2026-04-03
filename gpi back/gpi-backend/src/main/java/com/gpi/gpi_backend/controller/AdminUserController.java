@@ -12,7 +12,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
@@ -26,7 +25,7 @@ public class AdminUserController {
     public ResponseEntity<UserDTO> create(
             @RequestBody UserRequest req,
             @AuthenticationPrincipal Jwt jwt) {
-        String adminName = jwt.getClaimAsString("email");
+        String adminName = jwt.getClaimAsString("preferred_username");
         return ResponseEntity.ok(adminUserService.createUser(req, adminName));
     }
 
@@ -35,30 +34,18 @@ public class AdminUserController {
             @PathVariable Long id,
             @RequestBody UserRequest req,
             @AuthenticationPrincipal Jwt jwt) {
-        String adminName = jwt.getClaimAsString("email");
+        String adminName = jwt.getClaimAsString("preferred_username");
         return ResponseEntity.ok(adminUserService.updateUser(id, req, adminName));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
-            @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt) {
-        String adminName = jwt.getClaimAsString("email");
-        adminUserService.deleteUser(id, adminName);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        adminUserService.deleteUser(id, "SuperAdmin");
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/logs")
-    public ResponseEntity<List<LogDTO>> getLogs(@PathVariable Long id) {
+    public ResponseEntity<List<?>> getLogs(@PathVariable Long id) {
         return ResponseEntity.ok(adminUserService.getUserLogs(id));
-    }
-
-    // ✅ Nouvel endpoint — finaliser inscription après reset mot de passe
-    @PatchMapping("/finaliser-inscription")
-    public ResponseEntity<Void> finaliserInscription(
-            @AuthenticationPrincipal Jwt jwt) {
-        String email = jwt.getClaimAsString("email"); // ✅ extrait du token
-        adminUserService.finaliserInscription(email);
-        return ResponseEntity.ok().build();
     }
 }

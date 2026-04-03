@@ -123,68 +123,75 @@ export class Login {
     const c = this.form.get(controlName);
     return !!c && c.invalid && c.touched;
   }
-
   onSubmit() {
-    this.submitted = true;
-    this.errorMessage = '';
+  this.submitted = true;
+  this.errorMessage = '';
 
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.loading = true;
-    const { email, password } = this.form.value;
-
-    this.authService.login(email!, password!).subscribe({
-      next: (res) => {
-        localStorage.setItem('token', res.token);
-        localStorage.setItem('role', res.role);
-        if (res.firstLogin) {
-        this.router.navigateByUrl('/auth/change-password');
-        return;
-    }
-
-        if (res.role === 'Admin') {
-    this.router.navigateByUrl('/admin');
-} else if (res.role === 'Backoffice') {
-    this.router.navigateByUrl('/backoffice');
-} else {
-    this.router.navigateByUrl('/client');
-}
-      },
-      error: (err) => {
-  this.loading = false;
-
-  // ✅ Vérifier si c'est une erreur de type PASSWORD_CHANGE_REQUIRED
-  if (err?.type === 'PASSWORD_CHANGE_REQUIRED') {
-    this.router.navigateByUrl('/auth/change-password');
+  if (this.form.invalid) {
+    this.form.markAllAsTouched();
     return;
   }
 
-  let errDesc = '';
-  try {
-    const errorObj = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
-    errDesc = errorObj?.error_description || '';
-  } catch (e) {
-    errDesc = '';
-  }
+  this.loading = true;
+  const { email, password } = this.form.value;
 
-  if (err.status === 401 || err.status === 400) {
-    if (errDesc.includes('Invalid user credentials')) {
-      this.errorMessage = 'Email ou mot de passe incorrect.';
-    } else if (errDesc.includes('Account is not fully set up')) {
-      this.router.navigateByUrl('/auth/change-password'); // ✅ rediriger
-    } else if (errDesc.includes('Account disabled')) {
-      this.errorMessage = 'Votre compte a été désactivé. Contactez l\'administrateur.';
-    } else {
-      this.errorMessage = 'Email ou mot de passe incorrect.';
+  this.authService.login(email!, password!).subscribe({
+    next: (res) => {
+      // ✅ Appeler /api/auth/me pour récupérer firstLogin
+      this.authService.getMe().subscribe({
+        next: (me) => {
+          if (me.firstLogin) {
+            this.router.navigateByUrl('/auth/change-password');
+            return;
+          }
+          if (res.role === 'Admin') {
+            this.router.navigateByUrl('/admin');
+          } else if (res.role === 'Backoffice') {
+            this.router.navigateByUrl('/backoffice');
+          } else {
+            this.router.navigateByUrl('/client');
+          }
+        },
+        error: () => {
+          // Si /me échoue, rediriger selon le rôle quand même
+          if (res.role === 'Admin') {
+            this.router.navigateByUrl('/admin');
+          } else if (res.role === 'Backoffice') {
+            this.router.navigateByUrl('/backoffice');
+          } else {
+            this.router.navigateByUrl('/client');
+          }
+        }
+      });
+    },
+    error: (err) => {
+      this.loading = false;
+
+      let errDesc = '';
+      try {
+        const errorObj = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
+        errDesc = errorObj?.error_description || '';
+      } catch (e) {
+        errDesc = '';
+      }
+
+      if (err.status === 401 || err.status === 400) {
+        if (errDesc.includes('Invalid user credentials')) {
+          this.errorMessage = 'Email ou mot de passe incorrect.';
+        } else if (errDesc.includes('Account is not fully set up')) {
+          this.router.navigateByUrl('/auth/change-password');
+        } else if (errDesc.includes('Account disabled')) {
+          this.errorMessage = 'Votre compte a été désactivé. Contactez l\'administrateur.';
+        } else {
+          this.errorMessage = 'Email ou mot de passe incorrect.';
+        }
+      } else {
+        this.errorMessage = 'Erreur de connexion. Veuillez réessayer.';
+      }
+      this.cdr.detectChanges();
     }
-  } else {
-    this.errorMessage = 'Erreur de connexion. Veuillez réessayer.';
-  }
-  this.cdr.detectChanges();
+  });
 }
-    });
-  }
+
+
 }
