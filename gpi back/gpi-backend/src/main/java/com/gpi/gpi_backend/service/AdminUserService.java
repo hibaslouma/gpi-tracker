@@ -36,16 +36,7 @@ public class AdminUserService {
         if (userRepository.existsByEmail(req.getEmail()))
             throw new RuntimeException("Email déjà utilisé !");
 
-        User user = new User();
-        user.setUsername(req.getName());
-        user.setEmail(req.getEmail());
-        user.setPhone(req.getPhone());
-        user.setRole(User.Role.valueOf(req.getRole()));
-        user.setActive(true);
-        user.setPassword(passwordEncoder.encode(req.getPassword()));
-        user = userRepository.save(user);
-
-        // Créer dans Keycloak
+        // ✅ Keycloak d'abord
         keycloakAdminService.createUser(
                 req.getEmail(),
                 req.getName(),
@@ -53,10 +44,29 @@ public class AdminUserService {
                 req.getRole()
         );
 
+        // ✅ Oracle DB ensuite
+        User user = new User();
+        user.setUsername(req.getName());
+        user.setEmail(req.getEmail());
+        user.setPhone(req.getPhone());
+        user.setRole(User.Role.valueOf(req.getRole()));
+        user.setActive(true);
+        user.setFirstLogin(true); // ✅ ajouté
+        user.setPassword(passwordEncoder.encode(req.getPassword()));
+        user = userRepository.save(user);
+
         logAction(user, "Création compte", adminName);
         emailService.sendCredentials(req.getEmail(), req.getName(), req.getPassword());
 
         return toDTO(user);
+    }
+
+    // ✅ Nouvelle méthode — finaliser inscription après reset mot de passe
+    public void finaliserInscription(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        user.setFirstLogin(false); // ✅ plus jamais redirigé vers reset
+        userRepository.save(user);
     }
 
     public UserDTO updateUser(Long id, UserRequest req, String adminName) {
@@ -72,7 +82,6 @@ public class AdminUserService {
         if (req.getPassword() != null && !req.getPassword().trim().isEmpty()) {
             user.setPassword(passwordEncoder.encode(req.getPassword()));
 
-            // Réinitialiser le mot de passe dans Keycloak aussi
             try {
                 String userId = keycloakAdminService.getUserIdByEmail(user.getEmail());
                 keycloakAdminService.resetPassword(userId, req.getPassword());
@@ -84,7 +93,6 @@ public class AdminUserService {
         }
 
         user = userRepository.save(user);
-        // Synchroniser le statut avec Keycloak
         keycloakAdminService.updateUserStatus(user.getEmail(), user.isActive());
         logAction(user, "Modification", adminName);
         return toDTO(user);
@@ -95,12 +103,8 @@ public class AdminUserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
-        // Supprimer dans Keycloak
         keycloakAdminService.deleteUser(user.getEmail());
-
-        // Supprimer les logs liés AVANT de supprimer l'utilisateur
         userLogRepository.deleteByUserId(id);
-
         userRepository.delete(user);
     }
 
@@ -120,6 +124,7 @@ public class AdminUserService {
         dto.setPhone(u.getPhone());
         dto.setRole(u.getRole() != null ? u.getRole().name() : "Client");
         dto.setActive(u.isActive());
+        dto.setFirstLogin(u.isFirstLogin()); // ✅ ajouté
         dto.setCreatedAt(u.getCreatedAt() != null ? u.getCreatedAt().format(D_FMT) : "-");
         dto.setLastLogin(u.getLastLogin() != null ? u.getLastLogin().format(D_FMT) : "-");
         return dto;

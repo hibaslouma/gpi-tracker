@@ -140,7 +140,10 @@ export class Login {
       next: (res) => {
         localStorage.setItem('token', res.token);
         localStorage.setItem('role', res.role);
-        this.loading = false;
+        if (res.firstLogin) {
+        this.router.navigateByUrl('/auth/change-password');
+        return;
+    }
 
         if (res.role === 'Admin') {
     this.router.navigateByUrl('/admin');

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ButtonModule } from 'primeng/button';
 import { PasswordModule } from 'primeng/password';
 import { InputTextModule } from 'primeng/inputtext';
@@ -16,7 +16,6 @@ import { InputTextModule } from 'primeng/inputtext';
       <div class="flex flex-col items-center justify-center">
         <div style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
           <div class="w-full bg-surface-0 dark:bg-surface-900 py-20 px-8 sm:px-20" style="border-radius: 53px; min-width: 400px;">
-            
             <div class="text-center mb-8">
               <img src="logo-gpi.png" class="mb-8 w-24 mx-auto" />
               <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Changer votre mot de passe</div>
@@ -103,8 +102,8 @@ export class ChangePasswordComponent {
       return;
     }
 
-    const email = sessionStorage.getItem('temp_email');
-    const oldPassword = sessionStorage.getItem('temp_password');
+    const email = localStorage.getItem('temp_email');
+    const oldPassword = localStorage.getItem('temp_password');
     const newPassword = this.form.value.newPassword!;
 
     if (!email || !oldPassword) {
@@ -115,24 +114,81 @@ export class ChangePasswordComponent {
 
     this.loading = true;
 
-    // ✅ Appel direct Spring Boot sans token
+    // ✅ Étape 1 — changer le mot de passe
     this.http.post<any>('http://localhost:8080/api/auth/change-password', {
       email,
       oldPassword,
       newPassword
     }).subscribe({
       next: () => {
-        this.loading = false;
-        sessionStorage.removeItem('temp_email');
-        sessionStorage.removeItem('temp_password');
-        this.successMessage = 'Mot de passe changé avec succès ! Redirection...';
-        setTimeout(() => this.router.navigateByUrl('/auth/login'), 2000);
+
+        // ✅ Étape 2 — se reconnecter avec le nouveau mot de passe
+        this.http.post<any>(
+          'http://localhost:8180/realms/gpi/protocol/openid-connect/token',
+          new URLSearchParams({
+            grant_type: 'password',
+            client_id: 'gpi-frontend',
+            username: email!,
+            password: newPassword
+          }).toString(),
+          { headers: new HttpHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' }) }
+        ).subscribe({
+          next: (tokenRes) => {
+            const newToken = tokenRes.access_token;
+            localStorage.setItem('token', newToken);
+
+            // ✅ extrait le rôle depuis le nouveau token JWT
+            const payload = JSON.parse(atob(newToken.split('.')[1]));
+            const roles: string[] = payload?.realm_access?.roles || [];
+            const rolesLower = roles.map((r: string) => r.toLowerCase());
+            let newRole = 'Client';
+            if (rolesLower.includes('admin')) newRole = 'Admin';
+            else if (rolesLower.includes('backoffice')) newRole = 'Backoffice';
+            localStorage.setItem('role', newRole); // ✅ vrai rôle
+
+            // ✅ Étape 3 — finaliser inscription
+            this.http.patch<any>(
+              'http://localhost:8080/api/auth/finaliser-inscription',
+              {},
+              { headers: new HttpHeaders({ Authorization: `Bearer ${newToken}` }) }
+            ).subscribe({
+              next: () => {
+                this.loading = false;
+                localStorage.removeItem('temp_email');
+                localStorage.removeItem('temp_password');
+                this.successMessage = 'Mot de passe changé avec succès !';
+
+                setTimeout(() => {
+                  if (newRole === 'Admin') {
+                    this.router.navigateByUrl('/admin');
+                  } else if (newRole === 'Backoffice') {
+                    this.router.navigateByUrl('/backoffice');
+                  } else {
+                    this.router.navigateByUrl('/client');
+                  }
+                }, 2000);
+              },
+              error: () => {
+                this.loading = false;
+                this.errorMessage = 'Erreur finalisation. Veuillez vous reconnecter.';
+              }
+            }); // ✅ fin subscribe étape 3
+
+          },
+          error: () => {
+            // ✅ fin error étape 2
+            this.loading = false;
+            this.errorMessage = 'Erreur reconnexion. Réessayez.';
+          }
+        }); // ✅ fin subscribe étape 2
+
       },
       error: (err) => {
+        // ✅ fin error étape 1
         this.loading = false;
         console.error('Erreur changement mdp:', err);
         this.errorMessage = 'Erreur lors du changement. Réessayez.';
       }
-    });
+    }); // ✅ fin subscribe étape 1
   }
 }

@@ -38,6 +38,8 @@ public class User {
 
     @Column(name = "ACTIVE")
     private boolean active = true;
+    @Column(name = "FIRST_LOGIN")
+    private boolean firstLogin = true;
 
     @Column(name = "CREATED_AT")
     private LocalDate createdAt;

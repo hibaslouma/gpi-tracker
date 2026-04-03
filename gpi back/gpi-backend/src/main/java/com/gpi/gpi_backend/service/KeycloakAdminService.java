@@ -89,7 +89,7 @@ public class KeycloakAdminService {
         Map<String, Object> credential = new HashMap<>();
         credential.put("type", "password");
         credential.put("value", password);
-        credential.put("temporary", false);
+        credential.put("temporary", true);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(credential, headers);
         restTemplate.exchange(url, HttpMethod.PUT, request, Void.class);

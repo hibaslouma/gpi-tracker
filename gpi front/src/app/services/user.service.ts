@@ -29,30 +29,24 @@ export class UserService {
 
   constructor(private http: HttpClient) {}
 
-  private getHeaders(): HttpHeaders {
-    const token = localStorage.getItem('token');
-    return new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-  }
-
+  
   getAll(): Observable<User[]> {
-    return this.http.get<User[]>(this.api, { headers: this.getHeaders() });
+    return this.http.get<User[]>(this.api);
   }
 
   create(user: User): Observable<User> {
-    return this.http.post<User>(this.api, user, { headers: this.getHeaders() });
+    return this.http.post<User>(this.api, user);
   }
 
   update(id: number, user: User): Observable<User> {
-    return this.http.put<User>(`${this.api}/${id}`, user, { headers: this.getHeaders() });
+    return this.http.put<User>(`${this.api}/${id}`, user);
   }
 
   delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.api}/${id}`, { headers: this.getHeaders() });
+    return this.http.delete<void>(`${this.api}/${id}`);
   }
 
   getLogs(id: number): Observable<LogDTO[]> {
-    return this.http.get<LogDTO[]>(`${this.api}/${id}/logs`, { headers: this.getHeaders() });
+    return this.http.get<LogDTO[]>(`${this.api}/${id}/logs`);
   }
 }
