@@ -549,61 +549,59 @@
     <!-- ═══════════════════════════════════════════════════
          TAB 2 : PAIEMENTS ENTRANTS
     ═══════════════════════════════════════════════════ -->
-    <div *ngIf="activeTab==='entrants'" class="tab-content">
-      <div class="page-title">Paiements Entrants</div>
-      <div class="content-card">
-        <div class="card-header">
-          <div>
-            <h2>pacs.008 recus</h2>
-            <p class="content-sub">Reponse pacs.002 requise pour les transactions PDNG</p>
-          </div>
-        </div>
-        <div class="search-section">
-          <div class="search-wrapper">
-            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input class="search-input" type="text" placeholder="Rechercher BIC, UETR, motif..." [(ngModel)]="searchEntrants" />
-          </div>
-        </div>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead>
-              <tr><th>Statut ISO</th><th>UETR</th><th>Banque Emettrice</th><th>Montant</th><th>Devise</th><th>Type Frais</th><th>Motif</th><th>Date Reception</th><th>Action</th></tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let p of filteredEntrants">
-                <td>
-                  <div class="statut-cell">
-                    <span class="badge" [ngClass]="getStatutClass(p.statutISO)">{{ getStatutLabelCourt(p.statutISO) }}</span>
-                    <span class="statut-desc">{{ getStatutDesc(p.statutISO) }}</span>
-                  </div>
-                </td>
-                <td class="uetr-cell" [title]="p.uetr">{{ p.uetr }}</td>
-                <td>{{ p.bicEmetteur }}</td>
-                <td class="montant-cell">{{ formatMontant(p.montant) }}</td>
-                <td>{{ p.devise }}</td>
-                <td><span class="badge-type">{{ p.typeCharges }}</span></td>
-                <td class="motif-cell">{{ p.motif }}</td>
-                <td>{{ p.date }}</td>
-                <td>
-                  <div *ngIf="p.statutISO==='PDNG'" class="action-btns">
-                    <button class="btn-accepter" (click)="accepterPaiement(p)">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>ACSC
-                    </button>
-                    <button class="btn-rejeter" (click)="rejeterPaiement(p, 'MS03')">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>RJCT
-                    </button>
-                  </div>
-                  <span *ngIf="p.statutISO==='RJCT'" class="motif-rejet">{{ getMotifRejetLabel(p.motifRejet) }}</span>
-                  <span *ngIf="p.statutISO==='ACSC'" class="badge badge-acsc">Credit effectue</span>
-                </td>
-              </tr>
-              <tr *ngIf="filteredEntrants.length===0"><td colspan="9" class="empty-state">Aucun paiement entrant</td></tr>
-            </tbody>
-          </table>
-        </div>
+    <!-- TAB 2 : PAIEMENTS ENTRANTS -->
+<div *ngIf="activeTab==='entrants'" class="tab-content">
+  <div class="page-title">Paiements Entrants (pacs.008 reçus)</div>
+  <div class="content-card">
+    <div class="card-header">
+      <div>
+        <h2>pacs.008 reçus</h2>
+        <p class="content-sub">Messages SWIFT parsés automatiquement depuis le dossier surveillé</p>
       </div>
+      <button class="btn-navy" (click)="loadPaiementsRecus()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.18-5.64"/></svg>
+        Actualiser
+      </button>
     </div>
 
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Message ID</th>
+            <th>Expéditeur</th>
+            <th>BIC Expéditeur</th>
+            <th>Destinataire</th>
+            <th>BIC Destinataire</th>
+            <th>Montant</th>
+            <th>Devise</th>
+            <th>Date Valeur</th>
+            <th>Fichier</th>
+            <th>Reçu le</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of paiementsRecus">
+            <td><strong>{{ p.messageId }}</strong></td>
+            <td>{{ p.senderName }}</td>
+            <td><strong>{{ p.senderBic }}</strong></td>
+            <td>{{ p.receiverName }}</td>
+            <td><strong>{{ p.receiverBic }}</strong></td>
+            <td class="montant-cell">{{ formatMontant(p.montant) }}</td>
+            <td>{{ p.devise }}</td>
+            <td>{{ p.dateValeur }}</td>
+            <td class="motif-cell">{{ p.fileName }}</td>
+            <td>{{ p.receivedAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          </tr>
+          <tr *ngIf="paiementsRecus.length === 0">
+            <td colspan="10" class="empty-state">Aucun paiement reçu pour l'instant</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+        
     <!-- ═══════════════════════════════════════════════════
          TAB 3 : GENERER pacs.002
     ═══════════════════════════════════════════════════ -->

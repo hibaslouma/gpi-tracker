@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
+import { RecapMgService, RecapMg } from '../../services/recap-mg.service';
 
 export type StatutISO = 'PDNG' | 'ACCP' | 'ACSP' | 'ACSC' | 'RJCT' | 'CANC';
 export type MotifRejet = 'AC01' | 'AC04' | 'AG01' | 'FF01' | 'MS03' | 'NARR';
@@ -60,7 +61,11 @@ export class BackofficeComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private router: Router, private route: ActivatedRoute) {}
+  constructor(
+  private router: Router,
+  private route: ActivatedRoute,
+  private recapMgService: RecapMgService
+) {}
 
   activeTab = 'dashboard';
   selectedTransaction: Transaction | null = null;
@@ -98,14 +103,22 @@ export class BackofficeComponent implements OnInit, OnDestroy {
 
   transactions: Transaction[] = [];
   paiementsEntrants: PaiementEntrant[] = [];
+  paiementsRecus: RecapMg[] = [];
   annulations: Annulation[] = [];
   historique: Historique[] = [];
 
   userName = '';
   userInitials = '';
+  loadPaiementsRecus(): void {
+  this.recapMgService.getPaiementsRecus().subscribe({
+    next: (data) => this.paiementsRecus = data,
+    error: (err) => console.error('Erreur chargement paiements:', err)
+  });
+}
 
   ngOnInit(): void {
     this.loadUserFromToken();
+    this.loadPaiementsRecus();
 
     // Lire le tab depuis l'URL à chaque changement
     this.route.queryParams
