@@ -53,9 +53,15 @@ public class RecapMg {
 
     @Column(name = "RECEIVED_AT")
     private LocalDateTime receivedAt;
+    @Column(name = "STATUT", length = 10)
+    private String statut;
+
+    @Column(name = "MOTIF_REJET", length = 10)
+    private String motifRejet;
 
     @PrePersist
     public void prePersist() {
         this.receivedAt = LocalDateTime.now();
+        this.statut = "PDNG";
     }
 }

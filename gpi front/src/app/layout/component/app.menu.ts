@@ -63,7 +63,7 @@ export class AppMenu implements OnInit, OnChanges {
                     {
                         label: 'Paiements',
                         items: [
-                            { label: 'Paiements Sortants', icon: 'pi pi-fw pi-send', routerLink: ['/backoffice'], queryParams: { tab: 'vue-transactionnelle' } },
+                            { label: 'pacs.002 émis', icon: 'pi pi-fw pi-send', routerLink: ['/backoffice'], queryParams: { tab: 'vue-transactionnelle' } },
                             { label: 'Paiements Entrants', icon: 'pi pi-fw pi-download', routerLink: ['/backoffice'], queryParams: { tab: 'entrants' } },
                             { label: 'Générer pacs.002', icon: 'pi pi-fw pi-check-circle', routerLink: ['/backoffice'], queryParams: { tab: 'confirmation' } }
                         ]

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
-import { RecapMgService, RecapMg } from '../../services/recap-mg.service';
+import { RecapMgService, RecapMg, BackofficeStats, HistoriqueItem } from '../../services/recap-mg.service';
 
 export type StatutISO = 'PDNG' | 'ACCP' | 'ACSP' | 'ACSC' | 'RJCT' | 'CANC';
 export type MotifRejet = 'AC01' | 'AC04' | 'AG01' | 'FF01' | 'MS03' | 'NARR';
@@ -104,6 +104,10 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   transactions: Transaction[] = [];
   paiementsEntrants: PaiementEntrant[] = [];
   paiementsRecus: RecapMg[] = [];
+  stats: BackofficeStats = { totalRecus: 0, enAttente: 0, acceptes: 0, rejetes: 0 };
+  historiqueReel: HistoriqueItem[] = [];
+  selectedMessageId = '';
+selectedRecapId: number | null = null;
   annulations: Annulation[] = [];
   historique: Historique[] = [];
 
@@ -111,7 +115,9 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   userInitials = '';
   loadPaiementsRecus(): void {
   this.recapMgService.getPaiementsRecus().subscribe({
-    next: (data) => this.paiementsRecus = data,
+    next: (data) => {
+      this.paiementsRecus = [...data];
+    },
     error: (err) => console.error('Erreur chargement paiements:', err)
   });
 }
@@ -119,6 +125,8 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadUserFromToken();
     this.loadPaiementsRecus();
+    this.loadStats();
+    this.loadHistorique();
 
     // Lire le tab depuis l'URL à chaque changement
     this.route.queryParams
@@ -135,9 +143,39 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
+  loadStats(): void {
+  this.recapMgService.getStats().subscribe({
+    next: (data) => this.stats = data,
+    error: (err) => console.error('Erreur stats:', err)
+  });
+}
+
+traiterPaiement(p: RecapMg): void {
+  this.selectedMessageId = p.messageId;
+  this.selectedRecapId = p.id;
+  this.setActiveTab('confirmation');
+}
+
+rejeterPaiementRecu(p: RecapMg, motif: string): void {
+  this.recapMgService.updateStatut(p.id, 'RJCT', motif).subscribe({
+    next: () => {
+      p.statut = 'RJCT';
+      p.motifRejet = motif;
+      this.loadStats();
+      this.displayToast('Paiement rejeté — pacs.002 RJCT généré', 'error');
+    },
+    error: (err) => this.displayToast('Erreur rejet', 'error')
+  });
+}
+loadHistorique(): void {
+  this.recapMgService.getHistorique().subscribe({
+    next: (data) => this.historiqueReel = data,
+    error: (err) => console.error('Erreur historique:', err)
+  });
+}
 
   private loadUserFromToken(): void {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -244,6 +282,9 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     const q = this.searchHistorique.toLowerCase();
     return this.historique.filter(h => h.type.includes(q) || h.reference.toLowerCase().includes(q) || h.uetr.toLowerCase().includes(q));
   }
+  get pacs002Emis(): HistoriqueItem[] {
+  return this.historiqueReel.filter(h => h.type === 'pacs.002');
+}
 
   // ── Actions paiements entrants ─────────────────────────────
   accepterPaiement(p: PaiementEntrant): void {
@@ -266,19 +307,28 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     else { this.confirmationTransaction = null; this.displayToast('Aucune transaction trouvee', 'error'); }
   }
   genererEtEnvoyer(): void {
-    if (!this.confirmationTransaction) { this.displayToast('Veuillez selectionner un UETR', 'error'); return; }
-    const idx = this.transactions.findIndex(t => t.uetr === this.confirmationTransaction!.uetr);
-    if (idx !== -1) {
-      this.transactions[idx].statutISO = this.confirmationNouveauStatut;
-      if (this.confirmationNouveauStatut === 'RJCT') {
-        this.transactions[idx].motifRejet = this.confirmationMotifRejet;
-        this.transactions[idx].motifRejetDetail = this.confirmationMotifRejetDetail;
-      }
-      this.transactions[idx].messages.push({ type: 'pacs.002', dateHeure: new Date().toLocaleDateString('fr-FR'), statut: this.confirmationNouveauStatut, ref: `BIAT-CONF-${Date.now().toString().slice(-4)}`, detail: `Statut mis a jour: ${this.confirmationNouveauStatut}` });
-    }
-    this.displayToast(`pacs.002 genere — statut ${this.confirmationNouveauStatut}`, 'success');
-    this.confirmationTransaction = null; this.confirmationUetr = '';
+  if (!this.selectedMessageId || !this.selectedRecapId) {
+    this.displayToast('Veuillez sélectionner un paiement depuis Paiements Entrants', 'error'); 
+    return; 
   }
+
+  this.recapMgService.updateStatut(this.selectedRecapId!, this.confirmationNouveauStatut, 
+    this.confirmationNouveauStatut === 'RJCT' ? this.confirmationMotifRejet : undefined
+  ).subscribe({
+    next: () => {
+  this.loadStats();
+  this.loadPaiementsRecus();
+  this.selectedMessageId = '';
+  this.selectedRecapId = null;
+  this.displayToast(`pacs.002 généré — statut ${this.confirmationNouveauStatut}`, 'success');
+  setTimeout(() => {
+  this.loadPaiementsRecus();
+  this.setActiveTab('entrants');
+}, 1000);
+},
+    error: (err) => this.displayToast('Erreur lors de la mise à jour du statut', 'error')
+  });
+}
   annulerConfirmation(): void { this.confirmationUetr = ''; this.confirmationTransaction = null; }
 
   // ── Annulation camt.056 ────────────────────────────────────

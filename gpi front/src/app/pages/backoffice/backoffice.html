@@ -19,54 +19,53 @@
       
 
       <div class="stats-grid">
-        <div class="stat-card" (click)="setActiveTab('vue-transactionnelle')" style="cursor:pointer">
-          <div class="stat-info">
-            <span class="stat-number">{{ transactions.length }}</span>
-            <span class="stat-label">Paiements sortants</span>
-          </div>
-          <div class="stat-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-          </div>
-        </div>
+        <div class="stat-card" (click)="setActiveTab('entrants')" style="cursor:pointer">
+  <div class="stat-info">
+    <span class="stat-number">{{ stats.totalRecus }}</span>
+    <span class="stat-label">Paiements reçus</span>
+  </div>
+  <div class="stat-icon">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+  </div>
+</div>
 
-        <div class="stat-card stat-card--orange" (click)="setActiveTab('entrants')" style="cursor:pointer">
-          <div class="stat-info">
-            <span class="stat-number">{{ nbEntrantsEnAttente }}</span>
-            <span class="stat-label">Entrants en attente</span>
-          </div>
-          <div class="stat-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-            </svg>
-          </div>
-        </div>
+<div class="stat-card stat-card--orange" (click)="setActiveTab('entrants')" style="cursor:pointer">
+  <div class="stat-info">
+    <span class="stat-number">{{ stats.enAttente }}</span>
+    <span class="stat-label">En attente</span>
+  </div>
+  <div class="stat-icon">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+  </div>
+</div>
 
-        <div class="stat-card" (click)="setActiveTab('annulations')" style="cursor:pointer">
-          <div class="stat-info">
-            <span class="stat-number">{{ nbAnnulationsPdng }}</span>
-            <span class="stat-label">Annulations en cours</span>
-          </div>
-          <div class="stat-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-            </svg>
-          </div>
-        </div>
+<div class="stat-card" (click)="setActiveTab('entrants')" style="cursor:pointer">
+  <div class="stat-info">
+    <span class="stat-number">{{ stats.acceptes }}</span>
+    <span class="stat-label">Acceptés (ACSC)</span>
+  </div>
+  <div class="stat-icon">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  </div>
+</div>
 
-        <div class="stat-card stat-card--navy" (click)="setActiveTab('historique')" style="cursor:pointer">
-          <div class="stat-info">
-            <span class="stat-number">{{ historique.length }}</span>
-            <span class="stat-label">Messages MX échangés</span>
-          </div>
-          <div class="stat-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="12 8 12 12 14 14"/>
-              <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/>
-            </svg>
-          </div>
-        </div>
+<div class="stat-card stat-card--navy" (click)="setActiveTab('entrants')" style="cursor:pointer">
+  <div class="stat-info">
+    <span class="stat-number">{{ stats.rejetes }}</span>
+    <span class="stat-label">Rejetés (RJCT)</span>
+  </div>
+  <div class="stat-icon">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+    </svg>
+  </div>
+</div>
       </div>
 
       <div class="dash-grid">
@@ -100,27 +99,27 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>
               Dernières transactions
             </h2>
-            <button class="btn-navy" (click)="setActiveTab('vue-transactionnelle')">
+            <button class="btn-navy" (click)="setActiveTab('entrants')">
               Voir tout <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           </div>
-          <div *ngIf="transactions.length === 0" class="dash-empty">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            <p>Aucune transaction — utilisez <strong>Nouveau pacs.008</strong> pour commencer</p>
-          </div>
-          <table *ngIf="transactions.length > 0" class="data-table">
-            <thead>
-              <tr><th>Statut</th><th>BIC Récepteur</th><th>Montant</th><th>Date</th></tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let t of transactions.slice(0,5)" (click)="ouvrirDetailDashboard(t)" style="cursor:pointer">
-                <td><span class="badge" [ngClass]="getStatutClass(t.statutISO)">{{ getStatutLabelCourt(t.statutISO) }}</span></td>
-                <td><strong>{{ t.bicRecepteur }}</strong></td>
-                <td class="montant-cell">{{ formatMontant(t.montant) }} {{ t.devise }}</td>
-                <td>{{ t.date }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div *ngIf="paiementsRecus.length === 0" class="dash-empty">
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+  <p>Aucun paiement reçu pour l'instant</p>
+</div>
+<table *ngIf="paiementsRecus.length > 0" class="data-table">
+  <thead>
+    <tr><th>Statut</th><th>BIC Expéditeur</th><th>Montant</th><th>Date</th></tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let p of paiementsRecus.slice(0,5)" (click)="setActiveTab('entrants')" style="cursor:pointer">
+      <td><span class="badge" [ngClass]="getStatutClass(p.statut)">{{ p.statut }}</span></td>
+      <td><strong>{{ p.senderBic }}</strong></td>
+      <td class="montant-cell">{{ formatMontant(p.montant) }} {{ p.devise }}</td>
+      <td>{{ p.receivedAt | date:'dd/MM/yyyy' }}</td>
+    </tr>
+  </tbody>
+</table>
         </div>
       </div>
 
@@ -234,170 +233,50 @@
     <!-- ═══════════════════════════════════════════════════
          TAB 1 : PAIEMENTS SORTANTS
     ═══════════════════════════════════════════════════ -->
-    <div *ngIf="activeTab==='vue-transactionnelle' && !selectedTransaction" class="tab-content">
-      <div class="page-title">Paiements Sortants</div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-info"><span class="stat-number">{{ transactions.length }}</span><span class="stat-label">Total transactions</span></div>
-          <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-info"><span class="stat-number">{{ nbEnCours }}</span><span class="stat-label">En cours</span></div>
-          <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-        </div>
-        <div class="stat-card stat-card--orange">
-          <div class="stat-info"><span class="stat-number">{{ nbAcsc }}</span><span class="stat-label">Credits confirmes</span></div>
-          <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
-        </div>
-        <div class="stat-card stat-card--navy">
-          <div class="stat-info"><span class="stat-number">{{ nbRejets }}</span><span class="stat-label">Rejetes</span></div>
-          <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
-        </div>
-      </div>
-
-      <div class="content-card">
-        <div class="card-header">
-          <div>
-            <h2>Transactions pacs.008</h2>
-            <p class="content-sub">Initiees par BIATTNTTXXX</p>
-          </div>
-          <button class="btn-initier" (click)="toggleFormInitiation()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nouveau pacs.008
-          </button>
-        </div>
-
-        <div *ngIf="showFormInitiation" class="initiation-form">
-          <div class="initiation-form-header">
-            <h3>Initier un Nouveau Paiement (pacs.008)</h3>
-            <button class="btn-close-form" (click)="toggleFormInitiation()">✕</button>
-          </div>
-          <div class="form-grid">
-            <div class="form-group">
-              <label>BIC Destinataire <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="nouveauPaiement.bicDestinataire" placeholder="ex: BNPAFRPPXXX" style="text-transform:uppercase" />
-            </div>
-            <div class="form-group">
-              <label>IBAN Beneficiaire <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="nouveauPaiement.iban" placeholder="ex: FR76 3000 6000 0112 3456 7890 189" />
-            </div>
-            <div class="form-group">
-              <label>Montant <span class="required">*</span></label>
-              <input type="number" [(ngModel)]="nouveauPaiement.montant" placeholder="0.00" min="0" />
-            </div>
-            <div class="form-group">
-              <label>Devise <span class="required">*</span></label>
-              <select [(ngModel)]="nouveauPaiement.devise">
-                <option value="TND">TND</option>
-                <option value="EUR">EUR</option>
-                <option value="USD">USD</option>
-                <option value="GBP">GBP</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Type de Frais <span class="required">*</span></label>
-              <select [(ngModel)]="nouveauPaiement.typeCharges">
-                <option value="SHA">SHA — Partage</option>
-                <option value="OUR">OUR — Emetteur paie tout</option>
-                <option value="BEN">BEN — Beneficiaire paie</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Motif du Paiement <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="nouveauPaiement.motif" placeholder="ex: Paiement fournisseur INV-2024-001" />
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn-primary" (click)="initierPaiement()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-              Envoyer pacs.008
-            </button>
-            <button class="btn-secondary" (click)="toggleFormInitiation()">Annuler</button>
-          </div>
-        </div>
-
-        <div class="filter-section">
-          <div class="filter-group">
-            <label>Statut ISO</label>
-            <select [(ngModel)]="filterStatut">
-              <option value="">Tous</option>
-              <option value="PDNG">PDNG</option><option value="ACCP">ACCP</option>
-              <option value="ACSP">ACSP</option><option value="ACSC">ACSC</option>
-              <option value="RJCT">RJCT</option><option value="CANC">CANC</option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label>Devise</label>
-            <select [(ngModel)]="filterDevise">
-              <option value="">Toutes</option>
-              <option value="TND">TND</option><option value="EUR">EUR</option><option value="USD">USD</option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label>Date</label>
-            <input type="date" [(ngModel)]="filterDate" />
-          </div>
-        </div>
-
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Statut ISO</th><th>UETR</th><th>Banque Emettrice</th><th>Banque Receptrice</th>
-                <th>Montant</th><th>Devise</th><th>Date</th><th>Delai GPI</th><th>Motif Rejet</th><th>Detail</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let t of paginatedTransactions">
-                <td>
-                  <div class="statut-cell">
-                    <span class="badge" [ngClass]="getStatutClass(t.statutISO)">{{ getStatutLabelCourt(t.statutISO) }}</span>
-                    <span class="statut-desc">{{ getStatutDesc(t.statutISO) }}</span>
-                  </div>
-                </td>
-                <td class="uetr-cell" [title]="t.uetr">{{ t.uetr }}</td>
-                <td>
-                  <div class="user-cell">
-                    <div class="user-avatar-sm">BI</div>
-                    <div><div class="user-name">{{ t.bicEmetteur }}</div><div class="user-email">Tunisie</div></div>
-                  </div>
-                </td>
-                <td><strong>{{ t.bicRecepteur }}</strong></td>
-                <td class="montant-cell">{{ formatMontant(t.montant) }}</td>
-                <td>{{ t.devise }}</td>
-                <td>{{ t.date }}</td>
-                <td><span class="delai-badge" [ngClass]="getDelaiClass(t.delaiGPI)">{{ getDelaiLabel(t.delaiGPI) }}</span></td>
-                <td>
-                  <span *ngIf="t.motifRejet" class="motif-rejet">{{ getMotifRejetLabel(t.motifRejet) }}</span>
-                  <span *ngIf="!t.motifRejet" class="text-light">—</span>
-                </td>
-                <td>
-                  <button class="btn-action" (click)="ouvrirDetailLigne(t)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                  </button>
-                </td>
-              </tr>
-              <tr *ngIf="paginatedTransactions.length===0">
-                <td colspan="10" class="empty-state">Aucun resultat</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="pagination">
-          <div class="pagination-info">{{ filteredTransactions.length }} enregistrement(s) | Page {{ currentPage }} / {{ totalPages || 1 }}</div>
-          <div class="pagination-controls">
-            <button (click)="goToPage(currentPage-1)" [disabled]="currentPage===1">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            <button *ngFor="let p of totalPagesArray" [class.active]="p===currentPage" (click)="goToPage(p)">{{ p }}</button>
-            <button (click)="goToPage(currentPage+1)" [disabled]="currentPage===totalPages||totalPages===0">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </div>
-        </div>
+ <div *ngIf="activeTab==='vue-transactionnelle' && !selectedTransaction" class="tab-content">
+  <div class="page-title">pacs.002 Émis</div>
+  <div class="content-card">
+    <div class="card-header">
+      <div>
+        <h2>pacs.002 générés</h2>
+        <p class="content-sub">Confirmations envoyées suite aux pacs.008 reçus</p>
       </div>
     </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Message ID</th>
+            <th>BIC Expéditeur</th>
+            <th>BIC Destinataire</th>
+            <th>Montant</th>
+            <th>Devise</th>
+            <th>Statut</th>
+            <th>Motif Rejet</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let h of pacs002Emis">
+            <td><span class="badge badge-acsc">pacs.002</span></td>
+            <td><strong>{{ h.messageId }}</strong></td>
+            <td>{{ h.senderBic }}</td>
+            <td>{{ h.receiverBic }}</td>
+            <td class="montant-cell">{{ formatMontant(h.montant) }}</td>
+            <td>{{ h.devise }}</td>
+            <td><span class="badge" [ngClass]="getStatutClass(h.statut)">{{ h.statut }}</span></td>
+            <td>{{ h.motifRejet || '—' }}</td>
+            <td>{{ h.date | date:'dd/MM/yyyy HH:mm' }}</td>
+          </tr>
+          <tr *ngIf="pacs002Emis.length === 0">
+            <td colspan="9" class="empty-state">Aucun pacs.002 généré pour l'instant</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
     <!-- ═══════════════════════════════════════════════════
          LIGNE METRO DETAIL
@@ -578,21 +457,39 @@
             <th>Date Valeur</th>
             <th>Fichier</th>
             <th>Reçu le</th>
+            <th>Statut</th>
+    <th>Action</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of paiementsRecus">
-            <td><strong>{{ p.messageId }}</strong></td>
-            <td>{{ p.senderName }}</td>
-            <td><strong>{{ p.senderBic }}</strong></td>
-            <td>{{ p.receiverName }}</td>
-            <td><strong>{{ p.receiverBic }}</strong></td>
-            <td class="montant-cell">{{ formatMontant(p.montant) }}</td>
-            <td>{{ p.devise }}</td>
-            <td>{{ p.dateValeur }}</td>
-            <td class="motif-cell">{{ p.fileName }}</td>
-            <td>{{ p.receivedAt | date:'dd/MM/yyyy HH:mm' }}</td>
-          </tr>
+  <tr *ngFor="let p of paiementsRecus">
+    <td><strong>{{ p.messageId }}</strong></td>
+    <td>{{ p.senderName }}</td>
+    <td><strong>{{ p.senderBic }}</strong></td>
+    <td>{{ p.receiverName }}</td>
+    <td><strong>{{ p.receiverBic }}</strong></td>
+    <td class="montant-cell">{{ formatMontant(p.montant) }}</td>
+    <td>{{ p.devise }}</td>
+    <td>{{ p.dateValeur }}</td>
+    <td class="motif-cell">{{ p.fileName }}</td>
+    <td>{{ p.receivedAt | date:'dd/MM/yyyy HH:mm' }}</td>
+    <td>
+      <span *ngIf="p.statut === 'PDNG'" class="badge badge-pdng">PDNG</span>
+      <span *ngIf="p.statut === 'ACSC'" class="badge badge-acsc">ACSC</span>
+      <span *ngIf="p.statut === 'RJCT'" class="badge badge-rjct">RJCT</span>
+      <span *ngIf="!p.statut" class="badge badge-pdng">PDNG</span>
+    </td>
+    <td>
+     <div *ngIf="p.statut === 'PDNG' || !p.statut" class="action-btns">
+  <button class="btn-accepter" (click)="traiterPaiement(p)">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    Traiter
+  </button>
+</div>
+      <span *ngIf="p.statut === 'ACSC'" class="badge badge-acsc">Accepté ✅</span>
+      <span *ngIf="p.statut === 'RJCT'" class="badge badge-rjct">Rejeté ❌</span>
+    </td>
+  </tr>
           <tr *ngIf="paiementsRecus.length === 0">
             <td colspan="10" class="empty-state">Aucun paiement reçu pour l'instant</td>
           </tr>
@@ -615,18 +512,21 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Selectionner un UETR <span class="required">*</span></label>
-          <div class="input-row">
-            <select [(ngModel)]="confirmationUetr" class="select-uetr">
-              <option value="">-- Selectionnez --</option>
-              <option *ngFor="let t of transactions" [value]="t.uetr">{{ t.uetr }} — {{ t.bicRecepteur }} — {{ getStatutLabelCourt(t.statutISO) }}</option>
-            </select>
-            <button class="btn-search" (click)="rechercherTransactionConfirmation()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              Charger
-            </button>
-          </div>
-        </div>
+  <label>Message ID <span class="required">*</span></label>
+  <div class="input-row">
+    <input 
+      type="text" 
+      [(ngModel)]="selectedMessageId" 
+      class="select-uetr" 
+      [readonly]="selectedRecapId !== null"
+      placeholder="Message ID automatique depuis Paiements Entrants"
+      style="background: #f8f8f8; cursor: not-allowed;"
+    />
+  </div>
+  <small *ngIf="!selectedMessageId" style="color:#cc0000">
+    ⚠️ Veuillez sélectionner un paiement depuis l'onglet "Paiements Entrants" → Traiter
+  </small>
+</div>
         <div *ngIf="confirmationTransaction" class="transaction-detail-card">
           <h4>Transaction chargee</h4>
           <div class="detail-grid">
@@ -641,12 +541,9 @@
         <div class="form-group">
           <label>Nouveau Statut ISO <span class="required">*</span></label>
           <select [(ngModel)]="confirmationNouveauStatut">
-            <option value="ACCP">ACCP — Accepte</option>
-            <option value="ACSP">ACSP — Reglement en cours</option>
-            <option value="ACSC">ACSC — Credit confirme</option>
-            <option value="RJCT">RJCT — Rejete</option>
-            <option value="CANC">CANC — Annule</option>
-          </select>
+  <option value="ACSC">ACSC — Accepter le paiement </option>
+  <option value="RJCT">RJCT — Rejeter le paiement </option>
+</select>
         </div>
         <div *ngIf="confirmationNouveauStatut==='RJCT'" class="rejet-section">
           <div class="form-group">
@@ -794,29 +691,38 @@
         <div class="table-wrapper">
           <table class="data-table">
             <thead>
-              <tr><th>Type Msg</th><th>Reference</th><th>UETR</th><th>BIC Emetteur</th><th>BIC Recepteur</th><th>Montant</th><th>Devise</th><th>Statut ISO</th><th>Charges</th><th>Montant Net</th><th>Date</th></tr>
-            </thead>
+  <tr>
+    <th>Type</th>
+    <th>Message ID</th>
+    <th>BIC Expéditeur</th>
+    <th>BIC Destinataire</th>
+    <th>Montant</th>
+    <th>Devise</th>
+    <th>Statut</th>
+    <th>Motif Rejet</th>
+    <th>Date</th>
+  </tr>
+</thead>
             <tbody>
-              <tr *ngFor="let h of filteredHistorique">
-                <td>
-                  <span class="badge" [ngClass]="h.type.startsWith('pacs') ? 'badge-msg-pacs' : h.type==='camt.056' ? 'badge-msg-camt056' : 'badge-msg-camt029'">{{ h.type }}</span>
-                </td>
-                <td>{{ h.reference }}</td>
-                <td class="uetr-cell" [title]="h.uetr">{{ h.uetr }}</td>
-                <td><strong>{{ h.bicEmetteur }}</strong><span *ngIf="h.bicEmetteur==='BIATTNTTXXX'" class="pays-label"><br>Tunisie</span></td>
-                <td>{{ h.bicRecepteur }}</td>
-                <td class="montant-cell">{{ formatMontant(h.montant) }}</td>
-                <td>{{ h.devise }}</td>
-                <td><span class="badge" [ngClass]="getStatutClass(h.statutISO)">{{ getStatutLabelCourt(h.statutISO) }}</span></td>
-                <td class="charges-cell">
-                  <span *ngIf="h.totalCharges>0" class="charges-badge">- {{ formatMontant(h.totalCharges) }} {{ h.devise }}</span>
-                  <span *ngIf="h.totalCharges===0" class="charges-badge-zero">—</span>
-                </td>
-                <td class="montant-cell montant-net">{{ formatMontant(h.montant - h.totalCharges) }} {{ h.devise }}</td>
-                <td>{{ h.date }}</td>
-              </tr>
-              <tr *ngIf="filteredHistorique.length===0"><td colspan="11" class="empty-state">Aucun historique</td></tr>
-            </tbody>
+  <tr *ngFor="let h of historiqueReel">
+    <td>
+      <span class="badge" [ngClass]="h.type === 'pacs.008' ? 'badge-msg-pacs' : 'badge-acsc'">{{ h.type }}</span>
+    </td>
+    <td><strong>{{ h.messageId }}</strong></td>
+    <td><strong>{{ h.senderBic }}</strong></td>
+    <td>{{ h.receiverBic }}</td>
+    <td class="montant-cell">{{ formatMontant(h.montant) }}</td>
+    <td>{{ h.devise }}</td>
+    <td>
+      <span class="badge" [ngClass]="getStatutClass(h.statut)">{{ h.statut }}</span>
+    </td>
+    <td>{{ h.motifRejet || '—' }}</td>
+    <td>{{ h.date | date:'dd/MM/yyyy HH:mm' }}</td>
+  </tr>
+  <tr *ngIf="historiqueReel.length === 0">
+    <td colspan="9" class="empty-state">Aucun historique</td>
+  </tr>
+</tbody>
           </table>
         </div>
       </div>
