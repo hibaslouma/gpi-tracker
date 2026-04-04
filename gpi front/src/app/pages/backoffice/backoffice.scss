@@ -24,6 +24,97 @@
   font-size: 14px;
   color: var(--gti-text-primary);
 }
+// ── Filtres Bar ─────────────────────────────────────
+.filtres-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+}
+
+.filtre-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  input[type="text"],
+  input[type="date"],
+  select {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.82rem;
+    color: #333;
+    background: #fff;
+    outline: none;
+    height: 34px;
+
+    &:focus {
+      border-color: var(--gti-primary, #e05a2b);
+    }
+  }
+}
+
+.filtre-search {
+  flex: 1;
+  min-width: 220px;
+
+  input {
+    width: 100%;
+  }
+
+  svg {
+    color: #999;
+    flex-shrink: 0;
+  }
+}
+
+.btn-reset {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.8rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #666;
+  cursor: pointer;
+  height: 34px;
+
+  &:hover {
+    background: #fee;
+    border-color: #e05a2b;
+    color: #e05a2b;
+  }
+}
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--gti-navy);
+  border: none;
+  color: #fff;
+  padding: 0.4rem 1rem;
+  border-radius: var(--gti-radius-sm);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--gti-navy-light);
+  }
+}
+.filtres-count {
+  padding: 0.5rem 1.5rem;
+  font-size: 0.8rem;
+  color: #888;
+  border-bottom: 1px solid #f0f0f0;
+}
 
 // ─── Body ──────────────────────────────────────────────────
 .body-layout { display: flex; flex: 1; overflow: hidden; }
