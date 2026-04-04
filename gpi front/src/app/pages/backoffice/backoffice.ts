@@ -100,7 +100,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   filterDate = '';
 
   confirmationUetr = '';
-  confirmationNouveauStatut: StatutISO = 'ACSC';
+  confirmationNouveauStatut: StatutISO = 'ACCP';
   confirmationMotifRejet: MotifRejet = 'AC01';
   confirmationMotifRejetDetail = '';
   confirmationTransaction: Transaction | null = null;
@@ -136,6 +136,9 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   filtreBicExp = '';
   filtreDateDu = '';
   filtreDateAu = '';
+  filtreHistoriqueSearch = '';
+filtreHistoriqueType = '';
+filtreHistoriqueStatut = '';
   annulations: Annulation[] = [];
   historique: Historique[] = [];
   userName = '';
@@ -234,19 +237,19 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     return this.paiementsRecus.filter(p => p.statut === 'PDNG' || !p.statut);
   }
 
-  get repartitionStatuts(): { statut: string; count: number; pct: number }[] {
-    const total = this.paiementsRecus.length;
-    if (total === 0) return [];
-    const statuts = ['PDNG', 'ACSC', 'RJCT'];
-    return statuts
-      .map(s => ({
-        statut: s,
-        count: this.paiementsRecus.filter(p => p.statut === s || (!p.statut && s === 'PDNG')).length,
-        pct: 0
-      }))
-      .filter(item => item.count > 0)
-      .map(item => ({ ...item, pct: Math.round((item.count / total) * 100) }));
-  }
+ get repartitionStatuts(): { statut: string; count: number; pct: number }[] {
+  const total = this.paiementsRecus.length;
+  if (total === 0) return [];
+  const statuts = ['PDNG', 'ACCP', 'ACSP', 'ACSC', 'RJCT', 'CANC'];
+  return statuts
+    .map(s => ({
+      statut: s,
+      count: this.paiementsRecus.filter(p => p.statut === s || (!p.statut && s === 'PDNG')).length,
+      pct: 0
+    }))
+    .filter(item => item.count > 0)
+    .map(item => ({ ...item, pct: Math.round((item.count / total) * 100) }));
+}
 
   // ── Getters Filtres pacs.008 ───────────────────────────────
   get paiementsRecusFiltres(): RecapMg[] {
@@ -278,7 +281,27 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     this.filtreBicExp = '';
     this.filtreDateDu = '';
     this.filtreDateAu = '';
+    
   }
+  get historiqueFiltres(): HistoriqueItem[] {
+  return this.historiqueReel.filter(h => {
+    const matchSearch = !this.filtreHistoriqueSearch ||
+      h.messageId?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
+      h.senderBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
+      h.receiverBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase());
+
+    const matchType = !this.filtreHistoriqueType || h.type === this.filtreHistoriqueType;
+    const matchStatut = !this.filtreHistoriqueStatut || h.statut === this.filtreHistoriqueStatut;
+
+    return matchSearch && matchType && matchStatut;
+  });
+}
+
+resetFiltresHistorique(): void {
+  this.filtreHistoriqueSearch = '';
+  this.filtreHistoriqueType = '';
+  this.filtreHistoriqueStatut = '';
+}
 
   // ── Getters pacs.002 ───────────────────────────────────────
   get pacs002Emis(): HistoriqueItem[] {
