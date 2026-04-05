@@ -36,14 +36,7 @@ public class AdminUserService {
         if (userRepository.existsByEmail(req.getEmail()))
             throw new RuntimeException("Email déjà utilisé !");
 
-        User user = new User();
-        user.setUsername(req.getName());
-        user.setEmail(req.getEmail());
-        user.setPhone(req.getPhone());
-        user.setRole(User.Role.valueOf(req.getRole()));
-        user.setActive(true);
-        user.setPassword(passwordEncoder.encode(req.getPassword()));
-        user = userRepository.save(user);
+
 
         // ✅ Create in Keycloak — includes emailVerified + empty requiredActions
         // ✅ Keycloak d'abord
