@@ -1,6 +1,5 @@
 package com.gpi.gpi_backend.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -12,8 +11,12 @@ import java.util.Collections;
 import java.util.*;
 
 @Service
-@RequiredArgsConstructor
 public class KeycloakAdminService {
+    @Value("${keycloak.admin.username}")
+    private String adminUsername;
+
+    @Value("${keycloak.admin.password}")
+    private String adminPassword;
 
     @Value("${keycloak.admin.server-url}")
     private String serverUrl;
@@ -27,22 +30,22 @@ public class KeycloakAdminService {
     @Value("${keycloak.admin.client-secret}")
     private String clientSecret;
 
-    private final RestTemplate restTemplate;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     private String getAdminToken() {
-        String url = serverUrl + "/realms/" + realm + "/protocol/openid-connect/token";
+        String url = serverUrl + "/realms/master/protocol/openid-connect/token";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("grant_type", "client_credentials");
-        body.add("client_id", clientId);
-        body.add("client_secret", clientSecret);
+        body.add("grant_type", "password");
+        body.add("client_id", "admin-cli");
+        body.add("username", adminUsername);
+        body.add("password", adminPassword);
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
         ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
-
         return (String) response.getBody().get("access_token");
     }
 
@@ -68,11 +71,10 @@ public class KeycloakAdminService {
             user.put("enabled", true);
             user.put("emailVerified", true);
             user.put("requiredActions", Collections.emptyList()); // ✅ explicit empty list
+            user.put("requiredActions", Collections.emptyList());
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(user, headers);
             ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
-
-            System.out.println("✅ Keycloak response: " + response.getStatusCode() + " - " + response.getBody());
 
             if (response.getStatusCode() == HttpStatus.CREATED) {
                 String userId = getUserId(token, email);
@@ -80,8 +82,7 @@ public class KeycloakAdminService {
                 assignRole(token, userId, role);
             }
         } catch (Exception e) {
-            System.err.println("❌ ERREUR KEYCLOAK: " + e.getMessage());
-            throw new RuntimeException("Erreur Keycloak: " + e.getMessage());
+            System.err.println("❌ Erreur création Keycloak: " + e.getMessage());
         }
     }
 
@@ -163,6 +164,7 @@ public class KeycloakAdminService {
             System.out.println("✅ Utilisateur supprimé de Keycloak: " + email);
         } catch (Exception e) {
             System.err.println("❌ Erreur suppression Keycloak: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -190,7 +192,7 @@ public class KeycloakAdminService {
             body.put("enabled", enabled);
 
             restTemplate.exchange(url, HttpMethod.PUT, new HttpEntity<>(body, headers), Void.class);
-            System.out.println("✅ Statut Keycloak mis à jour: " + email + " → enabled=" + enabled);
+            System.out.println("✅ Statut mis à jour pour: " + email + " → " + enabled);
         } catch (Exception e) {
             System.err.println("❌ Erreur update statut Keycloak: " + e.getMessage());
         }

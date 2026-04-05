@@ -20,6 +20,7 @@ public class AdminUserService {
     private final UserLogRepository userLogRepository;
     private final PasswordEncoder passwordEncoder;
     private final KeycloakAdminService keycloakAdminService;
+    private final EmailService emailService;
 
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final DateTimeFormatter D_FMT  = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -45,6 +46,7 @@ public class AdminUserService {
         user = userRepository.save(user);
 
         // ✅ Create in Keycloak — includes emailVerified + empty requiredActions
+        // ✅ Keycloak d'abord
         keycloakAdminService.createUser(
                 req.getEmail(),
                 req.getName(),
@@ -52,8 +54,28 @@ public class AdminUserService {
                 req.getRole()
         );
 
+        // ✅ Oracle DB ensuite
+        User user = new User();
+        user.setUsername(req.getName());
+        user.setEmail(req.getEmail());
+        user.setPhone(req.getPhone());
+        user.setRole(User.Role.valueOf(req.getRole()));
+        user.setActive(true);
+        user.setFirstLogin(true);
+        user.setPassword(passwordEncoder.encode(req.getPassword()));
+        user = userRepository.save(user);
+
         logAction(user, "Création compte", adminName);
+        emailService.sendCredentials(req.getEmail(), req.getName(), req.getPassword());
+
         return toDTO(user);
+    }
+
+    public void finaliserInscription(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        user.setFirstLogin(false);
+        userRepository.save(user);
     }
 
     public UserDTO updateUser(Long id, UserRequest req, String adminName) {
@@ -113,6 +135,29 @@ public class AdminUserService {
                 .collect(Collectors.toList());
     }
 
+    public void syncOracleToKeycloak() {
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            try {
+                keycloakAdminService.getUserIdByEmail(user.getEmail());
+                System.out.println("✅ Déjà dans Keycloak: " + user.getEmail());
+            } catch (Exception e) {
+                System.out.println("🔄 Recréation dans Keycloak: " + user.getEmail());
+                try {
+                    keycloakAdminService.createUser(
+                            user.getEmail(),
+                            user.getUsername(),
+                            "ChangeMe123@",
+                            user.getRole().name()
+                    );
+                    System.out.println("✅ Recréé dans Keycloak: " + user.getEmail());
+                } catch (Exception ex) {
+                    System.err.println("❌ Erreur recréation: " + user.getEmail() + " → " + ex.getMessage());
+                }
+            }
+        }
+    }
+
     private UserDTO toDTO(User u) {
         UserDTO dto = new UserDTO();
         dto.setId(u.getId());
@@ -122,6 +167,7 @@ public class AdminUserService {
         dto.setPhone(u.getPhone());
         dto.setRole(u.getRole() != null ? u.getRole().name() : "Client");
         dto.setActive(u.isActive());
+        dto.setFirstLogin(u.isFirstLogin());
         dto.setCreatedAt(u.getCreatedAt() != null ? u.getCreatedAt().format(D_FMT) : "-");
         dto.setLastLogin(u.getLastLogin() != null ? u.getLastLogin().format(D_FMT) : "-");
         return dto;

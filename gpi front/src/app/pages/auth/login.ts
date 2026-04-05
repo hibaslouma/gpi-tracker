@@ -123,59 +123,75 @@ export class Login {
     const c = this.form.get(controlName);
     return !!c && c.invalid && c.touched;
   }
-
   onSubmit() {
-    this.submitted = true;
-    this.errorMessage = '';
+  this.submitted = true;
+  this.errorMessage = '';
 
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.loading = true;
-    const { email, password } = this.form.value;
-
-    this.authService.login(email!, password!).subscribe({
-      next: (res) => {
-        localStorage.setItem('token', res.token);
-        localStorage.setItem('role', res.role);
-        this.loading = false;
-
-        if (res.role === 'admin') {
-          this.router.navigateByUrl('/admin');
-        } else if (res.role === 'backoffice') {
-          this.router.navigateByUrl('/backoffice');
-        } else {
-          this.router.navigateByUrl('/client');
-        }
-      },
-      error: (err) => {
-        this.loading = false;
-
-        let errDesc = '';
-        try {
-          const errorObj = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
-          errDesc = errorObj?.error_description || '';
-        } catch (e) {
-          errDesc = '';
-        }
-
-        if (err.status === 401 || err.status === 400) {
-          if (errDesc.includes('Invalid user credentials')) {
-            this.errorMessage = 'Email ou mot de passe incorrect.';
-          } else if (errDesc.includes('Account is not fully set up')) {
-            this.errorMessage = 'Compte non configuré. Contactez l\'administrateur.';
-          } else if (errDesc.includes('Account disabled')) {
-            this.errorMessage = 'Votre compte a été désactivé. Contactez l\'administrateur.';
-          } else {
-            this.errorMessage = 'Email ou mot de passe incorrect.';
-          }
-        } else {
-          this.errorMessage = 'Erreur de connexion. Veuillez réessayer.';
-        }
-        this.cdr.detectChanges();
-      }
-    });
+  if (this.form.invalid) {
+    this.form.markAllAsTouched();
+    return;
   }
+
+  this.loading = true;
+  const { email, password } = this.form.value;
+
+  this.authService.login(email!, password!).subscribe({
+    next: (res) => {
+      // ✅ Appeler /api/auth/me pour récupérer firstLogin
+      this.authService.getMe().subscribe({
+        next: (me) => {
+          if (me.firstLogin) {
+            this.router.navigateByUrl('/auth/change-password');
+            return;
+          }
+          if (res.role === 'Admin') {
+            this.router.navigateByUrl('/admin');
+          } else if (res.role === 'Backoffice') {
+            this.router.navigateByUrl('/backoffice');
+          } else {
+            this.router.navigateByUrl('/client');
+          }
+        },
+        error: () => {
+          // Si /me échoue, rediriger selon le rôle quand même
+          if (res.role === 'Admin') {
+            this.router.navigateByUrl('/admin');
+          } else if (res.role === 'Backoffice') {
+            this.router.navigateByUrl('/backoffice');
+          } else {
+            this.router.navigateByUrl('/client');
+          }
+        }
+      });
+    },
+    error: (err) => {
+      this.loading = false;
+
+      let errDesc = '';
+      try {
+        const errorObj = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
+        errDesc = errorObj?.error_description || '';
+      } catch (e) {
+        errDesc = '';
+      }
+
+      if (err.status === 401 || err.status === 400) {
+        if (errDesc.includes('Invalid user credentials')) {
+          this.errorMessage = 'Email ou mot de passe incorrect.';
+        } else if (errDesc.includes('Account is not fully set up')) {
+          this.router.navigateByUrl('/auth/change-password');
+        } else if (errDesc.includes('Account disabled')) {
+          this.errorMessage = 'Votre compte a été désactivé. Contactez l\'administrateur.';
+        } else {
+          this.errorMessage = 'Email ou mot de passe incorrect.';
+        }
+      } else {
+        this.errorMessage = 'Erreur de connexion. Veuillez réessayer.';
+      }
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+
 }

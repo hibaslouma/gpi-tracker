@@ -64,15 +64,19 @@
             align-items: center;
             position: relative;
             outline: 0 none;
-            color: var(--text-color);
+            color: #1B2A4A; // ✅ noir par défaut (plus var(--text-color) qui hérite du primary)
             cursor: pointer;
             padding: 0.75rem 1rem;
             border-radius: var(--content-border-radius);
             transition:
-                box-shadow var(--element-transition-duration);
+                box-shadow var(--element-transition-duration),
+                color 0.2s,
+                background-color 0.2s;
 
             .layout-menuitem-icon {
                 margin-right: 0.5rem;
+                color: #64748B; // ✅ icône grise par défaut
+                transition: color 0.2s;
             }
 
             .layout-submenu-toggler {
@@ -81,13 +85,32 @@
                 transition: transform var(--element-transition-duration);
             }
 
+            // ✅ Actif : fond orange clair + texte/icône orange
             &.active-route {
-                font-weight: 700;
-                color: var(--primary-color);
+                background-color: #FFF3F0;
+                border-radius: 6px;
+
+                .layout-menuitem-text {
+                    color: #E8421A;
+                    font-weight: 700;
+                }
+
+                .layout-menuitem-icon {
+                    color: #E8421A;
+                }
             }
 
+            // ✅ Hover : fond gris clair + texte/icône orange
             &:hover {
                 background-color: var(--surface-hover);
+
+                .layout-menuitem-text {
+                    color: #E8421A;
+                }
+
+                .layout-menuitem-icon {
+                    color: #E8421A;
+                }
             }
 
             &:focus {

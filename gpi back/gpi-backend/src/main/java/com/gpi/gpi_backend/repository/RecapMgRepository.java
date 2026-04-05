@@ -10,4 +10,6 @@ import java.util.List;
 public interface RecapMgRepository extends JpaRepository<RecapMg, Long> {
     List<RecapMg> findByFileName(String fileName);
     boolean existsByMessageId(String messageId);
+    List<RecapMg> findByStatut(String statut);
+    long countByStatut(String statut);
 }

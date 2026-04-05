@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.002.001.10">
+  <FIToFIPmtStsRpt>
+    <GrpHdr>
+      <MsgId>ACK-MSG-TN-0001-20260404_174216</MsgId>
+      <CreDtTm>2026-04-04T17:42:16.3386433</CreDtTm>
+    </GrpHdr>
+    <TxInfAndSts>
+      <OrgnlMsgId>MSG-TN-0001</OrgnlMsgId>
+      <OrgnlMsgNmId>pacs.008.001.08</OrgnlMsgNmId>
+      <TxSts>RJCT</TxSts>
+      <StsRsnInf><Rsn><Cd>AC13</Cd></Rsn></StsRsnInf>
+    </TxInfAndSts>
+  </FIToFIPmtStsRpt>
+</Document>

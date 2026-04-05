@@ -11,6 +11,7 @@ public class UserDTO {
     private String phone;
     private String role;
     private boolean active;
-    private String createdAt;
+    private boolean firstLogin; // ✅ déjà présent
+    private String createdAt;   // ✅ ajouté
     private String lastLogin;
 }

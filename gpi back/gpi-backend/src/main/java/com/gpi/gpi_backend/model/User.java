@@ -37,6 +37,8 @@ public class User {
 
     @Column(name = "ACTIVE")
     private boolean active = true;
+    @Column(name = "FIRST_LOGIN")
+    private boolean firstLogin = true;
 
     @Column(name = "CREATED_AT")
     private LocalDate createdAt;
@@ -54,7 +56,7 @@ public class User {
     }
 
     public enum Role {
-        Backoffice, Client
+        Admin, Backoffice, Client
     }
 
     public String getInitials() {

@@ -50,33 +50,32 @@ public class FolderWatcherService {
 
     @Scheduled(fixedDelayString = "${watcher.poll-interval-ms:3000}")
     public void pollFolder() {
+        System.out.println("[FolderWatcher]  Polling...");
         WatchKey key = watchService.poll();
-        if (key == null) return;
+        if (key == null) {
+            System.out.println("[FolderWatcher]  No events detected");
+            return;
+        }
 
         for (WatchEvent<?> event : key.pollEvents()) {
             Path fileName = (Path) event.context();
             Path fullPath = Paths.get(folderPath).resolve(fileName);
 
-            // ✅ Skip the archive folder itself and non-files
+            System.out.println("[FolderWatcher]  Event: " + event.kind() + " → " + fileName);
+
             if (fileName.toString().equals("archive")) continue;
             if (!Files.isRegularFile(fullPath)) continue;
 
-            // ✅ Log the detected file name clearly
-            System.out.println("[FolderWatcher] ✅ New file detected: " + fileName);
+            System.out.println("[FolderWatcher]  New file detected: " + fileName);
             System.out.println("[FolderWatcher] Full path: " + fullPath);
-            System.out.println("[FolderWatcher] Event type: " + event.kind());
 
             try {
-                // ✅ Process the file
                 clientRecuService.clientRecu(fullPath);
-
-                // ✅ Move to archive after successful processing
                 Path archivePath = Paths.get(folderPath).resolve("archive").resolve(fileName);
                 Files.move(fullPath, archivePath, StandardCopyOption.REPLACE_EXISTING);
-                System.out.println("[FolderWatcher] 📦 File archived: " + fileName + " → archive/");
-
+                System.out.println("[FolderWatcher]  File archived: " + fileName + " → archive/");
             } catch (Exception e) {
-                System.err.println("[FolderWatcher] ❌ Error processing file: " + fileName + " → " + e.getMessage());
+                System.err.println("[FolderWatcher]  Error processing file: " + fileName + " → " + e.getMessage());
             }
         }
 

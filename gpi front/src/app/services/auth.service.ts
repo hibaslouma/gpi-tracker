@@ -53,12 +53,15 @@ export class AuthService {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const roles: string[] = payload?.realm_access?.roles || [];
-      if (roles.includes('SuperAdmin')) return 'admin';
-      if (roles.includes('Backoffice'))  return 'backoffice';
-      if (roles.includes('Client'))      return 'client';
-      return 'client';
+      if (roles.includes('Admin')) return 'Admin';
+      if (roles.includes('Backoffice'))  return 'Backoffice';
+      if (roles.includes('Client'))      return 'Client';
+      return 'Client';
     } catch {
-      return 'client';
+      return 'Client';
     }
   }
+  getMe(): Observable<any> {
+  return this.http.get<any>('http://localhost:8080/api/auth/me');
+}
 }

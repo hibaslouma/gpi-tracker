@@ -38,7 +38,7 @@ export class AppMenu implements OnInit, OnChanges {
 
     private buildMenu(role: string) {
         switch (role) {
-            case 'admin':
+            case 'Admin':
                 this.model = [
                     {
                         label: 'Administration',
@@ -52,39 +52,43 @@ export class AppMenu implements OnInit, OnChanges {
                 ];
                 break;
 
-            case 'backoffice':
-                this.model = [
-                    {
-                        label: 'Vue générale',
-                        items: [
-                            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/backoffice'], queryParams: { tab: 'dashboard' } }
-                        ]
-                    },
-                    {
-                        label: 'Paiements',
-                        items: [
-                            { label: 'Paiements Sortants', icon: 'pi pi-fw pi-send', routerLink: ['/backoffice'], queryParams: { tab: 'vue-transactionnelle' } },
-                            { label: 'Paiements Entrants', icon: 'pi pi-fw pi-download', routerLink: ['/backoffice'], queryParams: { tab: 'entrants' } },
-                            { label: 'Générer pacs.002', icon: 'pi pi-fw pi-check-circle', routerLink: ['/backoffice'], queryParams: { tab: 'confirmation' } }
-                        ]
-                    },
-                    {
-                        label: 'Annulations',
-                        items: [
-                            { label: 'Envoyer camt.056', icon: 'pi pi-fw pi-times-circle', routerLink: ['/backoffice'], queryParams: { tab: 'annulation' } },
-                            { label: 'Suivi camt.029', icon: 'pi pi-fw pi-file', routerLink: ['/backoffice'], queryParams: { tab: 'annulations' } }
-                        ]
-                    },
-                    {
-                        label: 'Consultation',
-                        items: [
-                            { label: 'Historique Messages', icon: 'pi pi-fw pi-history', routerLink: ['/backoffice'], queryParams: { tab: 'historique' } }
-                        ]
-                    }
-                ];
-                break;
+            case 'Backoffice':
+  this.model = [
+    {
+      label: 'Vue générale',
+      items: [
+        { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/backoffice/dashboard'] }
+      ]
+    },
+    {
+      label: 'Paiements Reçus',
+      items: [
+        { label: 'pacs.008', icon: 'pi pi-fw pi-download', routerLink: ['/backoffice/entrants'] }
+      ]
+    },
+    {
+      label: 'Paiements Émis',
+      items: [
+        { label: 'pacs.002', icon: 'pi pi-fw pi-send', routerLink: ['/backoffice/vue-transactionnelle'] }
+      ]
+    },
+    {
+      label: 'Annulations',
+      items: [
+        { label: 'Envoyer camt.056', icon: 'pi pi-fw pi-times-circle', routerLink: ['/backoffice/annulation'] },
+        { label: 'Suivi camt.029', icon: 'pi pi-fw pi-file', routerLink: ['/backoffice/annulations'] }
+      ]
+    },
+    {
+      label: 'Consultation',
+      items: [
+        { label: 'Historique Messages', icon: 'pi pi-fw pi-history', routerLink: ['/backoffice/historique'] }
+      ]
+    }
+  ];
+  break;
 
-            case 'client':
+            case 'Client':
                 this.model = [
                     {
                         label: 'Vue générale',

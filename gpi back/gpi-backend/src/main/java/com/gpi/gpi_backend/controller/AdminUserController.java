@@ -45,7 +45,7 @@ public class AdminUserController {
     }
 
     @GetMapping("/{id}/logs")
-    public ResponseEntity<List<LogDTO>> getLogs(@PathVariable Long id) {
+    public ResponseEntity<List<?>> getLogs(@PathVariable Long id) {
         return ResponseEntity.ok(adminUserService.getUserLogs(id));
     }
 }
