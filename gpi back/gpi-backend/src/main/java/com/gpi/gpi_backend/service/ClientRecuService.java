@@ -19,21 +19,21 @@ public class ClientRecuService {
 
         // ✅ Validate file exists and is readable
         if (!Files.exists(file)) {
-            System.err.println("[ClientRecu] ❌ File not found: " + file);
+
             return;
         }
 
         if (!Files.isReadable(file)) {
-            System.err.println("[ClientRecu] ❌ File not readable: " + file);
+
             return;
         }
 
         try {
-            mxParserService.parsingMx(file);
-            System.out.println("[ClientRecu] ✅ File processed successfully: " + file.getFileName());
+            mxParserService.parsingMx(file,"RECU");
+
         } catch (Exception e) {
-            System.err.println("[ClientRecu] ❌ Failed to process: " + file.getFileName() + " → " + e.getMessage());
-            throw e; // rethrow so FolderWatcher knows it failed and can log accordingly
+
+            throw e;
         }
     }
 }

@@ -47,6 +47,7 @@
                     <InstrId>INST-TN-01</InstrId>
                     <EndToEndId>E2E-TN-9988</EndToEndId>
                     <TxId>TX-TN-5566</TxId>
+                    <UETR>550e8400-e29b-41d4-a716-446655440000</UETR>
                 </PmtId>
 
                 <PmtTpInf>

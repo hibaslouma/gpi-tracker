@@ -21,6 +21,12 @@ public class RecapMg {
     @Column(name = "MESSAGE_ID", length = 100)
     private String messageId;
 
+    @Column(name = "UETR", length = 100)
+    private String uetr;
+
+    @Column(name = "TYPE_MSG", length = 10)
+    private String typeMsg;
+
     @Column(name = "SENDER_NAME", length = 200)
     private String senderName;
 
@@ -33,11 +39,17 @@ public class RecapMg {
     @Column(name = "RECEIVER_NAME", length = 200)
     private String receiverName;
 
+    @Column(name = "SENDER_IBAN", length = 50)
+    private String senderIban;
+
     @Column(name = "RECEIVER_ADDRESS", length = 300)
     private String receiverAddress;
 
     @Column(name = "RECEIVER_BIC", length = 20)
     private String receiverBic;
+
+    @Column(name = "RECEIVER_IBAN", length = 50)
+    private String receiverIban;
 
     @Column(name = "MONTANT", precision = 18, scale = 2)
     private BigDecimal montant;
@@ -53,6 +65,7 @@ public class RecapMg {
 
     @Column(name = "RECEIVED_AT")
     private LocalDateTime receivedAt;
+
     @Column(name = "STATUT", length = 10)
     private String statut;
 
@@ -62,6 +75,8 @@ public class RecapMg {
     @PrePersist
     public void prePersist() {
         this.receivedAt = LocalDateTime.now();
-        this.statut = "PDNG";
+        if (this.statut == null) {
+            this.statut = "PDNG";
+        }
     }
 }
