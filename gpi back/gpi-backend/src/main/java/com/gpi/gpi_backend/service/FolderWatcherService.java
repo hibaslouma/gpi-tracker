@@ -50,10 +50,8 @@ public class FolderWatcherService {
 
     @Scheduled(fixedDelayString = "${watcher.poll-interval-ms:3000}")
     public void pollFolder() {
-        System.out.println("[FolderWatcher]  Polling...");
         WatchKey key = watchService.poll();
         if (key == null) {
-            System.out.println("[FolderWatcher]  No events detected");
             return;
         }
 
