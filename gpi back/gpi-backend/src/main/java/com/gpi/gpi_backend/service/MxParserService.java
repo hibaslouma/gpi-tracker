@@ -20,7 +20,7 @@ public class MxParserService {
 
     private final RecapMgRepository recapMgRepository;
 
-    public void parsingMx(Path file) {
+    public void parsingMx(Path file, String typeMsg) {
         System.out.println("[MxParser] 🔍 Parsing file: " + file.getFileName());
 
         try {
@@ -42,6 +42,9 @@ public class MxParserService {
                 System.out.println("[MxParser] ⚠️ Already processed messageId: " + messageId + " — skipping");
                 return;
             }
+            // ── UETR ──────────────────────────────────────────────────────
+            String uetr = extractFirst(xpath, doc,
+                    "//*[local-name()='UETR']");
 
             // ── Sender (Debtor) ───────────────────────────────────────────
             String senderName    = extractFirst(xpath, doc, "//*[local-name()='Dbtr']/*[local-name()='Nm']");
@@ -52,6 +55,7 @@ public class MxParserService {
             String senderCountry = extractFirst(xpath, doc, "//*[local-name()='Dbtr']//*[local-name()='Ctry']");
             String senderAddress = buildAddress(senderStreet, senderBldg, senderPstCd, senderCity, senderCountry);
             String senderBic     = extractFirst(xpath, doc, "//*[local-name()='DbtrAgt']//*[local-name()='BICFI']");
+            String senderIban    = extractFirst(xpath, doc, "//*[local-name()='DbtrAcct']//*[local-name()='IBAN']");
 
             // ── Receiver (Creditor) ───────────────────────────────────────
             String receiverName    = extractFirst(xpath, doc, "//*[local-name()='Cdtr']/*[local-name()='Nm']");
@@ -65,6 +69,7 @@ public class MxParserService {
                     ? receiverAdrLine
                     : buildAddress(receiverStreet, receiverBldg, receiverPstCd, receiverCity, receiverCountry);
             String receiverBic     = extractFirst(xpath, doc, "//*[local-name()='CdtrAgt']//*[local-name()='BICFI']");
+            String receiverIban    = extractFirst(xpath, doc, "//*[local-name()='CdtrAcct']//*[local-name()='IBAN']");
 
             // ── Amount + Currency ─────────────────────────────────────────
             String montantStr = extractFirst(xpath, doc, "//*[local-name()='IntrBkSttlmAmt']");
@@ -84,12 +89,16 @@ public class MxParserService {
             // ── Save to DB ────────────────────────────────────────────────
             RecapMg recap = RecapMg.builder()
                     .messageId(messageId)
+                    .uetr(uetr)
+                    .typeMsg(typeMsg)
                     .senderName(senderName)
                     .senderAddress(senderAddress)
                     .senderBic(senderBic)
+                    .senderIban(senderIban)
                     .receiverName(receiverName)
                     .receiverAddress(receiverAddress)
                     .receiverBic(receiverBic)
+                    .receiverIban(receiverIban)
                     .montant(montant)
                     .devise(devise)
                     .dateValeur(dateValeur)
@@ -100,6 +109,8 @@ public class MxParserService {
 
             System.out.println("[MxParser] ✅ Saved to RECAP_MG:"
                     + "\n  messageId   : " + messageId
+                    + "\n  uetr        : " + uetr
+                    + "\n  typeMsg     : " + typeMsg
                     + "\n  sender      : " + senderName + " (" + senderBic + ")"
                     + "\n  receiver    : " + receiverName + " (" + receiverBic + ")"
                     + "\n  montant     : " + montant + " " + devise

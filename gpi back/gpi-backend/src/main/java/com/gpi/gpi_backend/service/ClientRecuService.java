@@ -9,31 +9,52 @@ import java.nio.file.Path;
 public class ClientRecuService {
 
     private final MxParserService mxParserService;
+    private final Pacs002ParserService pacs002ParserService;
 
-    public ClientRecuService(MxParserService mxParserService) {
+    public ClientRecuService(MxParserService mxParserService,
+                             Pacs002ParserService pacs002ParserService) {
         this.mxParserService = mxParserService;
+        this.pacs002ParserService = pacs002ParserService;
     }
 
     public void clientRecu(Path file) {
-        System.out.println("[ClientRecu] 📥 File received: " + file.getFileName());
+        System.out.println("[ClientRecu]  File received: " + file.getFileName());
 
         // ✅ Validate file exists and is readable
         if (!Files.exists(file)) {
-            System.err.println("[ClientRecu] ❌ File not found: " + file);
+
             return;
         }
 
         if (!Files.isReadable(file)) {
-            System.err.println("[ClientRecu] ❌ File not readable: " + file);
+
             return;
         }
 
         try {
-            mxParserService.parsingMx(file);
-            System.out.println("[ClientRecu] ✅ File processed successfully: " + file.getFileName());
+            //  Détecter le type de message
+            String content = Files.readString(file);
+
+            if (content.contains("pacs.008")) {
+                // C'est un pacs.008 → parser comme paiement reçu
+
+                mxParserService.parsingMx(file, "RECU");
+
+            } else if (content.contains("pacs.002")) {
+                // C'est un pacs.002 → mettre à jour le statut
+                pacs002ParserService.parsingPacs002(file);
+
+            } else {
+                System.err.println("[ClientRecu]  Type de message inconnu: "
+                        + file.getFileName());
+            }
+
+            System.out.println("[ClientRecu]  File processed: " + file.getFileName());
+
         } catch (Exception e) {
-            System.err.println("[ClientRecu] ❌ Failed to process: " + file.getFileName() + " → " + e.getMessage());
-            throw e; // rethrow so FolderWatcher knows it failed and can log accordingly
+            System.err.println("[ClientRecu]  Failed: " + file.getFileName()
+                    + " → " + e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 }

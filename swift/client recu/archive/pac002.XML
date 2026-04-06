@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<data>
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.002.001.10">
   <FIToFIPmtStsRpt>
     <GrpHdr>
-      <MsgId>ACK-MSG-TN-0001-20260404_174216</MsgId>
-      <CreDtTm>2026-04-04T17:42:16.3386433</CreDtTm>
+      <MsgId>ACK-MSG-TN-0001-20260406</MsgId>
+      <CreDtTm>2026-04-06T14:00:00</CreDtTm>
     </GrpHdr>
     <TxInfAndSts>
       <OrgnlMsgId>MSG-TN-0001</OrgnlMsgId>
-      <OrgnlMsgNmId>pacs.008.001.08</OrgnlMsgNmId>
-      <TxSts>RJCT</TxSts>
-      <StsRsnInf><Rsn><Cd>AC13</Cd></Rsn></StsRsnInf>
+      <OrgnlUETR>550e8400-e29b-41d4-a716-446655440000</OrgnlUETR>
+      <TxSts>ACSC</TxSts>
     </TxInfAndSts>
   </FIToFIPmtStsRpt>
 </Document>
+</data>

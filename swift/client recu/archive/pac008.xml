@@ -32,7 +32,7 @@
 
             <!-- Group Header -->
             <GrpHdr>
-                <MsgId>MSG-TN-0003</MsgId>
+                <MsgId>MSG-TN-0001</MsgId>
                 <CreDtTm>2026-03-31T18:59:00</CreDtTm>
                 <NbOfTxs>1</NbOfTxs>
                 <SttlmInf>
@@ -47,6 +47,7 @@
                     <InstrId>INST-TN-01</InstrId>
                     <EndToEndId>E2E-TN-9988</EndToEndId>
                     <TxId>TX-TN-5566</TxId>
+		    <UETR>550e8400-e29b-41d4-a716-446655440000</UETR>
                 </PmtId>
 
                 <PmtTpInf>
