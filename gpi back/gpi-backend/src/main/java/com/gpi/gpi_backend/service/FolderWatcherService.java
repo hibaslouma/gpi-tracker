@@ -65,10 +65,6 @@ public class FolderWatcherService {
     public void pollFolder() {
         WatchKey key = watchService.poll();
         if (key == null) {
-
-        WatchKey key = watchService.poll();
-        if (key == null) {
-
             return;
         }
         String typeMsg = keyToFolder.get(key);
