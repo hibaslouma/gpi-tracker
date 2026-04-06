@@ -84,7 +84,11 @@ public class FolderWatcherService {
 
 
             try {
-                clientRecuService.clientRecu(fullPath);
+                if (typeMsg.equals("RECU")) {
+                    clientRecuService.clientRecu(fullPath);
+                } else {
+                    clientEmisService.clientEmis(fullPath);
+                }
                 Path archivePath = Paths.get(folderPath).resolve("archive").resolve(fileName);
                 Files.move(fullPath, archivePath, StandardCopyOption.REPLACE_EXISTING);
                 System.out.println("[FolderWatcher]  File archived: " + fileName + " → archive/");

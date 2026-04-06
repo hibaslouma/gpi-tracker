@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+<AppHdr>
+  <Fr>
+    <FIId>
+      <FinInstnId>
+        <BICFI>BIATTNTT</BICFI>
+      </FinInstnId>
+    </FIId>
+  </Fr>
+  <To>
+    <FIId>
+      <FinInstnId>
+        <BICFI>STUSTNTT</BICFI>
+      </FinInstnId>
+    </FIId>
+  </To>
+  <BizMsgIdr>TN202604060002</BizMsgIdr>
+  <MsgDefIdr>pacs.008.001.08</MsgDefIdr>
+  <CreDt>2026-04-06T10:00:00</CreDt>
+</AppHdr>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08">
+  <FIToFICstmrCdtTrf>
+    <GrpHdr>
+      <MsgId>MSG-TN-EMIS-001</MsgId>
+      <CreDtTm>2026-04-06T10:00:00</CreDtTm>
+      <NbOfTxs>1</NbOfTxs>
+      <SttlmInf>
+        <SttlmMtd>CLRG</SttlmMtd>
+      </SttlmInf>
+    </GrpHdr>
+    <CdtTrfTxInf>
+      <PmtId>
+        <InstrId>INST-EMIS-01</InstrId>
+        <EndToEndId>E2E-EMIS-001</EndToEndId>
+        <TxId>TX-EMIS-001</TxId>
+        <UETR>660f9500-f30c-52e5-b827-557766551111</UETR>
+      </PmtId>
+      <IntrBkSttlmAmt Ccy="TND">3000.000</IntrBkSttlmAmt>
+      <IntrBkSttlmDt>2026-04-06</IntrBkSttlmDt>
+      <Dbtr>
+        <Nm>BIAT Client</Nm>
+        <PstlAdr>
+          <Ctry>TN</Ctry>
+          <AdrLine>70 Avenue Jugurtha, Tunis</AdrLine>
+        </PstlAdr>
+      </Dbtr>
+      <DbtrAcct>
+        <Id>
+          <IBAN>TN33100000000099887766</IBAN>
+        </Id>
+      </DbtrAcct>
+      <DbtrAgt>
+        <FinInstnId>
+          <BICFI>BIATTNTT</BICFI>
+        </FinInstnId>
+      </DbtrAgt>
+      <CdtrAgt>
+        <FinInstnId>
+          <BICFI>STUSTNTT</BICFI>
+        </FinInstnId>
+      </CdtrAgt>
+      <Cdtr>
+        <Nm>STB Beneficiaire</Nm>
+        <PstlAdr>
+          <Ctry>TN</Ctry>
+          <AdrLine>Rue Hedi Nouira, Tunis</AdrLine>
+        </PstlAdr>
+      </Cdtr>
+      <CdtrAcct>
+        <Id>
+          <IBAN>TN44200000000011223344</IBAN>
+        </Id>
+      </CdtrAcct>
+      <RmtInf>
+        <Ustrd>Paiement BIAT vers STB 2026</Ustrd>
+      </RmtInf>
+    </CdtTrfTxInf>
+  </FIToFICstmrCdtTrf>
+</Document>
+</data>
