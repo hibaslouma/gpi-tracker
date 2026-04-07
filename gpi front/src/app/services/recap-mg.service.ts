@@ -5,12 +5,16 @@ import { Observable } from 'rxjs';
 export interface RecapMg {
   id: number;
   messageId: string;
+  uetr: string;
+  typeMsg: string;
   senderName: string;
   senderAddress: string;
   senderBic: string;
+  senderIban: string;
   receiverName: string;
   receiverAddress: string;
   receiverBic: string;
+  receiverIban: string;
   montant: number;
   devise: string;
   dateValeur: string;
@@ -25,6 +29,10 @@ export interface BackofficeStats {
   enAttente: number;
   acceptes: number;
   rejetes: number;
+  totalEmis: number;
+  emisEnAttente: number;
+  emisAcceptes: number;
+  emisRejetes: number;
 }
 export interface HistoriqueItem {
   type: string;
@@ -59,6 +67,9 @@ export class RecapMgService {
       motifRejet
     });
   }
+  getPaiementsEmis(): Observable<RecapMg[]> {
+  return this.http.get<RecapMg[]>(`${this.api}/paiements-emis`);
+}
   getHistorique(): Observable<HistoriqueItem[]> {
   return this.http.get<HistoriqueItem[]>(`${this.api}/historique`);
 }

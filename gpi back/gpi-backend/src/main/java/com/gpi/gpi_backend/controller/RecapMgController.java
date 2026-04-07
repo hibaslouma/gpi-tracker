@@ -27,20 +27,45 @@ public class RecapMgController {
     @Value("${watcher.output-folder-path}")
     private String outputFolderPath;
 
-    // ✅ Récupérer tous les paiements reçus
     @GetMapping("/paiements-recus")
     public ResponseEntity<List<RecapMg>> getPaiementsRecus() {
-        return ResponseEntity.ok(recapMgRepository.findAll());
+        // ✅ Seulement les paiements reçus (incoming داخل)
+        return ResponseEntity.ok(recapMgRepository.findByTypeMsg("RECU"));
+    }
+
+    @GetMapping("/paiements-emis")
+    public ResponseEntity<List<RecapMg>> getPaiementsEmis() {
+        // ✅ Seulement les paiements émis (outgoing خارج)
+        return ResponseEntity.ok(recapMgRepository.findByTypeMsg("EMIS"));
     }
 
     // ✅ Stats pour le dashboard
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Long>> getStats() {
         Map<String, Long> stats = new HashMap<>();
-        stats.put("totalRecus", recapMgRepository.count());
-        stats.put("enAttente", recapMgRepository.countByStatut("PDNG"));
-        stats.put("acceptes", recapMgRepository.countByStatut("ACSC"));
-        stats.put("rejetes", recapMgRepository.countByStatut("RJCT"));
+
+        // ✅ Stats paiements reçus (RECU)
+        List<RecapMg> recus = recapMgRepository.findByTypeMsg("RECU");
+        stats.put("totalRecus", (long) recus.size());
+        stats.put("enAttente", recus.stream()
+                .filter(r -> "PDNG".equals(r.getStatut())).count());
+        stats.put("acceptes", recus.stream()
+                .filter(r -> "ACSC".equals(r.getStatut())
+                        || "ACCP".equals(r.getStatut())
+                        || "ACSP".equals(r.getStatut())).count());
+        stats.put("rejetes", recus.stream()
+                .filter(r -> "RJCT".equals(r.getStatut())).count());
+
+        // ✅ Stats paiements émis (EMIS)
+        List<RecapMg> emis = recapMgRepository.findByTypeMsg("EMIS");
+        stats.put("totalEmis", (long) emis.size());
+        stats.put("emisEnAttente", emis.stream()
+                .filter(r -> "PDNG".equals(r.getStatut())).count());
+        stats.put("emisAcceptes", emis.stream()
+                .filter(r -> "ACSC".equals(r.getStatut())).count());
+        stats.put("emisRejetes", emis.stream()
+                .filter(r -> "RJCT".equals(r.getStatut())).count());
+
         return ResponseEntity.ok(stats);
     }
 

@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
-import { Subject, takeUntil, filter } from 'rxjs';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { RecapMgService, RecapMg, BackofficeStats, HistoriqueItem } from '../../services/recap-mg.service';
 
 export type StatutISO = 'PDNG' | 'ACCP' | 'ACSP' | 'ACSC' | 'RJCT' | 'CANC';
@@ -49,27 +49,6 @@ export interface NouveauPaiement {
   bicDestinataire: string; iban: string; montant: number;
   devise: 'TND' | 'EUR' | 'USD' | 'GBP'; typeCharges: 'SHA' | 'OUR' | 'BEN'; motif: string;
 }
-
-// ── Mapping URL ↔ Tab ──────────────────────────────────────
-const URL_TO_TAB: { [key: string]: string } = {
-  '/backoffice':                      'dashboard',
-  '/backoffice/dashboard':            'dashboard',
-  '/backoffice/entrants':             'entrants',
-  '/backoffice/vue-transactionnelle': 'vue-transactionnelle',
-  '/backoffice/annulation':           'annulation',
-  '/backoffice/annulations':          'annulations',
-  '/backoffice/historique':           'historique',
-};
-
-const TAB_TO_URL: { [key: string]: string } = {
-  'dashboard':            '/backoffice/dashboard',
-  'entrants':             '/backoffice/entrants',
-  'vue-transactionnelle': '/backoffice/vue-transactionnelle',
-  'annulation':           '/backoffice/annulation',
-  'annulations':          '/backoffice/annulations',
-  'historique':           '/backoffice/historique',
-  'confirmation':         '/backoffice/entrants',
-};
 
 @Component({
   selector: 'app-backoffice',
@@ -126,7 +105,11 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   transactions: Transaction[] = [];
   paiementsEntrants: PaiementEntrant[] = [];
   paiementsRecus: RecapMg[] = [];
-  stats: BackofficeStats = { totalRecus: 0, enAttente: 0, acceptes: 0, rejetes: 0 };
+  paiementsEmis: RecapMg[] = [];
+  stats: BackofficeStats = {
+    totalRecus: 0, enAttente: 0, acceptes: 0, rejetes: 0,
+    totalEmis: 0, emisEnAttente: 0, emisAcceptes: 0, emisRejetes: 0
+  };
   historiqueReel: HistoriqueItem[] = [];
   selectedMessageId = '';
   selectedRecapId: number | null = null;
@@ -137,8 +120,8 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   filtreDateDu = '';
   filtreDateAu = '';
   filtreHistoriqueSearch = '';
-filtreHistoriqueType = '';
-filtreHistoriqueStatut = '';
+  filtreHistoriqueType = '';
+  filtreHistoriqueStatut = '';
   annulations: Annulation[] = [];
   historique: Historique[] = [];
   userName = '';
@@ -148,7 +131,14 @@ filtreHistoriqueStatut = '';
   loadPaiementsRecus(): void {
     this.recapMgService.getPaiementsRecus().subscribe({
       next: (data) => { this.paiementsRecus = [...data]; },
-      error: (err) => console.error('Erreur chargement paiements:', err)
+      error: (err) => console.error('Erreur chargement paiements reçus:', err)
+    });
+  }
+
+  loadPaiementsEmis(): void {
+    this.recapMgService.getPaiementsEmis().subscribe({
+      next: (data) => { this.paiementsEmis = [...data]; },
+      error: (err) => console.error('Erreur chargement paiements émis:', err)
     });
   }
 
@@ -169,20 +159,17 @@ filtreHistoriqueStatut = '';
   ngOnInit(): void {
     this.loadUserFromToken();
     this.loadPaiementsRecus();
+    this.loadPaiementsEmis();
     this.loadStats();
     this.loadHistorique();
 
-    // ✅ Lire le tab depuis l'URL au démarrage
-    this.syncTabFromUrl();
-
-    // ✅ Mettre à jour le tab à chaque navigation
-    this.router.events
-      .pipe(
-        filter(event => event instanceof NavigationEnd),
-        takeUntil(this.destroy$)
-      )
-      .subscribe(() => {
-        this.syncTabFromUrl();
+    this.route.queryParams
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        if (params['tab']) {
+          this.activeTab = params['tab'];
+          this.selectedTransaction = null;
+        }
       });
   }
 
@@ -191,19 +178,11 @@ filtreHistoriqueStatut = '';
     this.destroy$.complete();
   }
 
-  // ✅ Lit l'URL et met à jour activeTab
-  private syncTabFromUrl(): void {
-    const url = this.router.url.split('?')[0];
-    this.activeTab = URL_TO_TAB[url] ?? 'dashboard';
-  }
-
   // ── Navigation ─────────────────────────────────────────────
-  // ✅ Navigue vers la bonne route selon le tab
   setActiveTab(tab: string): void {
     this.activeTab = tab;
     this.selectedTransaction = null;
-    const url = TAB_TO_URL[tab] ?? '/backoffice/dashboard';
-    this.router.navigate([url]);
+    this.router.navigate(['/backoffice'], { queryParams: { tab } });
   }
 
   logout(): void {
@@ -237,19 +216,19 @@ filtreHistoriqueStatut = '';
     return this.paiementsRecus.filter(p => p.statut === 'PDNG' || !p.statut);
   }
 
- get repartitionStatuts(): { statut: string; count: number; pct: number }[] {
-  const total = this.paiementsRecus.length;
-  if (total === 0) return [];
-  const statuts = ['PDNG', 'ACCP', 'ACSP', 'ACSC', 'RJCT', 'CANC'];
-  return statuts
-    .map(s => ({
-      statut: s,
-      count: this.paiementsRecus.filter(p => p.statut === s || (!p.statut && s === 'PDNG')).length,
-      pct: 0
-    }))
-    .filter(item => item.count > 0)
-    .map(item => ({ ...item, pct: Math.round((item.count / total) * 100) }));
-}
+  get repartitionStatuts(): { statut: string; count: number; pct: number }[] {
+    const total = this.paiementsRecus.length;
+    if (total === 0) return [];
+    const statuts = ['PDNG', 'ACCP', 'ACSP', 'ACSC', 'RJCT', 'CANC'];
+    return statuts
+      .map(s => ({
+        statut: s,
+        count: this.paiementsRecus.filter(p => p.statut === s || (!p.statut && s === 'PDNG')).length,
+        pct: 0
+      }))
+      .filter(item => item.count > 0)
+      .map(item => ({ ...item, pct: Math.round((item.count / total) * 100) }));
+  }
 
   // ── Getters Filtres pacs.008 ───────────────────────────────
   get paiementsRecusFiltres(): RecapMg[] {
@@ -281,31 +260,30 @@ filtreHistoriqueStatut = '';
     this.filtreBicExp = '';
     this.filtreDateDu = '';
     this.filtreDateAu = '';
-    
   }
-  get historiqueFiltres(): HistoriqueItem[] {
-  return this.historiqueReel.filter(h => {
-    const matchSearch = !this.filtreHistoriqueSearch ||
-      h.messageId?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
-      h.senderBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
-      h.receiverBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase());
-
-    const matchType = !this.filtreHistoriqueType || h.type === this.filtreHistoriqueType;
-    const matchStatut = !this.filtreHistoriqueStatut || h.statut === this.filtreHistoriqueStatut;
-
-    return matchSearch && matchType && matchStatut;
-  });
-}
-
-resetFiltresHistorique(): void {
-  this.filtreHistoriqueSearch = '';
-  this.filtreHistoriqueType = '';
-  this.filtreHistoriqueStatut = '';
-}
 
   // ── Getters pacs.002 ───────────────────────────────────────
   get pacs002Emis(): HistoriqueItem[] {
     return this.historiqueReel.filter(h => h.type === 'pacs.002');
+  }
+
+  // ── Getters Historique ─────────────────────────────────────
+  get historiqueFiltres(): HistoriqueItem[] {
+    return this.historiqueReel.filter(h => {
+      const matchSearch = !this.filtreHistoriqueSearch ||
+        h.messageId?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
+        h.senderBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
+        h.receiverBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase());
+      const matchType = !this.filtreHistoriqueType || h.type === this.filtreHistoriqueType;
+      const matchStatut = !this.filtreHistoriqueStatut || h.statut === this.filtreHistoriqueStatut;
+      return matchSearch && matchType && matchStatut;
+    });
+  }
+
+  resetFiltresHistorique(): void {
+    this.filtreHistoriqueSearch = '';
+    this.filtreHistoriqueType = '';
+    this.filtreHistoriqueStatut = '';
   }
 
   // ── Getters camt.056 ───────────────────────────────────────
@@ -394,7 +372,7 @@ resetFiltresHistorique(): void {
     this.displayToast(`camt.056 envoyé — ref ${ref}`, 'success');
   }
 
-  // ── Actions statiques (ancien code) ───────────────────────
+  // ── Actions statiques ──────────────────────────────────────
   accepterPaiement(p: PaiementEntrant): void {
     p.statutISO = 'ACSC';
     this.displayToast(`Paiement accepte — pacs.002 ACSC envoye`, 'success');
@@ -459,7 +437,7 @@ resetFiltresHistorique(): void {
   get allCharges(): Charge[] { return this.selectedTransaction?.agents.flatMap(a => a.charges) ?? []; }
   totalChargesAll(): number { return this.allCharges.reduce((s, c) => s + c.montant, 0); }
 
-  // ── Filtres anciens (statiques) ───────────────────────────
+  // ── Filtres anciens ───────────────────────────────────────
   get filteredTransactions(): Transaction[] {
     return this.transactions.filter(t => {
       const matchStatut = !this.filterStatut || t.statutISO === this.filterStatut;
@@ -486,9 +464,18 @@ resetFiltresHistorique(): void {
   getAnnulStatutLabel(s: string): string { return ({ ACCP: 'ACCP — Acceptee', PDNG: 'PDNG — En attente', RJCT: 'RJCT — Refusee' } as any)[s] || s; }
   getMsgTypeClass(t: string): string { return t.startsWith('pacs') ? 'badge-msg-pacs' : t === 'camt.056' ? 'badge-msg-camt056' : 'badge-msg-camt029'; }
 
-  // ── Getters stats anciens ──────────────────────────────────
+  // ── Getters stats ──────────────────────────────────────────
   get nbEntrantsEnAttente(): number { return this.paiementsEnAttente.length; }
   get nbAnnulationsPdng(): number { return this.annulations.filter(a => a.statutReponse === 'PDNG').length; }
+
+  // ── Répartition statuts ────────────────────────────────────
+  get statutsRepartition(): { statut: StatutISO; count: number; pct: number }[] {
+    return this.repartitionStatuts.map(r => ({
+      statut: r.statut as StatutISO,
+      count: r.count,
+      pct: r.pct
+    }));
+  }
 
   // ── Toast ──────────────────────────────────────────────────
   displayToast(msg: string, type: 'success' | 'error' | 'info'): void {
@@ -498,14 +485,5 @@ resetFiltresHistorique(): void {
 
   formatMontant(n: number): string {
     return n?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00';
-  }
-
-  // ── Répartition statuts (ancien — statique) ────────────────
-  get statutsRepartition(): { statut: StatutISO; count: number; pct: number }[] {
-    return this.repartitionStatuts.map(r => ({
-      statut: r.statut as StatutISO,
-      count: r.count,
-      pct: r.pct
-    }));
   }
 }
