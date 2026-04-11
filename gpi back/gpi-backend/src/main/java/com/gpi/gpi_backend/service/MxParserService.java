@@ -37,6 +37,12 @@ public class MxParserService {
             String messageId = extractFirst(xpath, doc,
                     "//*[local-name()='MsgId']");
 
+            // ✅ Ignore generated pacs.002 files
+            if (messageId != null && messageId.startsWith("ACK-")) {
+                System.out.println("[MxParser] ⚠️ Ignoring generated pacs.002 file: " + messageId);
+                return;
+            }
+
             // ✅ Duplicate check
             if (messageId != null && recapMgRepository.existsByMessageId(messageId)) {
                 System.out.println("[MxParser] ⚠️ Already processed messageId: " + messageId + " — skipping");
