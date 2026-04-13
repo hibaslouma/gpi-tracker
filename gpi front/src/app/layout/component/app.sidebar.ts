@@ -4,7 +4,8 @@ import { Component, effect, ElementRef, inject, OnDestroy, OnInit } from '@angul
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subject, takeUntil } from 'rxjs';
 import { AppMenu } from './app.menu';
-import { AuthService } from '../../services/auth.service'; // ✅ chemin correct
+import { AuthService } from '../../services/auth.service';
+import { KeycloakService } from 'keycloak-angular';
 
 @Component({
     selector: 'app-sidebar',
@@ -55,7 +56,8 @@ export class AppSidebar implements OnInit, OnDestroy {
     layoutService: LayoutService = inject(LayoutService);
     router: Router = inject(Router);
     el: ElementRef = inject(ElementRef);
-    authService: AuthService = inject(AuthService); // ✅ typage explicite
+    authService: AuthService = inject(AuthService);
+    keycloak: KeycloakService = inject(KeycloakService); // ✅
 
     userName = '';
     userInitials = '';
@@ -79,18 +81,13 @@ export class AppSidebar implements OnInit, OnDestroy {
     }
 
     ngOnInit() {
-        // Charger au démarrage
-        this.loadUserFromToken();
-
-        // Recharger à chaque changement de route
+        this.loadUserInfo();
         this.router.events.pipe(
             filter(event => event instanceof NavigationEnd),
             takeUntil(this.destroy$)
         ).subscribe(() => {
-            this.loadUserFromToken();
             this.onRouteChange(this.router.url);
         });
-
         this.onRouteChange(this.router.url);
     }
 
@@ -100,41 +97,37 @@ export class AppSidebar implements OnInit, OnDestroy {
         this.unbindOutsideClickListener();
     }
 
-    loadUserFromToken() {
-        // ✅ Via AuthService — plus de localStorage direct
-        const token = this.authService.getToken();
-        const role = this.authService.getRole();
-        this.currentRole = role;
+    // ✅ Profil depuis Keycloak — plus de décodage JWT manuel
+    async loadUserInfo() {
+        try {
+            const profile = await this.keycloak.loadUserProfile();
+            const firstName = profile.firstName || '';
+            const lastName  = profile.lastName  || '';
+            this.userName   = `${firstName} ${lastName}`.trim() || profile.username || 'Utilisateur';
 
-        if (token) {
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                this.userName = payload.name || payload.preferred_username || 'Utilisateur';
-                const parts = this.userName.trim().split(' ');
-                this.userInitials = parts.length >= 2
-                    ? (parts[0][0] + parts[1][0]).toUpperCase()
-                    : this.userName.substring(0, 2).toUpperCase();
-            } catch (e) {
-                this.userName = 'Utilisateur';
-                this.userInitials = 'U';
+            const parts = this.userName.trim().split(' ');
+            this.userInitials = parts.length >= 2
+                ? (parts[0][0] + parts[1][0]).toUpperCase()
+                : this.userName.substring(0, 2).toUpperCase();
+
+            this.currentRole = this.authService.getRole();
+
+            switch (this.currentRole) {
+                case 'Admin':      this.userRoleLabel = 'Administrateur'; break;
+                case 'Backoffice': this.userRoleLabel = 'Backoffice';     break;
+                case 'Client':     this.userRoleLabel = 'Client';         break;
+                default:           this.userRoleLabel = 'Utilisateur';
             }
-        } else {
-            this.userName = 'Utilisateur';
-            this.userInitials = 'U';
-        }
-
-        switch (role) {
-            case 'Admin': this.userRoleLabel = ' Administrateur'; break;
-            case 'Backoffice': this.userRoleLabel = 'Backoffice'; break;
-            case 'Client': this.userRoleLabel = 'Client'; break;
-            default: this.userRoleLabel = 'Utilisateur';
+        } catch (e) {
+            this.userName      = 'Utilisateur';
+            this.userInitials  = 'U';
+            this.userRoleLabel = 'Utilisateur';
         }
     }
 
+    // ✅ Logout via Keycloak
     logout() {
-        // ✅ Via AuthService
         this.authService.logout();
-        this.router.navigate(['/auth/login']);
     }
 
     private onRouteChange(path: string) {
