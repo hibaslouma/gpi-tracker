@@ -17,19 +17,19 @@ export class AuthGuard extends KeycloakAuthGuard {
     state: RouterStateSnapshot
   ): Promise<boolean> {
 
-    // ✅ Non authentifié → redirection vers Keycloak :8180
+    // Non authentifié → redirection vers Keycloak :8180
     if (!this.authenticated) {
       await this.keycloak.login();
       return false;
     }
 
-    // ✅ Pas de rôle requis → accès autorisé
+    //Pas de rôle requis → accès autorisé
     const requiredRoles = route.data['roles'] as string[];
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
 
-    // ✅ Vérifier si l'utilisateur a le bon rôle
+    // Vérifier si l'utilisateur a le bon rôle
     const userRoles = this.keycloak.getUserRoles();
     const hasRole = requiredRoles.some(role => userRoles.includes(role));
 

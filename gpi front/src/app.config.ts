@@ -16,7 +16,7 @@ function initializeKeycloak(keycloak: KeycloakService) {
         clientId: 'gpi-frontend',
       },
       initOptions: {
-        onLoad: 'login-required',
+        onLoad: 'login-required',//redirige vers Keycloak si non connecté
         checkLoginIframe: false,
       },
     });

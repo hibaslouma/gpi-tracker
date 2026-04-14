@@ -17,12 +17,12 @@ export class AuthInterceptor implements HttpInterceptor {
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
 
-    // ✅ Ne pas intercepter les appels Keycloak
+    // Ne pas intercepter les appels Keycloak
     if (req.url.includes('openid-connect')) {
       return next.handle(req);
     }
 
-    // ✅ Ajouter le token Keycloak
+    // Ajouter le token Keycloak
     return from(this.keycloak.getToken()).pipe(
       switchMap(token => {
         if (token) {
@@ -33,7 +33,7 @@ export class AuthInterceptor implements HttpInterceptor {
         return next.handle(req).pipe(
           catchError((error: HttpErrorResponse) => {
             if (error.status === 401) {
-              // ✅ Session expirée → Keycloak gère le re-login
+              // Session expirée → Keycloak gère le re-login
               this.keycloak.login();
             }
             return throwError(() => error);
