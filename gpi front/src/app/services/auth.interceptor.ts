@@ -6,33 +6,39 @@ import {
   HttpInterceptor,
   HttpErrorResponse
 } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import { Router } from '@angular/router';
+import { Observable, from, throwError } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
+import { KeycloakService } from 'keycloak-angular';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
 
-  constructor(private router: Router) {}
+  constructor(private keycloak: KeycloakService) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    if (req.url.includes('openid-connect/token')) {
+
+    // ✅ Ne pas intercepter les appels Keycloak
+    if (req.url.includes('openid-connect')) {
       return next.handle(req);
     }
 
-    const token = sessionStorage.getItem('token');
-    if (token) {
-      req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
-    }
-
-    return next.handle(req).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          sessionStorage.removeItem('token');
-          sessionStorage.removeItem('role');
-          this.router.navigateByUrl('/auth/login');
+    // ✅ Ajouter le token Keycloak
+    return from(this.keycloak.getToken()).pipe(
+      switchMap(token => {
+        if (token) {
+          req = req.clone({
+            setHeaders: { Authorization: `Bearer ${token}` }
+          });
         }
-        return throwError(() => error);
+        return next.handle(req).pipe(
+          catchError((error: HttpErrorResponse) => {
+            if (error.status === 401) {
+              // ✅ Session expirée → Keycloak gère le re-login
+              this.keycloak.login();
+            }
+            return throwError(() => error);
+          })
+        );
       })
     );
   }

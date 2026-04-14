@@ -1,26 +1,45 @@
-import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
-import { AuthService } from './auth.service';
+import { Injectable } from '@angular/core';
+import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
+import { KeycloakAuthGuard, KeycloakService } from 'keycloak-angular';
 
-export const authGuard: CanActivateFn = () => {
-  const auth   = inject(AuthService);
-  const router = inject(Router);
-  if (auth.isAuthenticated()) return true;
-  router.navigateByUrl('/auth/login');
-  return false;
-};
+@Injectable({ providedIn: 'root' })
+export class AuthGuard extends KeycloakAuthGuard {
 
-export const roleGuard = (...allowedRoles: string[]): CanActivateFn => {
-  return () => {
-    const auth   = inject(AuthService);
-    const router = inject(Router);
-    if (!auth.isAuthenticated()) {
-      router.navigateByUrl('/auth/login');
+  constructor(
+    protected override readonly router: Router,
+    protected readonly keycloak: KeycloakService
+  ) {
+    super(router, keycloak);
+  }
+
+  async isAccessAllowed(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+  ): Promise<boolean> {
+
+    // ✅ Non authentifié → redirection vers Keycloak :8180
+    if (!this.authenticated) {
+      await this.keycloak.login();
       return false;
     }
-    const role = auth.getRole();
-    if (allowedRoles.includes(role)) return true;
-    router.navigateByUrl(`/${role}`);
-    return false;
-  };
-};
+
+    // ✅ Pas de rôle requis → accès autorisé
+    const requiredRoles = route.data['roles'] as string[];
+    if (!requiredRoles || requiredRoles.length === 0) {
+      return true;
+    }
+
+    // ✅ Vérifier si l'utilisateur a le bon rôle
+    const userRoles = this.keycloak.getUserRoles();
+    const hasRole = requiredRoles.some(role => userRoles.includes(role));
+
+    if (!hasRole) {
+      if (userRoles.includes('Admin'))           this.router.navigateByUrl('/admin');
+      else if (userRoles.includes('Backoffice')) this.router.navigateByUrl('/backoffice');
+      else                                       this.router.navigateByUrl('/client');
+      return false;
+    }
+
+    return true;
+  }
+}

@@ -1,67 +1,42 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
-
-const KEYCLOAK_URL = 'http://localhost:8180/realms/gpi/protocol/openid-connect/token';
-const CLIENT_ID    = 'gpi-frontend';
-const TOKEN_KEY    = 'token';
-const ROLE_KEY     = 'role';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { KeycloakService } from 'keycloak-angular';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private keycloak: KeycloakService
+  ) {}
 
-  login(email: string, password: string): Observable<{ token: string; role: string }> {
-    const body = new HttpParams()
-      .set('grant_type', 'password')
-      .set('client_id', CLIENT_ID)
-      .set('username', email)
-      .set('password', password);
-
-    const headers = new HttpHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' });
-
-    return this.http.post<any>(KEYCLOAK_URL, body.toString(), { headers }).pipe(
-      map(res => {
-        const token: string = res.access_token;
-        const role: string  = this.extractRole(token);
-        sessionStorage.setItem(TOKEN_KEY, token);
-        sessionStorage.setItem(ROLE_KEY, role);
-        return { token, role };
-      })
-    );
-  }
-
+  // ✅ Logout via Keycloak
   logout(): void {
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(ROLE_KEY);
+    this.keycloak.logout('http://localhost:4200');
   }
 
-  getToken(): string | null {
-    return sessionStorage.getItem(TOKEN_KEY);
-  }
-
+  // ✅ Rôle extrait depuis Keycloak
   getRole(): string {
-    return sessionStorage.getItem(ROLE_KEY) || '';
+    const roles = this.keycloak.getUserRoles();
+    if (roles.includes('Admin'))      return 'Admin';
+    if (roles.includes('Backoffice')) return 'Backoffice';
+    if (roles.includes('Client'))     return 'Client';
+    return 'Client';
   }
 
+  // ✅ Authentification gérée par Keycloak
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    return this.keycloak.isLoggedIn();
   }
 
-  private extractRole(token: string): string {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const roles: string[] = payload?.realm_access?.roles || [];
-      if (roles.includes('Admin')) return 'Admin';
-      if (roles.includes('Backoffice'))  return 'Backoffice';
-      if (roles.includes('Client'))      return 'Client';
-      return 'Client';
-    } catch {
-      return 'Client';
-    }
+  // ✅ Profil utilisateur depuis Keycloak
+  getUserProfile() {
+    return this.keycloak.loadUserProfile();
   }
+
+  // ✅ Appel Spring Boot
   getMe(): Observable<any> {
-  return this.http.get<any>('http://localhost:8080/api/auth/me');
-}
+    return this.http.get<any>('http://localhost:8080/api/auth/me');
+  }
 }

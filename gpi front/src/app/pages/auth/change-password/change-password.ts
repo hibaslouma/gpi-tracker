@@ -6,6 +6,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ButtonModule } from 'primeng/button';
 import { PasswordModule } from 'primeng/password';
 import { InputTextModule } from 'primeng/inputtext';
+import { KeycloakService } from 'keycloak-angular';
 
 @Component({
   selector: 'app-change-password',
@@ -82,7 +83,8 @@ export class ChangePasswordComponent {
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private http: HttpClient
+    private http: HttpClient,
+    private keycloak: KeycloakService  // ✅ Keycloak
   ) {
     this.form = this.fb.group({
       newPassword: ['', [Validators.required, Validators.minLength(8)]],
@@ -96,7 +98,7 @@ export class ChangePasswordComponent {
     return newPassword === confirmPassword ? null : { mismatch: true };
   }
 
-  onSubmit() {
+  async onSubmit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -104,89 +106,58 @@ export class ChangePasswordComponent {
 
     const newPassword = this.form.value.newPassword!;
 
-    // ✅ Récupérer l'email depuis le token JWT dans sessionStorage
-    const token = sessionStorage.getItem('token');
-    if (!token) {
-      this.errorMessage = 'Session expirée. Veuillez vous reconnecter.';
-      this.router.navigateByUrl('/auth/login');
-      return;
-    }
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const email = payload.email;
+    // ✅ Récupérer l'email depuis Keycloak
+    const profile = await this.keycloak.loadUserProfile();
+    const email = profile.email;
 
     if (!email) {
       this.errorMessage = 'Session expirée. Veuillez vous reconnecter.';
-      this.router.navigateByUrl('/auth/login');
+      this.keycloak.login();
       return;
     }
 
     this.loading = true;
 
+    // ✅ Récupérer le token depuis Keycloak
+    const token = await this.keycloak.getToken();
+
     // ✅ Étape 1 — changer le mot de passe
     this.http.post<any>('http://localhost:8080/api/auth/change-password', {
       email,
       newPassword
+    }, {
+      headers: new HttpHeaders({ Authorization: `Bearer ${token}` })
     }).subscribe({
       next: () => {
-
-        // ✅ Étape 2 — se reconnecter avec le nouveau mot de passe
-        this.http.post<any>(
-          'http://localhost:8180/realms/gpi/protocol/openid-connect/token',
-          new URLSearchParams({
-            grant_type: 'password',
-            client_id: 'gpi-frontend',
-            username: email,
-            password: newPassword
-          }).toString(),
-          { headers: new HttpHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' }) }
+        // ✅ Étape 2 — finaliser inscription
+        this.http.patch<any>(
+          'http://localhost:8080/api/auth/finaliser-inscription',
+          {},
+          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) }
         ).subscribe({
-          next: (tokenRes) => {
-            const newToken = tokenRes.access_token;
-            sessionStorage.setItem('token', newToken);
+          next: () => {
+            this.loading = false;
+            this.successMessage = 'Mot de passe changé avec succès !';
 
-            // ✅ Extraire le rôle depuis le nouveau token JWT
-            const newPayload = JSON.parse(atob(newToken.split('.')[1]));
-            const roles: string[] = newPayload?.realm_access?.roles || [];
-            let newRole = 'Client';
-            if (roles.includes('Admin')) newRole = 'Admin';
-            else if (roles.includes('Backoffice')) newRole = 'Backoffice';
-            sessionStorage.setItem('role', newRole);
-
-            // ✅ Étape 3 — finaliser inscription (first_login = false)
-            this.http.patch<any>(
-              'http://localhost:8080/api/auth/finaliser-inscription',
-              {},
-              { headers: new HttpHeaders({ Authorization: `Bearer ${newToken}` }) }
-            ).subscribe({
-              next: () => {
-                this.loading = false;
-                this.successMessage = 'Mot de passe changé avec succès !';
-
-                setTimeout(() => {
-                  if (newRole === 'Admin') {
-                    this.router.navigateByUrl('/admin');
-                  } else if (newRole === 'Backoffice') {
-                    this.router.navigateByUrl('/backoffice');
-                  } else {
-                    this.router.navigateByUrl('/client');
-                  }
-                }, 2000);
-              },
-              error: () => {
-                this.loading = false;
-                this.errorMessage = 'Erreur finalisation. Veuillez vous reconnecter.';
+            setTimeout(() => {
+              const roles = this.keycloak.getUserRoles();
+              if (roles.includes('Admin')) {
+                this.router.navigateByUrl('/admin');
+              } else if (roles.includes('Backoffice')) {
+                this.router.navigateByUrl('/backoffice');
+              } else {
+                this.router.navigateByUrl('/client');
               }
-            });
+            }, 2000);
           },
           error: () => {
             this.loading = false;
-            this.errorMessage = 'Erreur reconnexion. Réessayez.';
+            this.errorMessage = 'Erreur finalisation. Veuillez vous reconnecter.';
           }
         });
       },
-      error: (err) => {
+      error: () => {
         this.loading = false;
-        console.error('Erreur changement mdp:', err);
         this.errorMessage = 'Erreur lors du changement. Réessayez.';
       }
     });
