@@ -7,6 +7,7 @@ export interface RecapMg {
   messageId: string;
   uetr: string;
   typeMsg: string;
+  msgType: string; // ✅ pacs.008 / pacs.009 / pacs.009.COV
   senderName: string;
   senderAddress: string;
   senderBic: string;
@@ -84,8 +85,12 @@ export class RecapMgService {
     return this.http.get<BackofficeStats>(`${this.api}/stats`);
   }
 
-  updateStatut(id: number, statut: string, motifRejet?: string): Observable<RecapMg> {
-    return this.http.patch<RecapMg>(`${this.api}/paiements-recus/${id}/statut`, { statut, motifRejet });
+  updateStatut(id: number, statut: string, motifRejet?: string): Observable<Blob> {
+    return this.http.patch(
+      `${this.api}/paiements-recus/${id}/statut`,
+      { statut, motifRejet },
+      { responseType: 'blob' }
+    );
   }
 
   getHistorique(): Observable<HistoriqueItem[]> {
@@ -96,12 +101,10 @@ export class RecapMgService {
     return this.http.get<Pacs002Recu[]>(`${this.api}/pacs002-recus`);
   }
 
-  // ✅ XML du pacs.008 émis
   getXmlEmis(id: number): Observable<XmlResponse> {
     return this.http.get<XmlResponse>(`${this.api}/paiements-emis/${id}/xml`);
   }
 
-  // ✅ XML du pacs.008 reçu
   getXmlRecu(id: number): Observable<XmlResponse> {
     return this.http.get<XmlResponse>(`${this.api}/paiements-recus/${id}/xml`);
   }

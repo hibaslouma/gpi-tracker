@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -64,7 +64,8 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private recapMgService: RecapMgService
+    private recapMgService: RecapMgService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   activeTab = 'dashboard';
@@ -147,54 +148,73 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   // ── Data Loading ───────────────────────────────────────────
   loadPaiementsRecus(): void {
     this.recapMgService.getPaiementsRecus().subscribe({
-      next: (data) => { this.paiementsRecus = [...data]; },
+      next: (data) => {
+        this.paiementsRecus = [...data];
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur chargement paiements reçus:', err)
     });
   }
 
   loadPaiementsEmis(): void {
     this.recapMgService.getPaiementsEmis().subscribe({
-      next: (data) => { this.paiementsEmis = [...data]; },
+      next: (data) => {
+        this.paiementsEmis = [...data];
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur chargement paiements émis:', err)
     });
   }
 
   loadPacs002Recus(): void {
     this.recapMgService.getPacs002Recus().subscribe({
-      next: (data) => { this.pacs002Recus = [...data]; },
+      next: (data) => {
+        this.pacs002Recus = [...data];
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur chargement pacs.002 reçus:', err)
     });
   }
 
   loadStats(): void {
     this.recapMgService.getStats().subscribe({
-      next: (data) => this.stats = data,
+      next: (data) => {
+        this.stats = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur stats:', err)
     });
   }
 
   loadHistorique(): void {
     this.recapMgService.getHistorique().subscribe({
-      next: (data) => this.historiqueReel = data,
+      next: (data) => {
+        this.historiqueReel = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur historique:', err)
     });
   }
 
   ngOnInit(): void {
     this.loadUserFromToken();
+
+    // ✅ Read tab from URL snapshot directly
+    this.activeTab = this.route.snapshot.queryParams['tab'] || 'dashboard';
+
+    // ✅ Load all data immediately
     this.loadPaiementsRecus();
     this.loadPaiementsEmis();
-    this.loadPacs002Recus();
     this.loadStats();
     this.loadHistorique();
 
+    // ✅ Only update active tab on navigation
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
-        if (params['tab']) {
-          this.activeTab = params['tab'];
-          this.selectedTransaction = null;
-        }
+        this.activeTab = params['tab'] || 'dashboard';
+        this.selectedTransaction = null;
+        this.cdr.detectChanges();
       });
   }
 
@@ -239,14 +259,14 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   // ── Modal XML ──────────────────────────────────────────────
   voirXmlEmis(p: RecapMg): void {
     this.recapMgService.getXmlEmis(p.id).subscribe({
-      next: (res) => { this.xmlFileName = res.fileName; this.xmlContent = res.content; this.showXmlModal = true; },
+      next: (res) => { this.xmlFileName = res.fileName; this.xmlContent = res.content; this.showXmlModal = true; this.cdr.detectChanges(); },
       error: () => this.displayToast('Erreur chargement XML', 'error')
     });
   }
 
   voirXmlRecu(p: RecapMg): void {
     this.recapMgService.getXmlRecu(p.id).subscribe({
-      next: (res) => { this.xmlFileName = res.fileName; this.xmlContent = res.content; this.showXmlModal = true; },
+      next: (res) => { this.xmlFileName = res.fileName; this.xmlContent = res.content; this.showXmlModal = true; this.cdr.detectChanges(); },
       error: () => this.displayToast('Erreur chargement XML', 'error')
     });
   }
@@ -278,19 +298,34 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   confirmerTraitement(): void {
     if (!this.paiementATraiter) return;
     this.modalEnvoi = true;
+    const statutEnvoi  = this.modalNouveauStatut;
+    const messageId    = this.paiementATraiter.messageId;
+
     this.recapMgService.updateStatut(
       this.paiementATraiter.id,
       this.modalNouveauStatut,
       this.modalNouveauStatut === 'RJCT' ? this.modalMotifRejet : undefined
     ).subscribe({
-      next: () => {
-        this.displayToast(`pacs.002 généré — statut ${this.modalNouveauStatut}`, 'success');
+      next: (blob: Blob) => {
+        this.modalEnvoi = false;
         this.fermerTraitementModal();
+
+        // ✅ Trigger browser download of the generated pacs.002 XML
+        const url  = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href  = url;
+        link.download = `pacs002_${messageId}_${statutEnvoi}.xml`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+
+        this.displayToast(`✅ pacs.002 généré et téléchargé — ${statutEnvoi}`, 'success');
         this.loadPaiementsRecus();
         this.loadStats();
         this.loadHistorique();
+        this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
+        console.error('Erreur traitement:', err);
         this.modalEnvoi = false;
         this.displayToast('Erreur lors du traitement', 'error');
       }
@@ -367,7 +402,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     return this.paiementsRecus.filter(p => p.statut === 'PDNG' || !p.statut);
   }
 
-  // ── Traitement pacs.008 (kept for tab confirmation compatibility) ──
+  // ── Traitement pacs.008 ────────────────────────────────────
   traiterPaiement(p: RecapMg): void {
     this.ouvrirModalTraitement(p);
   }
@@ -395,7 +430,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
       this.confirmationNouveauStatut === 'RJCT' ? this.confirmationMotifRejet : undefined
     ).subscribe({
       next: () => {
-        this.loadStats(); this.loadPaiementsRecus(); this.loadHistorique(); this.loadPacs002Recus();
+        this.loadStats(); this.loadPaiementsRecus(); this.loadHistorique();
         this.selectedMessageId = ''; this.selectedRecapId = null;
         this.displayToast(`pacs.002 généré — statut ${this.confirmationNouveauStatut}`, 'success');
         setTimeout(() => { this.loadPaiementsRecus(); this.setActiveTab('entrants'); }, 1000);
