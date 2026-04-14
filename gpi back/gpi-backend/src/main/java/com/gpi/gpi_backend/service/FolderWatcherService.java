@@ -19,13 +19,12 @@ public class FolderWatcherService {
 
     @Value("${watcher.folder-path}")
     private String folderRecuPath;
+
     @Value("${watcher.output-folder-path}")
     private String folderEmisPath;
 
     private WatchService watchService;
-    // Map pour savoir quel dossier correspond à quelle WatchKey
     private final Map<WatchKey, String> keyToFolder = new HashMap<>();
-
 
     public FolderWatcherService(ClientRecuService clientRecuService,
                                 ClientEmisService clientEmisService) {
@@ -35,10 +34,9 @@ public class FolderWatcherService {
 
     @PostConstruct
     public void init() throws IOException {
-        Path path = Paths.get(folderRecuPath);
         this.watchService = FileSystems.getDefault().newWatchService();
 
-        // Surveiller client recu (incoming)
+        // ✅ Watch client recu (incoming)
         Path pathRecu = Paths.get(folderRecuPath);
         if (!Files.exists(pathRecu)) Files.createDirectories(pathRecu);
         Path archiveRecu = pathRecu.resolve("archive");
@@ -49,7 +47,7 @@ public class FolderWatcherService {
         keyToFolder.put(keyRecu, "RECU");
         System.out.println("[FolderWatcher] Watching RECU: " + folderRecuPath);
 
-        // Surveiller client emis (outgoing)
+        // ✅ Watch client emis (outgoing)
         Path pathEmis = Paths.get(folderEmisPath);
         if (!Files.exists(pathEmis)) Files.createDirectories(pathEmis);
         Path archiveEmis = pathEmis.resolve("archive");
@@ -63,12 +61,9 @@ public class FolderWatcherService {
 
     @Scheduled(fixedDelayString = "${watcher.poll-interval-ms:3000}")
     public void pollFolder() {
-
         WatchKey key = watchService.poll();
-        if (key == null) {
+        if (key == null) return;
 
-            return;
-        }
         String typeMsg = keyToFolder.get(key);
         String folderPath = typeMsg.equals("RECU") ? folderRecuPath : folderEmisPath;
 
@@ -76,24 +71,42 @@ public class FolderWatcherService {
             Path fileName = (Path) event.context();
             Path fullPath = Paths.get(folderPath).resolve(fileName);
 
-            System.out.println("[FolderWatcher]  Event: " + event.kind() + " → " + fileName + " | type: " + typeMsg);
+            System.out.println("[FolderWatcher] Event: " + event.kind()
+                    + " → " + fileName + " | type: " + typeMsg);
 
+            // ✅ Ignore archive folder
             if (fileName.toString().equals("archive")) continue;
+
+            // ✅ Ignore non-files
             if (!Files.isRegularFile(fullPath)) continue;
 
-
+            // ✅ Ignore generated pacs.002 files in client emis
+            if (typeMsg.equals("EMIS") && (
+                    fileName.toString().startsWith("pacs002_") ||
+                            fileName.toString().startsWith("ACK-"))) {
+                System.out.println("[FolderWatcher] Ignoring generated file: " + fileName);
+                continue;
+            }
 
             try {
+                // ✅ Route to correct service based on folder type
                 if (typeMsg.equals("RECU")) {
                     clientRecuService.clientRecu(fullPath);
                 } else {
                     clientEmisService.clientEmis(fullPath);
                 }
-                Path archivePath = Paths.get(folderPath).resolve("archive").resolve(fileName);
-                Files.move(fullPath, archivePath, StandardCopyOption.REPLACE_EXISTING);
-                System.out.println("[FolderWatcher]  File archived: " + fileName + " → archive/");
+
+                // ✅ Archive after successful processing
+                Path archivePath = Paths.get(folderPath)
+                        .resolve("archive")
+                        .resolve(fileName);
+                Files.move(fullPath, archivePath,
+                        StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("[FolderWatcher] Archived: " + fileName);
+
             } catch (Exception e) {
-                System.err.println("[FolderWatcher]  Error processing file: " + fileName + " → " + e.getMessage());
+                System.err.println("[FolderWatcher] Error: " + fileName
+                        + " → " + e.getMessage());
             }
         }
 

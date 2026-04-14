@@ -7,6 +7,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import java.util.Collections;
+
 import java.util.*;
 
 @Service
@@ -69,6 +70,7 @@ public class KeycloakAdminService {
             user.put("lastName", lastName);
             user.put("enabled", true);
             user.put("emailVerified", true);
+            user.put("requiredActions", Collections.emptyList()); // ✅ explicit empty list
             user.put("requiredActions", Collections.emptyList());
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(user, headers);
@@ -94,7 +96,7 @@ public class KeycloakAdminService {
         Map<String, Object> credential = new HashMap<>();
         credential.put("type", "password");
         credential.put("value", password);
-        credential.put("temporary", false);
+        credential.put("temporary", false); // ✅ Must be false
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(credential, headers);
         restTemplate.exchange(url, HttpMethod.PUT, request, Void.class);
@@ -151,11 +153,8 @@ public class KeycloakAdminService {
 
     public void deleteUser(String email) {
         try {
-            System.out.println("🔍 Tentative suppression Keycloak pour: " + email);
             String token = getAdminToken();
-            System.out.println("✅ Token admin obtenu");
             String userId = getUserId(token, email);
-            System.out.println("✅ UserId trouvé: " + userId);
             String url = serverUrl + "/admin/realms/" + realm + "/users/" + userId;
 
             HttpHeaders headers = new HttpHeaders();

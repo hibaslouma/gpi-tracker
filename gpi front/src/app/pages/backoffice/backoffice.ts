@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
-import { Subject, takeUntil, filter } from 'rxjs';
-import { RecapMgService, RecapMg, BackofficeStats, HistoriqueItem } from '../../services/recap-mg.service';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
+import { RecapMgService, RecapMg, BackofficeStats, HistoriqueItem, Pacs002Recu } from '../../services/recap-mg.service';
 
 export type StatutISO = 'PDNG' | 'ACCP' | 'ACSP' | 'ACSC' | 'RJCT' | 'CANC';
 export type MotifRejet = 'AC01' | 'AC04' | 'AG01' | 'FF01' | 'MS03' | 'NARR';
@@ -50,27 +50,6 @@ export interface NouveauPaiement {
   devise: 'TND' | 'EUR' | 'USD' | 'GBP'; typeCharges: 'SHA' | 'OUR' | 'BEN'; motif: string;
 }
 
-// ── Mapping URL ↔ Tab ──────────────────────────────────────
-const URL_TO_TAB: { [key: string]: string } = {
-  '/backoffice':                      'dashboard',
-  '/backoffice/dashboard':            'dashboard',
-  '/backoffice/entrants':             'entrants',
-  '/backoffice/vue-transactionnelle': 'vue-transactionnelle',
-  '/backoffice/annulation':           'annulation',
-  '/backoffice/annulations':          'annulations',
-  '/backoffice/historique':           'historique',
-};
-
-const TAB_TO_URL: { [key: string]: string } = {
-  'dashboard':            '/backoffice/dashboard',
-  'entrants':             '/backoffice/entrants',
-  'vue-transactionnelle': '/backoffice/vue-transactionnelle',
-  'annulation':           '/backoffice/annulation',
-  'annulations':          '/backoffice/annulations',
-  'historique':           '/backoffice/historique',
-  'confirmation':         '/backoffice/entrants',
-};
-
 @Component({
   selector: 'app-backoffice',
   standalone: true,
@@ -85,7 +64,8 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private recapMgService: RecapMgService
+    private recapMgService: RecapMgService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   activeTab = 'dashboard';
@@ -123,10 +103,31 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     devise: 'TND', typeCharges: 'SHA', motif: ''
   };
 
+  // ── Modal XML ──────────────────────────────────────────────
+  showXmlModal = false;
+  xmlContent = '';
+  xmlFileName = '';
+
+  // ── Modal Timeline ─────────────────────────────────────────
+  showTimelineModal = false;
+  timelinePaiement: RecapMg | null = null;
+
+  // ── Modal Traitement ───────────────────────────────────────
+  showTraitementModal = false;
+  paiementATraiter: RecapMg | null = null;
+  modalNouveauStatut: StatutISO = 'ACSC';
+  modalMotifRejet: MotifRejet = 'AC01';
+  modalEnvoi = false;
+
   transactions: Transaction[] = [];
   paiementsEntrants: PaiementEntrant[] = [];
   paiementsRecus: RecapMg[] = [];
-  stats: BackofficeStats = { totalRecus: 0, enAttente: 0, acceptes: 0, rejetes: 0 };
+  paiementsEmis: RecapMg[] = [];
+  pacs002Recus: Pacs002Recu[] = [];
+  stats: BackofficeStats = {
+    totalRecus: 0, enAttente: 0, acceptes: 0, rejetes: 0,
+    totalEmis: 0, emisEnAttente: 0, emisAcceptes: 0, emisRejetes: 0
+  };
   historiqueReel: HistoriqueItem[] = [];
   selectedMessageId = '';
   selectedRecapId: number | null = null;
@@ -137,8 +138,8 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   filtreDateDu = '';
   filtreDateAu = '';
   filtreHistoriqueSearch = '';
-filtreHistoriqueType = '';
-filtreHistoriqueStatut = '';
+  filtreHistoriqueType = '';
+  filtreHistoriqueStatut = '';
   annulations: Annulation[] = [];
   historique: Historique[] = [];
   userName = '';
@@ -147,42 +148,73 @@ filtreHistoriqueStatut = '';
   // ── Data Loading ───────────────────────────────────────────
   loadPaiementsRecus(): void {
     this.recapMgService.getPaiementsRecus().subscribe({
-      next: (data) => { this.paiementsRecus = [...data]; },
-      error: (err) => console.error('Erreur chargement paiements:', err)
+      next: (data) => {
+        this.paiementsRecus = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Erreur chargement paiements reçus:', err)
+    });
+  }
+
+  loadPaiementsEmis(): void {
+    this.recapMgService.getPaiementsEmis().subscribe({
+      next: (data) => {
+        this.paiementsEmis = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Erreur chargement paiements émis:', err)
+    });
+  }
+
+  loadPacs002Recus(): void {
+    this.recapMgService.getPacs002Recus().subscribe({
+      next: (data) => {
+        this.pacs002Recus = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Erreur chargement pacs.002 reçus:', err)
     });
   }
 
   loadStats(): void {
     this.recapMgService.getStats().subscribe({
-      next: (data) => this.stats = data,
+      next: (data) => {
+        this.stats = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur stats:', err)
     });
   }
 
   loadHistorique(): void {
     this.recapMgService.getHistorique().subscribe({
-      next: (data) => this.historiqueReel = data,
+      next: (data) => {
+        this.historiqueReel = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur historique:', err)
     });
   }
 
   ngOnInit(): void {
     this.loadUserFromToken();
+
+    // ✅ Read tab from URL snapshot directly
+    this.activeTab = this.route.snapshot.queryParams['tab'] || 'dashboard';
+
+    // ✅ Load all data immediately
     this.loadPaiementsRecus();
+    this.loadPaiementsEmis();
     this.loadStats();
     this.loadHistorique();
 
-    // ✅ Lire le tab depuis l'URL au démarrage
-    this.syncTabFromUrl();
-
-    // ✅ Mettre à jour le tab à chaque navigation
-    this.router.events
-      .pipe(
-        filter(event => event instanceof NavigationEnd),
-        takeUntil(this.destroy$)
-      )
-      .subscribe(() => {
-        this.syncTabFromUrl();
+    // ✅ Only update active tab on navigation
+    this.route.queryParams
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        this.activeTab = params['tab'] || 'dashboard';
+        this.selectedTransaction = null;
+        this.cdr.detectChanges();
       });
   }
 
@@ -191,19 +223,11 @@ filtreHistoriqueStatut = '';
     this.destroy$.complete();
   }
 
-  // ✅ Lit l'URL et met à jour activeTab
-  private syncTabFromUrl(): void {
-    const url = this.router.url.split('?')[0];
-    this.activeTab = URL_TO_TAB[url] ?? 'dashboard';
-  }
-
   // ── Navigation ─────────────────────────────────────────────
-  // ✅ Navigue vers la bonne route selon le tab
   setActiveTab(tab: string): void {
     this.activeTab = tab;
     this.selectedTransaction = null;
-    const url = TAB_TO_URL[tab] ?? '/backoffice/dashboard';
-    this.router.navigate([url]);
+    this.router.navigate(['/backoffice'], { queryParams: { tab } });
   }
 
   logout(): void {
@@ -232,26 +256,102 @@ filtreHistoriqueStatut = '';
     }
   }
 
+  // ── Modal XML ──────────────────────────────────────────────
+  voirXmlEmis(p: RecapMg): void {
+    this.recapMgService.getXmlEmis(p.id).subscribe({
+      next: (res) => { this.xmlFileName = res.fileName; this.xmlContent = res.content; this.showXmlModal = true; this.cdr.detectChanges(); },
+      error: () => this.displayToast('Erreur chargement XML', 'error')
+    });
+  }
+
+  voirXmlRecu(p: RecapMg): void {
+    this.recapMgService.getXmlRecu(p.id).subscribe({
+      next: (res) => { this.xmlFileName = res.fileName; this.xmlContent = res.content; this.showXmlModal = true; this.cdr.detectChanges(); },
+      error: () => this.displayToast('Erreur chargement XML', 'error')
+    });
+  }
+
+  fermerXmlModal(): void { this.showXmlModal = false; }
+
+  // ── Modal Timeline ─────────────────────────────────────────
+  voirTimelineEmis(p: RecapMg): void {
+    this.timelinePaiement = p;
+    this.showTimelineModal = true;
+  }
+
+  fermerTimelineModal(): void { this.showTimelineModal = false; }
+
+  // ── Modal Traitement ───────────────────────────────────────
+  ouvrirModalTraitement(p: RecapMg): void {
+    this.paiementATraiter = p;
+    this.modalNouveauStatut = 'ACSC';
+    this.modalMotifRejet = 'AC01';
+    this.modalEnvoi = false;
+    this.showTraitementModal = true;
+  }
+
+  fermerTraitementModal(): void {
+    this.showTraitementModal = false;
+    this.paiementATraiter = null;
+  }
+
+  confirmerTraitement(): void {
+    if (!this.paiementATraiter) return;
+    this.modalEnvoi = true;
+    const statutEnvoi  = this.modalNouveauStatut;
+    const messageId    = this.paiementATraiter.messageId;
+
+    this.recapMgService.updateStatut(
+      this.paiementATraiter.id,
+      this.modalNouveauStatut,
+      this.modalNouveauStatut === 'RJCT' ? this.modalMotifRejet : undefined
+    ).subscribe({
+      next: (blob: Blob) => {
+        this.modalEnvoi = false;
+        this.fermerTraitementModal();
+
+        // ✅ Trigger browser download of the generated pacs.002 XML
+        const url  = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href  = url;
+        link.download = `pacs002_${messageId}_${statutEnvoi}.xml`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+
+        this.displayToast(`✅ pacs.002 généré et téléchargé — ${statutEnvoi}`, 'success');
+        this.loadPaiementsRecus();
+        this.loadStats();
+        this.loadHistorique();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Erreur traitement:', err);
+        this.modalEnvoi = false;
+        this.displayToast('Erreur lors du traitement', 'error');
+      }
+    });
+  }
+
   // ── Getters Dashboard ──────────────────────────────────────
   get paiementsEnAttente(): RecapMg[] {
     return this.paiementsRecus.filter(p => p.statut === 'PDNG' || !p.statut);
   }
 
- get repartitionStatuts(): { statut: string; count: number; pct: number }[] {
-  const total = this.paiementsRecus.length;
-  if (total === 0) return [];
-  const statuts = ['PDNG', 'ACCP', 'ACSP', 'ACSC', 'RJCT', 'CANC'];
-  return statuts
-    .map(s => ({
-      statut: s,
-      count: this.paiementsRecus.filter(p => p.statut === s || (!p.statut && s === 'PDNG')).length,
-      pct: 0
-    }))
-    .filter(item => item.count > 0)
-    .map(item => ({ ...item, pct: Math.round((item.count / total) * 100) }));
-}
+  get repartitionStatuts(): { statut: string; count: number; pct: number }[] {
+    const total = this.paiementsRecus.length;
+    if (total === 0) return [];
+    const statuts = ['PDNG', 'ACCP', 'ACSP', 'ACSC', 'RJCT', 'CANC'];
+    return statuts
+      .map(s => ({
+        statut: s,
+        count: this.paiementsRecus.filter(p => p.statut === s || (!p.statut && s === 'PDNG')).length,
+        pct: 0
+      }))
+      .filter(item => item.count > 0)
+      .map(item => ({ ...item, pct: Math.round((item.count / total) * 100) }));
+  }
 
-  // ── Getters Filtres pacs.008 ───────────────────────────────
+  // ── Getters Filtres ────────────────────────────────────────
   get paiementsRecusFiltres(): RecapMg[] {
     return this.paiementsRecus.filter(p => {
       const matchSearch = !this.filtreSearch ||
@@ -260,8 +360,7 @@ filtreHistoriqueStatut = '';
       const matchStatut = !this.filtreStatut || p.statut === this.filtreStatut;
       const matchDevise = !this.filtreDevise || p.devise === this.filtreDevise;
       const matchBic = !this.filtreBicExp || p.senderBic === this.filtreBicExp;
-      const matchDateDu = !this.filtreDateDu ||
-        new Date(p.dateValeur) >= new Date(this.filtreDateDu);
+      const matchDateDu = !this.filtreDateDu || new Date(p.dateValeur) >= new Date(this.filtreDateDu);
       return matchSearch && matchStatut && matchDevise && matchBic && matchDateDu;
     });
   }
@@ -275,56 +374,43 @@ filtreHistoriqueStatut = '';
   }
 
   resetFiltres(): void {
-    this.filtreSearch = '';
-    this.filtreStatut = '';
-    this.filtreDevise = '';
-    this.filtreBicExp = '';
-    this.filtreDateDu = '';
-    this.filtreDateAu = '';
-    
+    this.filtreSearch = ''; this.filtreStatut = ''; this.filtreDevise = '';
+    this.filtreBicExp = ''; this.filtreDateDu = ''; this.filtreDateAu = '';
   }
-  get historiqueFiltres(): HistoriqueItem[] {
-  return this.historiqueReel.filter(h => {
-    const matchSearch = !this.filtreHistoriqueSearch ||
-      h.messageId?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
-      h.senderBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
-      h.receiverBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase());
 
-    const matchType = !this.filtreHistoriqueType || h.type === this.filtreHistoriqueType;
-    const matchStatut = !this.filtreHistoriqueStatut || h.statut === this.filtreHistoriqueStatut;
-
-    return matchSearch && matchType && matchStatut;
-  });
-}
-
-resetFiltresHistorique(): void {
-  this.filtreHistoriqueSearch = '';
-  this.filtreHistoriqueType = '';
-  this.filtreHistoriqueStatut = '';
-}
-
-  // ── Getters pacs.002 ───────────────────────────────────────
   get pacs002Emis(): HistoriqueItem[] {
     return this.historiqueReel.filter(h => h.type === 'pacs.002');
   }
 
-  // ── Getters camt.056 ───────────────────────────────────────
+  get historiqueFiltres(): HistoriqueItem[] {
+    return this.historiqueReel.filter(h => {
+      const matchSearch = !this.filtreHistoriqueSearch ||
+        h.messageId?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
+        h.senderBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
+        h.receiverBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase());
+      const matchType = !this.filtreHistoriqueType || h.type === this.filtreHistoriqueType;
+      const matchStatut = !this.filtreHistoriqueStatut || h.statut === this.filtreHistoriqueStatut;
+      return matchSearch && matchType && matchStatut;
+    });
+  }
+
+  resetFiltresHistorique(): void {
+    this.filtreHistoriqueSearch = ''; this.filtreHistoriqueType = ''; this.filtreHistoriqueStatut = '';
+  }
+
   get paiementsAnnulables(): RecapMg[] {
     return this.paiementsRecus.filter(p => p.statut === 'PDNG' || !p.statut);
   }
 
   // ── Traitement pacs.008 ────────────────────────────────────
   traiterPaiement(p: RecapMg): void {
-    this.selectedMessageId = p.messageId;
-    this.selectedRecapId = p.id;
-    this.setActiveTab('confirmation');
+    this.ouvrirModalTraitement(p);
   }
 
   rejeterPaiementRecu(p: RecapMg, motif: string): void {
     this.recapMgService.updateStatut(p.id, 'RJCT', motif).subscribe({
       next: () => {
-        p.statut = 'RJCT';
-        p.motifRejet = motif;
+        p.statut = 'RJCT'; p.motifRejet = motif;
         this.loadStats();
         this.displayToast('Paiement rejeté — pacs.002 RJCT généré', 'error');
       },
@@ -332,7 +418,7 @@ resetFiltresHistorique(): void {
     });
   }
 
-  // ── Génération pacs.002 ────────────────────────────────────
+  // ── Génération pacs.002 (tab confirmation) ─────────────────
   genererEtEnvoyer(): void {
     if (!this.selectedMessageId || !this.selectedRecapId) {
       this.displayToast('Veuillez sélectionner un paiement depuis Paiements Entrants', 'error');
@@ -344,16 +430,10 @@ resetFiltresHistorique(): void {
       this.confirmationNouveauStatut === 'RJCT' ? this.confirmationMotifRejet : undefined
     ).subscribe({
       next: () => {
-        this.loadStats();
-        this.loadPaiementsRecus();
-        this.loadHistorique();
-        this.selectedMessageId = '';
-        this.selectedRecapId = null;
+        this.loadStats(); this.loadPaiementsRecus(); this.loadHistorique();
+        this.selectedMessageId = ''; this.selectedRecapId = null;
         this.displayToast(`pacs.002 généré — statut ${this.confirmationNouveauStatut}`, 'success');
-        setTimeout(() => {
-          this.loadPaiementsRecus();
-          this.setActiveTab('entrants');
-        }, 1000);
+        setTimeout(() => { this.loadPaiementsRecus(); this.setActiveTab('entrants'); }, 1000);
       },
       error: () => this.displayToast('Erreur lors de la mise à jour du statut', 'error')
     });
@@ -374,35 +454,27 @@ resetFiltresHistorique(): void {
   // ── camt.056 ───────────────────────────────────────────────
   envoyerAnnulation(): void {
     if (!this.annulationMessageId.trim()) {
-      this.displayToast('Veuillez sélectionner un paiement', 'error');
-      return;
+      this.displayToast('Veuillez sélectionner un paiement', 'error'); return;
     }
     const p = this.paiementsRecus.find(x => x.messageId === this.annulationMessageId);
     const ref = `ANN-${new Date().getFullYear()}-${Date.now().toString().slice(-3)}`;
     this.annulations.unshift({
-      reference: ref,
-      uetr: this.annulationMessageId,
-      bicEmetteur: p?.senderBic || 'BIATTNTT',
-      motif: this.annulationMotif,
-      motifDetail: this.annulationRaison,
-      date: new Date().toLocaleDateString('fr-FR'),
-      statutReponse: 'PDNG',
-      reponse: 'En attente de reponse'
+      reference: ref, uetr: this.annulationMessageId,
+      bicEmetteur: p?.senderBic || 'BIATTNTT', motif: this.annulationMotif,
+      motifDetail: this.annulationRaison, date: new Date().toLocaleDateString('fr-FR'),
+      statutReponse: 'PDNG', reponse: 'En attente de reponse'
     });
-    this.annulationMessageId = '';
-    this.annulationRaison = '';
+    this.annulationMessageId = ''; this.annulationRaison = '';
     this.displayToast(`camt.056 envoyé — ref ${ref}`, 'success');
   }
 
-  // ── Actions statiques (ancien code) ───────────────────────
   accepterPaiement(p: PaiementEntrant): void {
     p.statutISO = 'ACSC';
     this.displayToast(`Paiement accepte — pacs.002 ACSC envoye`, 'success');
   }
 
   rejeterPaiement(p: PaiementEntrant, motif: MotifRejet): void {
-    p.statutISO = 'RJCT';
-    p.motifRejet = motif;
+    p.statutISO = 'RJCT'; p.motifRejet = motif;
     this.displayToast(`Paiement rejete — pacs.002 RJCT envoye (${motif})`, 'error');
   }
 
@@ -411,8 +483,7 @@ resetFiltresHistorique(): void {
   initierPaiement(): void {
     const { bicDestinataire, iban, montant, devise, motif } = this.nouveauPaiement;
     if (!bicDestinataire || !iban || !montant || !motif) {
-      this.displayToast('Veuillez remplir tous les champs obligatoires', 'error');
-      return;
+      this.displayToast('Veuillez remplir tous les champs obligatoires', 'error'); return;
     }
     this.showFormInitiation = false;
     this.nouveauPaiement = { bicDestinataire: '', iban: '', montant: 0, devise: 'TND', typeCharges: 'SHA', motif: '' };
@@ -433,7 +504,6 @@ resetFiltresHistorique(): void {
     return ({ PDNG: 'En attente de traitement', ACCP: 'Accepte par la banque', ACSP: 'Reglement en cours', ACSC: 'Credit confirme', RJCT: 'Rejete', CANC: 'Annule' } as any)[s] || '';
   }
 
-  // ── Motifs ─────────────────────────────────────────────────
   getMotifRejetLabel(m: MotifRejet | undefined): string {
     if (!m) return '';
     return ({ AC01: 'AC01 — IBAN incorrect', AC04: 'AC04 — Compte cloture', AG01: 'AG01 — Banque ne traite pas', FF01: 'FF01 — Code operation invalide', MS03: 'MS03 — Motif non specifie', NARR: 'NARR — Voir detail' } as any)[m] || m;
@@ -443,23 +513,13 @@ resetFiltresHistorique(): void {
     return ({ LEGL: 'LEGL — Raison legale', CUST: 'CUST — Decision client', AGET: 'AGET — Decision agent', NARR: 'NARR — Voir detail' } as any)[m] || m;
   }
 
-  // ── Helpers ────────────────────────────────────────────────
-  getDelaiClass(h: number | undefined): string {
-    if (!h) return ''; return h <= 24 ? 'delai-ok' : 'delai-retard';
-  }
-  getDelaiLabel(h: number | undefined): string {
-    if (!h) return '—'; if (h < 1) return '< 1h'; return `${h}h`;
-  }
-  getRoleLabel(role: string): string {
-    return ({ emetteur: 'Emetteur', intermediaire: 'Intermediaire', recepteur: 'Recepteur' } as any)[role] || role;
-  }
-  getAgentStatutClass(s: string): string {
-    return ({ confirme: 'agent-confirme', 'en-transit': 'agent-transit', 'en-attente': 'agent-attente' } as any)[s] || '';
-  }
+  getDelaiClass(h: number | undefined): string { if (!h) return ''; return h <= 24 ? 'delai-ok' : 'delai-retard'; }
+  getDelaiLabel(h: number | undefined): string { if (!h) return '—'; if (h < 1) return '< 1h'; return `${h}h`; }
+  getRoleLabel(role: string): string { return ({ emetteur: 'Emetteur', intermediaire: 'Intermediaire', recepteur: 'Recepteur' } as any)[role] || role; }
+  getAgentStatutClass(s: string): string { return ({ confirme: 'agent-confirme', 'en-transit': 'agent-transit', 'en-attente': 'agent-attente' } as any)[s] || ''; }
   get allCharges(): Charge[] { return this.selectedTransaction?.agents.flatMap(a => a.charges) ?? []; }
   totalChargesAll(): number { return this.allCharges.reduce((s, c) => s + c.montant, 0); }
 
-  // ── Filtres anciens (statiques) ───────────────────────────
   get filteredTransactions(): Transaction[] {
     return this.transactions.filter(t => {
       const matchStatut = !this.filterStatut || t.statutISO === this.filterStatut;
@@ -481,31 +541,23 @@ resetFiltresHistorique(): void {
     return this.annulations.filter(a => a.reference.toLowerCase().includes(q) || a.uetr.toLowerCase().includes(q));
   }
 
-  // ── Helpers annulations ────────────────────────────────────
   getAnnulStatutClass(s: string): string { return ({ ACCP: 'badge-acsc', PDNG: 'badge-pdng', RJCT: 'badge-rjct' } as any)[s] || ''; }
   getAnnulStatutLabel(s: string): string { return ({ ACCP: 'ACCP — Acceptee', PDNG: 'PDNG — En attente', RJCT: 'RJCT — Refusee' } as any)[s] || s; }
   getMsgTypeClass(t: string): string { return t.startsWith('pacs') ? 'badge-msg-pacs' : t === 'camt.056' ? 'badge-msg-camt056' : 'badge-msg-camt029'; }
 
-  // ── Getters stats anciens ──────────────────────────────────
   get nbEntrantsEnAttente(): number { return this.paiementsEnAttente.length; }
   get nbAnnulationsPdng(): number { return this.annulations.filter(a => a.statutReponse === 'PDNG').length; }
 
-  // ── Toast ──────────────────────────────────────────────────
+  get statutsRepartition(): { statut: StatutISO; count: number; pct: number }[] {
+    return this.repartitionStatuts.map(r => ({ statut: r.statut as StatutISO, count: r.count, pct: r.pct }));
+  }
+
   displayToast(msg: string, type: 'success' | 'error' | 'info'): void {
     this.toastMessage = msg; this.toastType = type; this.showToast = true;
     setTimeout(() => { this.showToast = false; }, 4000);
   }
 
-  formatMontant(n: number): string {
+  formatMontant(n: number | undefined): string {
     return n?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00';
-  }
-
-  // ── Répartition statuts (ancien — statique) ────────────────
-  get statutsRepartition(): { statut: StatutISO; count: number; pct: number }[] {
-    return this.repartitionStatuts.map(r => ({
-      statut: r.statut as StatutISO,
-      count: r.count,
-      pct: r.pct
-    }));
   }
 }

@@ -24,13 +24,11 @@ export class AppMenu implements OnInit, OnChanges {
     @Input() role: string = '';
 
     ngOnInit() {
-        // ✅ sessionStorage au lieu de localStorage — isolé par onglet
         const effectiveRole = this.role || sessionStorage.getItem('role') || '';
         this.buildMenu(effectiveRole);
     }
 
     ngOnChanges(changes: SimpleChanges) {
-        // ✅ Se déclenche uniquement si le rôle a une vraie valeur
         if (changes['role']?.currentValue) {
             this.buildMenu(changes['role'].currentValue);
         }
@@ -53,40 +51,39 @@ export class AppMenu implements OnInit, OnChanges {
                 break;
 
             case 'Backoffice':
-  this.model = [
-    {
-      label: 'Vue générale',
-      items: [
-        { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/backoffice/dashboard'] }
-      ]
-    },
-    {
-      label: 'Paiements Reçus',
-      items: [
-        { label: 'pacs.008', icon: 'pi pi-fw pi-download', routerLink: ['/backoffice/entrants'] }
-      ]
-    },
-    {
-      label: 'Paiements Émis',
-      items: [
-        { label: 'pacs.002', icon: 'pi pi-fw pi-send', routerLink: ['/backoffice/vue-transactionnelle'] }
-      ]
-    },
-    {
-      label: 'Annulations',
-      items: [
-        { label: 'Envoyer camt.056', icon: 'pi pi-fw pi-times-circle', routerLink: ['/backoffice/annulation'] },
-        { label: 'Suivi camt.029', icon: 'pi pi-fw pi-file', routerLink: ['/backoffice/annulations'] }
-      ]
-    },
-    {
-      label: 'Consultation',
-      items: [
-        { label: 'Historique Messages', icon: 'pi pi-fw pi-history', routerLink: ['/backoffice/historique'] }
-      ]
-    }
-  ];
-  break;
+                this.model = [
+                    {
+                        label: 'Vue Générale',
+                        items: [
+                            { label: 'Dashboard', icon: 'pi pi-fw pi-home',
+                              routerLink: ['/backoffice'], queryParams: { tab: 'dashboard' } }
+                        ]
+                    },
+                    {
+                        label: 'Paiements Reçus',
+                        items: [
+                            { label: 'Paiements Reçus', icon: 'pi pi-fw pi-download',
+                              routerLink: ['/backoffice'], queryParams: { tab: 'entrants' } }
+                        ]
+                    },
+                    {
+                        label: 'Paiements Émis',
+                        items: [
+                            { label: 'Paiements Émis', icon: 'pi pi-fw pi-send',
+                              routerLink: ['/backoffice'], queryParams: { tab: 'vue-transactionnelle' } }
+                        ]
+                    },
+                    {
+                        label: 'Annulations',
+                        items: [
+                            { label: 'Envoyer camt.056', icon: 'pi pi-fw pi-times-circle',
+                              routerLink: ['/backoffice'], queryParams: { tab: 'annulation' } },
+                            { label: 'Suivi camt.029', icon: 'pi pi-fw pi-file',
+                              routerLink: ['/backoffice'], queryParams: { tab: 'annulations' } }
+                        ]
+                    }
+                ];
+                break;
 
             case 'Client':
                 this.model = [
@@ -107,9 +104,8 @@ export class AppMenu implements OnInit, OnChanges {
                 break;
 
             default:
-                // ✅ Menu vide si rôle inconnu — aucune page exposée par erreur
                 this.model = [];
                 break;
         }
     }
-}AppMenu
+}

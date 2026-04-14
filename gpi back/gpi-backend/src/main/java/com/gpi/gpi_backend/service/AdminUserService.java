@@ -36,6 +36,9 @@ public class AdminUserService {
         if (userRepository.existsByEmail(req.getEmail()))
             throw new RuntimeException("Email déjà utilisé !");
 
+
+
+        // ✅ Create in Keycloak — includes emailVerified + empty requiredActions
         // ✅ Keycloak d'abord
         keycloakAdminService.createUser(
                 req.getEmail(),
@@ -90,11 +93,14 @@ public class AdminUserService {
         }
 
         user = userRepository.save(user);
+
+        // ✅ Wrapped in try/catch — won't crash if user not found in Keycloak
         try {
             keycloakAdminService.updateUserStatus(user.getEmail(), user.isActive());
         } catch (Exception e) {
             System.err.println("❌ Erreur update statut Keycloak: " + e.getMessage());
         }
+
         logAction(user, "Modification", adminName);
         return toDTO(user);
     }
@@ -103,11 +109,14 @@ public class AdminUserService {
     public void deleteUser(Long id, String adminName) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        // ✅ Delete from Keycloak first
         try {
             keycloakAdminService.deleteUser(user.getEmail());
         } catch (Exception e) {
             System.err.println("❌ Erreur suppression Keycloak: " + e.getMessage());
         }
+
         userLogRepository.deleteByUserId(id);
         userRepository.delete(user);
     }

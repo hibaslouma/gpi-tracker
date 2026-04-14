@@ -21,10 +21,8 @@ public class MxParserService {
     private final RecapMgRepository recapMgRepository;
 
     public void parsingMx(Path file, String typeMsg) {
-        System.out.println("[MxParser] 🔍 Parsing file: " + file.getFileName());
-
+        System.out.println("[MxParser] 🔍 Parsing pacs.008: " + file.getFileName());
         try {
-            // ── Parse XML ─────────────────────────────────────────────────
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(false);
             DocumentBuilder builder = factory.newDocumentBuilder();
@@ -33,20 +31,14 @@ public class MxParserService {
 
             XPath xpath = XPathFactory.newInstance().newXPath();
 
-            // ── Message ID ────────────────────────────────────────────────
-            String messageId = extractFirst(xpath, doc,
-                    "//*[local-name()='MsgId']");
-
-            // ✅ Duplicate check
+            String messageId = extractFirst(xpath, doc, "//*[local-name()='MsgId']");
             if (messageId != null && recapMgRepository.existsByMessageId(messageId)) {
-                System.out.println("[MxParser] ⚠️ Already processed messageId: " + messageId + " — skipping");
+                System.out.println("[MxParser] ⚠️ Already processed messageId: "
+                        + messageId + " — skipping");
                 return;
             }
-            // ── UETR ──────────────────────────────────────────────────────
-            String uetr = extractFirst(xpath, doc,
-                    "//*[local-name()='UETR']");
 
-            // ── Sender (Debtor) ───────────────────────────────────────────
+            String uetr          = extractFirst(xpath, doc, "//*[local-name()='UETR']");
             String senderName    = extractFirst(xpath, doc, "//*[local-name()='Dbtr']/*[local-name()='Nm']");
             String senderStreet  = extractFirst(xpath, doc, "//*[local-name()='Dbtr']//*[local-name()='StrtNm']");
             String senderBldg    = extractFirst(xpath, doc, "//*[local-name()='Dbtr']//*[local-name()='BldgNb']");
@@ -57,7 +49,6 @@ public class MxParserService {
             String senderBic     = extractFirst(xpath, doc, "//*[local-name()='DbtrAgt']//*[local-name()='BICFI']");
             String senderIban    = extractFirst(xpath, doc, "//*[local-name()='DbtrAcct']//*[local-name()='IBAN']");
 
-            // ── Receiver (Creditor) ───────────────────────────────────────
             String receiverName    = extractFirst(xpath, doc, "//*[local-name()='Cdtr']/*[local-name()='Nm']");
             String receiverStreet  = extractFirst(xpath, doc, "//*[local-name()='Cdtr']//*[local-name()='StrtNm']");
             String receiverBldg    = extractFirst(xpath, doc, "//*[local-name()='Cdtr']//*[local-name()='BldgNb']");
@@ -71,7 +62,6 @@ public class MxParserService {
             String receiverBic     = extractFirst(xpath, doc, "//*[local-name()='CdtrAgt']//*[local-name()='BICFI']");
             String receiverIban    = extractFirst(xpath, doc, "//*[local-name()='CdtrAcct']//*[local-name()='IBAN']");
 
-            // ── Amount + Currency ─────────────────────────────────────────
             String montantStr = extractFirst(xpath, doc, "//*[local-name()='IntrBkSttlmAmt']");
             String devise     = extractAttribute(xpath, doc, "//*[local-name()='IntrBkSttlmAmt']", "Ccy");
             BigDecimal montant = null;
@@ -79,18 +69,17 @@ public class MxParserService {
                 montant = new BigDecimal(montantStr.trim());
             }
 
-            // ── Date Valeur ───────────────────────────────────────────────
             String dateStr = extractFirst(xpath, doc, "//*[local-name()='IntrBkSttlmDt']");
             LocalDate dateValeur = null;
             if (dateStr != null && !dateStr.isBlank()) {
                 dateValeur = LocalDate.parse(dateStr.trim());
             }
 
-            // ── Save to DB ────────────────────────────────────────────────
             RecapMg recap = RecapMg.builder()
                     .messageId(messageId)
                     .uetr(uetr)
                     .typeMsg(typeMsg)
+                    .msgType("pacs.008")   // ✅ store message type
                     .senderName(senderName)
                     .senderAddress(senderAddress)
                     .senderBic(senderBic)
@@ -107,23 +96,23 @@ public class MxParserService {
 
             recapMgRepository.save(recap);
 
-            System.out.println("[MxParser] ✅ Saved to RECAP_MG:"
-                    + "\n  messageId   : " + messageId
-                    + "\n  uetr        : " + uetr
-                    + "\n  typeMsg     : " + typeMsg
-                    + "\n  sender      : " + senderName + " (" + senderBic + ")"
-                    + "\n  receiver    : " + receiverName + " (" + receiverBic + ")"
-                    + "\n  montant     : " + montant + " " + devise
-                    + "\n  dateValeur  : " + dateValeur
-                    + "\n  file        : " + file.getFileName());
+            System.out.println("[MxParser] ✅ Saved pacs.008 to RECAP_MG:"
+                    + "\n  messageId  : " + messageId
+                    + "\n  uetr       : " + uetr
+                    + "\n  typeMsg    : " + typeMsg
+                    + "\n  msgType    : pacs.008"
+                    + "\n  sender     : " + senderName + " (" + senderBic + ")"
+                    + "\n  receiver   : " + receiverName + " (" + receiverBic + ")"
+                    + "\n  montant    : " + montant + " " + devise
+                    + "\n  dateValeur : " + dateValeur
+                    + "\n  file       : " + file.getFileName());
 
         } catch (Exception e) {
-            System.err.println("[MxParser] ❌ Error parsing: " + file.getFileName() + " → " + e.getMessage());
+            System.err.println("[MxParser] ❌ Error parsing: "
+                    + file.getFileName() + " → " + e.getMessage());
             throw new RuntimeException("Parsing failed: " + e.getMessage());
         }
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private String extractFirst(XPath xpath, Document doc, String expression) {
         try {
@@ -138,7 +127,8 @@ public class MxParserService {
         return null;
     }
 
-    private String extractAttribute(XPath xpath, Document doc, String expression, String attribute) {
+    private String extractAttribute(XPath xpath, Document doc,
+                                    String expression, String attribute) {
         try {
             NodeList nodes = (NodeList) xpath.evaluate(expression, doc, XPathConstants.NODESET);
             if (nodes != null && nodes.getLength() > 0) {
@@ -151,7 +141,8 @@ public class MxParserService {
         return null;
     }
 
-    private String buildAddress(String street, String bldg, String pstCd, String city, String country) {
+    private String buildAddress(String street, String bldg, String pstCd,
+                                String city, String country) {
         StringBuilder sb = new StringBuilder();
         if (street  != null) sb.append(street).append(" ");
         if (bldg    != null) sb.append(bldg).append(", ");

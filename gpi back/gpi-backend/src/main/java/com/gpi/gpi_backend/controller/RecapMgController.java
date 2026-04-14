@@ -2,17 +2,21 @@ package com.gpi.gpi_backend.controller;
 
 import com.gpi.gpi_backend.model.RecapMg;
 import com.gpi.gpi_backend.repository.RecapMgRepository;
+import com.gpi.gpi_backend.service.Pacs002GeneratorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.ArrayList;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,30 +27,97 @@ import java.util.Map;
 public class RecapMgController {
 
     private final RecapMgRepository recapMgRepository;
+    private final Pacs002GeneratorService pacs002GeneratorService;
 
     @Value("${watcher.output-folder-path}")
     private String outputFolderPath;
 
-    // ✅ Récupérer tous les paiements reçus
+    @Value("${watcher.folder-path}")
+    private String inputFolderPath;
+
+    @Value("${watcher.pacs002-folder-path}")
+    private String pacs002FolderPath;
+
+    // ── GET paiements ──────────────────────────────────────────
     @GetMapping("/paiements-recus")
     public ResponseEntity<List<RecapMg>> getPaiementsRecus() {
-        return ResponseEntity.ok(recapMgRepository.findAll());
+        return ResponseEntity.ok(recapMgRepository.findByTypeMsg("RECU"));
     }
 
-    // ✅ Stats pour le dashboard
+    @GetMapping("/paiements-emis")
+    public ResponseEntity<List<RecapMg>> getPaiementsEmis() {
+        return ResponseEntity.ok(recapMgRepository.findByTypeMsg("EMIS"));
+    }
+
+    // ── GET XML files ──────────────────────────────────────────
+    @GetMapping("/paiements-emis/{id}/xml")
+    public ResponseEntity<Map<String, String>> getPaiementEmisXml(@PathVariable Long id) {
+        RecapMg recap = recapMgRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Paiement introuvable"));
+
+        Path archivePath = Paths.get(outputFolderPath).resolve("archive").resolve(recap.getFileName());
+        if (!Files.exists(archivePath)) {
+            archivePath = Paths.get(inputFolderPath).resolve("archive").resolve(recap.getFileName());
+        }
+        if (!Files.exists(archivePath)) {
+            return ResponseEntity.ok(Map.of(
+                    "fileName", recap.getFileName() != null ? recap.getFileName() : "inconnu",
+                    "content", "<!-- Fichier XML introuvable dans l'archive -->"));
+        }
+        try {
+            return ResponseEntity.ok(Map.of("fileName", recap.getFileName(),
+                    "content", Files.readString(archivePath)));
+        } catch (IOException e) {
+            return ResponseEntity.ok(Map.of("fileName", recap.getFileName(),
+                    "content", "<!-- Erreur lecture: " + e.getMessage() + " -->"));
+        }
+    }
+
+    @GetMapping("/paiements-recus/{id}/xml")
+    public ResponseEntity<Map<String, String>> getPaiementRecuXml(@PathVariable Long id) {
+        RecapMg recap = recapMgRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Paiement introuvable"));
+
+        Path archivePath = Paths.get(inputFolderPath).resolve("archive").resolve(recap.getFileName());
+        if (!Files.exists(archivePath)) {
+            return ResponseEntity.ok(Map.of(
+                    "fileName", recap.getFileName() != null ? recap.getFileName() : "inconnu",
+                    "content", "<!-- Fichier XML introuvable dans l'archive -->"));
+        }
+        try {
+            return ResponseEntity.ok(Map.of("fileName", recap.getFileName(),
+                    "content", Files.readString(archivePath)));
+        } catch (IOException e) {
+            return ResponseEntity.ok(Map.of("fileName", recap.getFileName(),
+                    "content", "<!-- Erreur lecture: " + e.getMessage() + " -->"));
+        }
+    }
+
+    // ── Stats ──────────────────────────────────────────────────
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Long>> getStats() {
         Map<String, Long> stats = new HashMap<>();
-        stats.put("totalRecus", recapMgRepository.count());
-        stats.put("enAttente", recapMgRepository.countByStatut("PDNG"));
-        stats.put("acceptes", recapMgRepository.countByStatut("ACSC"));
-        stats.put("rejetes", recapMgRepository.countByStatut("RJCT"));
+
+        List<RecapMg> recus = recapMgRepository.findByTypeMsg("RECU");
+        stats.put("totalRecus", (long) recus.size());
+        stats.put("enAttente", recus.stream().filter(r -> "PDNG".equals(r.getStatut())).count());
+        stats.put("acceptes", recus.stream()
+                .filter(r -> "ACSC".equals(r.getStatut()) || "ACCP".equals(r.getStatut())
+                        || "ACSP".equals(r.getStatut())).count());
+        stats.put("rejetes", recus.stream().filter(r -> "RJCT".equals(r.getStatut())).count());
+
+        List<RecapMg> emis = recapMgRepository.findByTypeMsg("EMIS");
+        stats.put("totalEmis", (long) emis.size());
+        stats.put("emisEnAttente", emis.stream().filter(r -> "PDNG".equals(r.getStatut())).count());
+        stats.put("emisAcceptes", emis.stream().filter(r -> "ACSC".equals(r.getStatut())).count());
+        stats.put("emisRejetes", emis.stream().filter(r -> "RJCT".equals(r.getStatut())).count());
+
         return ResponseEntity.ok(stats);
     }
 
-    // ✅ Accepter ou rejeter un paiement
+    // ── Update statut + generate pacs.002 + return as download ─
     @PatchMapping("/paiements-recus/{id}/statut")
-    public ResponseEntity<RecapMg> updateStatut(
+    public ResponseEntity<Resource> updateStatut(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
 
@@ -54,76 +125,45 @@ public class RecapMgController {
                 .orElseThrow(() -> new RuntimeException("Paiement introuvable"));
 
         String nouveauStatut = body.get("statut");
-        String motifRejet = body.get("motifRejet");
+        String motifRejet    = body.get("motifRejet");
 
         recap.setStatut(nouveauStatut);
-        if (motifRejet != null) {
-            recap.setMotifRejet(motifRejet);
-        }
-
+        if (motifRejet != null) recap.setMotifRejet(motifRejet);
         recapMgRepository.save(recap);
 
-        // ✅ Générer pacs.002
-        genererPacs002(recap, nouveauStatut, motifRejet);
+        // ✅ Generate pacs.002 → saved in pacs002 folder
+        String generatedFileName = pacs002GeneratorService
+                .genererPacs002AvecProwide(recap, nouveauStatut, motifRejet);
 
-        return ResponseEntity.ok(recap);
-    }
-
-    // ✅ Générer fichier pacs.002
-    private void genererPacs002(RecapMg recap, String statut, String motifRejet) {
+        // ✅ Read generated file and return as downloadable XML
         try {
-            Path outputPath = Paths.get(outputFolderPath);
-            if (!Files.exists(outputPath)) {
-                Files.createDirectories(outputPath);
-            }
+            Path filePath = Paths.get(pacs002FolderPath).resolve(generatedFileName);
+            byte[] fileContent = Files.readAllBytes(filePath);
 
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String fileName = "pacs002_" + recap.getMessageId() + "_" + statut + "_" + timestamp + ".xml";
-            Path filePath = outputPath.resolve(fileName);
+            ByteArrayResource resource = new ByteArrayResource(fileContent);
 
-            String motifXml = (motifRejet != null && !motifRejet.isEmpty())
-                    ? "<StsRsnInf><Rsn><Cd>" + motifRejet + "</Cd></Rsn></StsRsnInf>"
-                    : "";
-
-            String xml = """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.002.001.10">
-                  <FIToFIPmtStsRpt>
-                    <GrpHdr>
-                      <MsgId>ACK-%s-%s</MsgId>
-                      <CreDtTm>%s</CreDtTm>
-                    </GrpHdr>
-                    <TxInfAndSts>
-                      <OrgnlMsgId>%s</OrgnlMsgId>
-                      <OrgnlMsgNmId>pacs.008.001.08</OrgnlMsgNmId>
-                      <TxSts>%s</TxSts>
-                      %s
-                    </TxInfAndSts>
-                  </FIToFIPmtStsRpt>
-                </Document>
-                """.formatted(
-                    recap.getMessageId(),
-                    timestamp,
-                    LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-                    recap.getMessageId(),
-                    statut,
-                    motifXml
-            );
-
-            Files.writeString(filePath, xml);
-            System.out.println("✅ pacs.002 généré : " + fileName);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + generatedFileName + "\"")
+                    .contentType(MediaType.APPLICATION_XML)
+                    .contentLength(fileContent.length)
+                    .body(resource);
 
         } catch (IOException e) {
-            System.err.println("❌ Erreur génération pacs.002 : " + e.getMessage());
+            System.err.println("[RecapMgController] ❌ Erreur lecture pacs.002 : "
+                    + e.getMessage());
+            // Fallback: return 200 without file
+            return ResponseEntity.ok().build();
         }
     }
+
+    // ── Historique ─────────────────────────────────────────────
     @GetMapping("/historique")
     public ResponseEntity<List<Map<String, Object>>> getHistorique() {
         List<RecapMg> tous = recapMgRepository.findAll();
         List<Map<String, Object>> historique = new ArrayList<>();
 
         for (RecapMg r : tous) {
-            // ✅ pacs.008 reçu
             Map<String, Object> pacs008 = new HashMap<>();
             pacs008.put("type", "pacs.008");
             pacs008.put("messageId", r.getMessageId());
@@ -134,20 +174,21 @@ public class RecapMgController {
             pacs008.put("statut", r.getStatut() != null ? r.getStatut() : "PDNG");
             pacs008.put("date", r.getReceivedAt());
             pacs008.put("fileName", r.getFileName());
+            pacs008.put("direction", r.getTypeMsg());
             historique.add(pacs008);
 
-            // ✅ pacs.002 généré si traité
             if (r.getStatut() != null && !r.getStatut().equals("PDNG")) {
                 Map<String, Object> pacs002 = new HashMap<>();
                 pacs002.put("type", "pacs.002");
                 pacs002.put("messageId", "ACK-" + r.getMessageId());
-                pacs002.put("senderBic", r.getReceiverBic());
-                pacs002.put("receiverBic", r.getSenderBic());
+                pacs002.put("senderBic", "RECU".equals(r.getTypeMsg()) ? r.getReceiverBic() : r.getSenderBic());
+                pacs002.put("receiverBic", "RECU".equals(r.getTypeMsg()) ? r.getSenderBic() : r.getReceiverBic());
                 pacs002.put("montant", r.getMontant());
                 pacs002.put("devise", r.getDevise());
                 pacs002.put("statut", r.getStatut());
                 pacs002.put("date", r.getReceivedAt());
                 pacs002.put("motifRejet", r.getMotifRejet());
+                pacs002.put("direction", "RECU".equals(r.getTypeMsg()) ? "EMIS" : "RECU");
                 historique.add(pacs002);
             }
         }
