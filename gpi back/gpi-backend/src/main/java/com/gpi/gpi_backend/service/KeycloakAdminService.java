@@ -80,7 +80,7 @@ public class KeycloakAdminService {
                 assignRole(token, userId, role);
             }
         } catch (Exception e) {
-            System.err.println("❌ Erreur création Keycloak: " + e.getMessage());
+            System.err.println(" Erreur création Keycloak: " + e.getMessage());
         }
     }
 
@@ -98,10 +98,10 @@ public class KeycloakAdminService {
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(credential, headers);
         restTemplate.exchange(url, HttpMethod.PUT, request, Void.class);
-        System.out.println("✅ Mot de passe défini pour userId: " + userId);
+        System.out.println(" Mot de passe défini pour userId: " + userId);
     }
 
-    // ✅ Fixed — handles empty list gracefully
+    //  Fixed — handles empty list gracefully
     private String getUserId(String token, String email) {
         String url = serverUrl + "/admin/realms/" + realm + "/users?email=" + email;
 
@@ -141,30 +141,30 @@ public class KeycloakAdminService {
             HttpEntity<List<Map<String, Object>>> request = new HttpEntity<>(List.of(role), headers);
             restTemplate.postForEntity(url, request, Void.class);
 
-            System.out.println("✅ Rôle assigné: " + roleName + " → userId: " + userId);
+            System.out.println(" Rôle assigné: " + roleName + " → userId: " + userId);
         } catch (Exception e) {
-            System.err.println("❌ ERREUR assignRole: " + e.getMessage());
-            System.err.println("❌ Role name used: " + roleName);
+            System.err.println(" ERREUR assignRole: " + e.getMessage());
+            System.err.println(" Role name used: " + roleName);
             throw new RuntimeException("Erreur assignation rôle: " + e.getMessage());
         }
     }
 
     public void deleteUser(String email) {
         try {
-            System.out.println("🔍 Tentative suppression Keycloak pour: " + email);
+            System.out.println(" Tentative suppression Keycloak pour: " + email);
             String token = getAdminToken();
-            System.out.println("✅ Token admin obtenu");
+            System.out.println(" Token admin obtenu");
             String userId = getUserId(token, email);
-            System.out.println("✅ UserId trouvé: " + userId);
+            System.out.println(" UserId trouvé: " + userId);
             String url = serverUrl + "/admin/realms/" + realm + "/users/" + userId;
 
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(token);
 
             restTemplate.exchange(url, HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
-            System.out.println("✅ Utilisateur supprimé de Keycloak: " + email);
+            System.out.println(" Utilisateur supprimé de Keycloak: " + email);
         } catch (Exception e) {
-            System.err.println("❌ Erreur suppression Keycloak: " + e.getMessage());
+            System.err.println(" Erreur suppression Keycloak: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -193,9 +193,9 @@ public class KeycloakAdminService {
             body.put("enabled", enabled);
 
             restTemplate.exchange(url, HttpMethod.PUT, new HttpEntity<>(body, headers), Void.class);
-            System.out.println("✅ Statut mis à jour pour: " + email + " → " + enabled);
+            System.out.println("Statut mis à jour pour: " + email + " → " + enabled);
         } catch (Exception e) {
-            System.err.println("❌ Erreur update statut Keycloak: " + e.getMessage());
+            System.err.println(" Erreur update statut Keycloak: " + e.getMessage());
         }
     }
 }

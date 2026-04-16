@@ -53,10 +53,11 @@ public class AuthController {
     // ✅ Endpoint 2 — changer mot de passe première connexion
     @PostMapping("/change-password")
     public ResponseEntity<Void> changePassword(
-            @RequestBody ChangePasswordRequest req) {
+            @RequestBody ChangePasswordRequest req ,
+            @AuthenticationPrincipal Jwt jwt) {
 
         // 1. Changer dans Keycloak
-        String userId = keycloakAdminService.getUserIdByEmail(req.getEmail());
+        String userId =  jwt.getClaimAsString("sub");
         keycloakAdminService.resetPassword(userId, req.getNewPassword());
 
         // 2. Synchroniser dans Oracle
@@ -68,7 +69,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    // ✅ Endpoint 3 — finaliser inscription (first_login = false)
+    // Endpoint 3 — finaliser inscription (first_login = false)
     @PatchMapping("/finaliser-inscription")
     public ResponseEntity<Void> finaliserInscription(
             @AuthenticationPrincipal Jwt jwt) {

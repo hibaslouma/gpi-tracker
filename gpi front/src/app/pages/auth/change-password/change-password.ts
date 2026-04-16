@@ -84,7 +84,7 @@ export class ChangePasswordComponent {
     private fb: FormBuilder,
     private router: Router,
     private http: HttpClient,
-    private keycloak: KeycloakService  // ✅ Keycloak
+    private keycloak: KeycloakService  // Keycloak
   ) {
     this.form = this.fb.group({
       newPassword: ['', [Validators.required, Validators.minLength(8)]],
@@ -106,7 +106,7 @@ export class ChangePasswordComponent {
 
     const newPassword = this.form.value.newPassword!;
 
-    // ✅ Récupérer l'email depuis Keycloak
+    //Récupérer l'email depuis Keycloak
     const profile = await this.keycloak.loadUserProfile();
     const email = profile.email;
 
@@ -118,10 +118,10 @@ export class ChangePasswordComponent {
 
     this.loading = true;
 
-    // ✅ Récupérer le token depuis Keycloak
+    //  Récupérer le token depuis Keycloak
     const token = await this.keycloak.getToken();
 
-    // ✅ Étape 1 — changer le mot de passe
+    //  Étape 1 — changer le mot de passe
     this.http.post<any>('http://localhost:8080/api/auth/change-password', {
       email,
       newPassword
@@ -129,7 +129,7 @@ export class ChangePasswordComponent {
       headers: new HttpHeaders({ Authorization: `Bearer ${token}` })
     }).subscribe({
       next: () => {
-        // ✅ Étape 2 — finaliser inscription
+        // Étape 2 — finaliser inscription
         this.http.patch<any>(
           'http://localhost:8080/api/auth/finaliser-inscription',
           {},

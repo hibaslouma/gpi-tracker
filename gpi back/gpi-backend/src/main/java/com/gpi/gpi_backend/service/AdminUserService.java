@@ -36,7 +36,7 @@ public class AdminUserService {
         if (userRepository.existsByEmail(req.getEmail()))
             throw new RuntimeException("Email déjà utilisé !");
 
-        // ✅ Keycloak d'abord
+        //  Keycloak d'abord
         keycloakAdminService.createUser(
                 req.getEmail(),
                 req.getName(),
@@ -44,7 +44,7 @@ public class AdminUserService {
                 req.getRole()
         );
 
-        // ✅ Oracle DB ensuite
+        //  Oracle DB ensuite
         User user = new User();
         user.setUsername(req.getName());
         user.setEmail(req.getEmail());
@@ -84,7 +84,7 @@ public class AdminUserService {
                 String userId = keycloakAdminService.getUserIdByEmail(user.getEmail());
                 keycloakAdminService.resetPassword(userId, req.getPassword());
             } catch (Exception e) {
-                System.err.println("❌ Erreur reset mdp Keycloak: " + e.getMessage());
+                System.err.println(" Erreur reset mdp Keycloak: " + e.getMessage());
             }
             logAction(user, "Réinitialisation mdp", adminName);
         }
@@ -93,7 +93,7 @@ public class AdminUserService {
         try {
             keycloakAdminService.updateUserStatus(user.getEmail(), user.isActive());
         } catch (Exception e) {
-            System.err.println("❌ Erreur update statut Keycloak: " + e.getMessage());
+            System.err.println(" Erreur update statut Keycloak: " + e.getMessage());
         }
         logAction(user, "Modification", adminName);
         return toDTO(user);
@@ -106,7 +106,7 @@ public class AdminUserService {
         try {
             keycloakAdminService.deleteUser(user.getEmail());
         } catch (Exception e) {
-            System.err.println("❌ Erreur suppression Keycloak: " + e.getMessage());
+            System.err.println(" Erreur suppression Keycloak: " + e.getMessage());
         }
         userLogRepository.deleteByUserId(id);
         userRepository.delete(user);
@@ -124,9 +124,9 @@ public class AdminUserService {
         for (User user : users) {
             try {
                 keycloakAdminService.getUserIdByEmail(user.getEmail());
-                System.out.println("✅ Déjà dans Keycloak: " + user.getEmail());
+                System.out.println(" Déjà dans Keycloak: " + user.getEmail());
             } catch (Exception e) {
-                System.out.println("🔄 Recréation dans Keycloak: " + user.getEmail());
+                System.out.println(" Recréation dans Keycloak: " + user.getEmail());
                 try {
                     keycloakAdminService.createUser(
                             user.getEmail(),
@@ -134,9 +134,9 @@ public class AdminUserService {
                             "ChangeMe123@",
                             user.getRole().name()
                     );
-                    System.out.println("✅ Recréé dans Keycloak: " + user.getEmail());
+                    System.out.println(" Recréé dans Keycloak: " + user.getEmail());
                 } catch (Exception ex) {
-                    System.err.println("❌ Erreur recréation: " + user.getEmail() + " → " + ex.getMessage());
+                    System.err.println(" Erreur recréation: " + user.getEmail() + " → " + ex.getMessage());
                 }
             }
         }

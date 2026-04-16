@@ -32,7 +32,7 @@ export class Utilisateurs implements OnInit {
   selectedUserLogs: LogDTO[] = [];
   newUser: Partial<User> = this.emptyUser();
 
-  // ✅ Erreurs par champ
+  // Erreurs par champ
   errors: { [key: string]: string } = {};
   touched: { [key: string]: boolean } = {};
 
@@ -130,7 +130,7 @@ export class Utilisateurs implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // ✅ Prénom/Nom — bloque chiffres et caractères spéciaux à la saisie
+  //  Prénom/Nom — bloque chiffres et caractères spéciaux à la saisie
   onNameInput(event: Event, field: 'firstName' | 'lastName') {
     const input = event.target as HTMLInputElement;
     const cleaned = input.value.replace(/[^a-zA-ZÀ-ÿ\s\-']/g, '');
@@ -140,7 +140,7 @@ export class Utilisateurs implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // ✅ Téléphone — bloque les chiffres invalides dès la saisie
+  //  Téléphone — bloque les chiffres invalides dès la saisie
   onPhoneInput(event: Event) {
     const input = event.target as HTMLInputElement;
     let val = input.value.replace(/\D/g, '');
@@ -157,14 +157,14 @@ export class Utilisateurs implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // ✅ Validation en temps réel à la sortie du champ (blur)
+  // Validation en temps réel à la sortie du champ (blur)
   onBlur(field: string) {
     this.touched[field] = true;
     this.validateField(field);
     this.cdr.detectChanges();
   }
 
-  // ✅ Validation d'un champ spécifique
+  // Validation d'un champ spécifique
   validateField(field: string) {
     this.errors[field] = '';
 
@@ -208,7 +208,7 @@ export class Utilisateurs implements OnInit {
     }
   }
 
-  // ✅ Validation complète avant soumission
+  //  Validation complète avant soumission
   private validateForm(): boolean {
     this.touched = { firstName: true, lastName: true, email: true, phone: true };
     ['firstName', 'lastName', 'email', 'phone'].forEach(f => this.validateField(f));
