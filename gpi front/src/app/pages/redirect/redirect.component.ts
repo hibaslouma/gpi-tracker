@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { KeycloakService } from 'keycloak-angular';
-import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-redirect',
@@ -13,12 +13,12 @@ export class RedirectComponent implements OnInit {
   constructor(
     private keycloak: KeycloakService,
     private router: Router,
-    private http: HttpClient
+    private authService: AuthService
   ) {}
 
   async ngOnInit() {
     // ✅ Vérifier firstLogin via Spring Boot
-    this.http.get<any>('http://localhost:8080/api/auth/me').subscribe({
+    this.authService.getMe().subscribe({
       next: (me) => {
         if (me.firstLogin) {
           // ✅ Première connexion → changer le mot de passe
