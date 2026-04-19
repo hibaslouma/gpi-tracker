@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-parametrage',
@@ -9,30 +10,30 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './parametrage.html',
   styleUrl: './parametrage.scss'
 })
-export class Parametrage {
+export class Parametrage implements OnInit {
+
+  private apiUrl = 'http://localhost:8080/api/parametrage';
 
   activeSection = 'banque';
   successMessage = '';
   hasChanges = false;
 
   sections = [
-    { id: 'banque',        label: 'Informations de la banque', icon: 'pi-building' },
-    { id: 'sla',           label: 'Paramètres SLA',            icon: 'pi-clock' },
-    { id: 'notifications', label: 'Notifications & alertes',   icon: 'pi-bell' },
-    { id: 'devises',       label: 'Devises et limites',        icon: 'pi-dollar' },
-    { id: 'xml',           label: 'Gestion fichiers XML',      icon: 'pi-file' },
-    { id: 'securite',      label: 'Sécurité & sessions',       icon: 'pi-shield' },
+    { id: 'banque',  label: 'Informations de la banque', icon: 'pi-building' },
+    { id: 'sla',     label: 'Paramètres SLA',            icon: 'pi-clock'    },
+    { id: 'devises', label: 'Devises',                   icon: 'pi-dollar'   },
+    { id: 'xml',     label: 'Gestion fichiers XML',      icon: 'pi-file'     },
   ];
 
   banque = {
-    nom:       'Banque Nationale de Tunisie',
-    bic:       'BNTNTNTXXXX',
+    nom:       '',
+    bic:       '',
     pays:      'TN',
     fuseau:    'Africa/Tunis',
-    adresse:   'Rue Hédi Nouira, Tunis 1001',
-    telephone: '+216 71 340 000',
-    email:     'gpi@bnt.com.tn',
-    site:      'https://www.bnt.com.tn',
+    adresse:   '',
+    telephone: '',
+    email:     '',
+    site:      '',
   };
 
   fuseaux = [
@@ -41,47 +42,55 @@ export class Parametrage {
   ];
 
   pays = [
-    { code: 'TN', nom: 'Tunisie' }, { code: 'FR', nom: 'France' },
-    { code: 'BE', nom: 'Belgique' }, { code: 'DE', nom: 'Allemagne' },
-    { code: 'GB', nom: 'Royaume-Uni' }, { code: 'US', nom: 'États-Unis' },
+    { code: 'TN', nom: 'Tunisie'     },
+    { code: 'FR', nom: 'France'      },
+    { code: 'BE', nom: 'Belgique'    },
+    { code: 'DE', nom: 'Allemagne'   },
+    { code: 'GB', nom: 'Royaume-Uni' },
+    { code: 'US', nom: 'États-Unis'  },
   ];
 
   sla = {
-    delaiConfirmation:  30,
-    delaiAlerte:        20,
-    delaiRecall:        60,
-    delaiCreditMax:     1440,
-    alerteDepassement:  true,
-    alerteRetard:       true,
-  };
-
-  notifications = {
-    emailPaiementRejet:   true,
-    emailDepassementSLA:  true,
-    emailRecallEnAttente: true,
-    emailNouveauPaiement: false,
-    emailAdresse:         'admin@bnt.com.tn',
-    emailCopie:           '',
-    frequenceRapport:     'quotidien',
-  };
-
-  frequences = ['temps-reel', 'toutes-les-heures', 'quotidien', 'hebdomadaire'];
-  frequencesLabels: { [key: string]: string } = {
-    'temps-reel':        'Temps réel',
-    'toutes-les-heures': 'Toutes les heures',
-    'quotidien':         'Quotidien',
-    'hebdomadaire':      'Hebdomadaire',
+    delaiConfirmation: 30,
+    delaiAlerte:       20,
+    delaiRecall:       60,
   };
 
   devisesActives = ['TND', 'EUR', 'USD', 'GBP'];
-  toutesDevises  = ['TND','EUR','USD','GBP','JPY','CNY','CAD','CHF','AUD','NZD','SEK','NOK','DKK','INR','BRL'];
+  toutesDevises  = ['TND','EUR','USD','GBP','JPY','CNY','CAD','CHF'];
+  deviseDefaut   = 'TND';
 
-  limites = {
-    montantMin:   100,
-    montantMax:   10000000,
-    seuilAlerte:  500000,
-    deviseDefaut: 'TND',
+  xml = {
+    dossierRecu: '',
+    dossierEmis: '',
   };
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit() {
+    this.http.get<any>(this.apiUrl).subscribe({
+      next: (data) => {
+        if (data) {
+          this.banque.nom       = data.nomBanque       || '';
+          this.banque.bic       = data.bic             || '';
+          this.banque.pays      = data.pays            || 'TN';
+          this.banque.fuseau    = data.fuseau          || 'Africa/Tunis';
+          this.banque.adresse   = data.adresse         || '';
+          this.banque.telephone = data.telephone       || '';
+          this.banque.email     = data.email           || '';
+          this.banque.site      = data.siteWeb         || '';
+          this.sla.delaiConfirmation = data.delaiConfirmation || 30;
+          this.sla.delaiAlerte       = data.delaiAlerte       || 20;
+          this.sla.delaiRecall       = data.delaiRecall       || 60;
+          this.devisesActives = data.devisesActives?.split(',') || ['TND'];
+          this.deviseDefaut   = data.deviseDefaut || 'TND';
+          this.xml.dossierRecu = data.dossierRecu || '';
+          this.xml.dossierEmis = data.dossierEmis || '';
+        }
+      },
+      error: (err) => console.error('Erreur chargement paramétrage', err)
+    });
+  }
 
   toggleDevise(devise: string) {
     const idx = this.devisesActives.indexOf(devise);
@@ -100,44 +109,39 @@ export class Parametrage {
     return this.devisesActives.includes(d);
   }
 
-  xml = {
-    dossierEntrant:   '/opt/gpi/incoming',
-    dossierArchive:   '/opt/gpi/archive',
-    dossierErreur:    '/opt/gpi/error',
-    frequenceLecture: 30,
-    traitementAuto:   true,
-    archivageAuto:    true,
-    retentionJours:   90,
-    formatDate:       'dd/MM/yyyy HH:mm:ss',
-  };
-
-  statutXml = {
-    actif:           true,
-    derniereExec:    '14/03/2026 09:45:12',
-    fichiersTraites: 1247,
-    fichiersErreur:  3,
-  };
-
-  // loak gère : mdp, 2FA, politique de session
-  securite = {
-    dureeSession:       30,
-    tentativesMax:      5,
-    blocageDuree:       15,
-    journalisation:     true,
-    retentionLogsJours: 365,
-  };
-
   setSection(id: string) { this.activeSection = id; }
-
   markChanged() { this.hasChanges = true; }
+  annuler() { this.hasChanges = false; }
 
   sauvegarder() {
-    this.hasChanges = false;
-    this.successMessage = 'Paramètres enregistrés avec succès.';
-    setTimeout(() => this.successMessage = '', 3500);
-  }
+    const payload = {
+      nomBanque:         this.banque.nom,
+      bic:               this.banque.bic,
+      pays:              this.banque.pays,
+      fuseau:            this.banque.fuseau,
+      adresse:           this.banque.adresse,
+      telephone:         this.banque.telephone,
+      email:             this.banque.email,
+      siteWeb:           this.banque.site,
+      delaiConfirmation: this.sla.delaiConfirmation,
+      delaiAlerte:       this.sla.delaiAlerte,
+      delaiRecall:       this.sla.delaiRecall,
+      devisesActives:    this.devisesActives.join(','),
+      deviseDefaut:      this.deviseDefaut,
+    };
 
-  annuler() { this.hasChanges = false; }
+    this.http.patch<any>(this.apiUrl, payload).subscribe({
+      next: () => {
+        this.hasChanges = false;
+        this.successMessage = 'Paramètres enregistrés avec succès.';
+        setTimeout(() => this.successMessage = '', 3500);
+      },
+      error: (err) => {
+        console.error('Erreur sauvegarde', err);
+        this.successMessage = 'Erreur lors de la sauvegarde.';
+      }
+    });
+  }
 
   formatMinutes(min: number): string {
     if (min < 60)   return `${min} min`;
