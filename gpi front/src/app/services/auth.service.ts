@@ -39,4 +39,19 @@ export class AuthService {
   getMe(): Observable<any> {
     return this.http.get<any>('http://localhost:8080/api/auth/me');
   }
+  // ✅ Changer le mot de passe
+changePassword(email: string, newPassword: string): Observable<any> {
+    return this.http.post<any>(
+        'http://localhost:8080/api/auth/change-password',
+        { email, newPassword }
+    );
+}
+
+// ✅ Finaliser inscription
+finaliserInscription(): Observable<any> {
+    return this.http.patch<any>(
+        'http://localhost:8080/api/auth/finaliser-inscription',
+        {}
+    );
+}
 }

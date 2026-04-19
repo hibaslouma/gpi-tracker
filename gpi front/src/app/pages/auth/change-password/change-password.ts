@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { AuthService } from '../../../services/auth.service';
 import { ButtonModule } from 'primeng/button';
 import { PasswordModule } from 'primeng/password';
 import { InputTextModule } from 'primeng/inputtext';
@@ -83,7 +83,7 @@ export class ChangePasswordComponent {
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private http: HttpClient,
+    private authService: AuthService,
     private keycloak: KeycloakService  // Keycloak
   ) {
     this.form = this.fb.group({
@@ -98,68 +98,51 @@ export class ChangePasswordComponent {
     return newPassword === confirmPassword ? null : { mismatch: true };
   }
 
-  async onSubmit() {
+ async onSubmit() {
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
+        this.form.markAllAsTouched();
+        return;
     }
 
     const newPassword = this.form.value.newPassword!;
-
-    //Récupérer l'email depuis Keycloak
     const profile = await this.keycloak.loadUserProfile();
     const email = profile.email;
 
     if (!email) {
-      this.errorMessage = 'Session expirée. Veuillez vous reconnecter.';
-      this.keycloak.login();
-      return;
+        this.errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+        this.keycloak.login();
+        return;
     }
 
     this.loading = true;
 
-    //  Récupérer le token depuis Keycloak
-    const token = await this.keycloak.getToken();
-
-    //  Étape 1 — changer le mot de passe
-    this.http.post<any>('http://localhost:8080/api/auth/change-password', {
-      email,
-      newPassword
-    }, {
-      headers: new HttpHeaders({ Authorization: `Bearer ${token}` })
-    }).subscribe({
-      next: () => {
-        // Étape 2 — finaliser inscription
-        this.http.patch<any>(
-          'http://localhost:8080/api/auth/finaliser-inscription',
-          {},
-          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) }
-        ).subscribe({
-          next: () => {
+    this.authService.changePassword(email, newPassword).subscribe({
+        next: () => {
+            this.authService.finaliserInscription().subscribe({
+                next: () => {
+                    this.loading = false;
+                    this.successMessage = 'Mot de passe changé avec succès !';
+                    setTimeout(() => {
+                        const roles = this.keycloak.getUserRoles();
+                        if (roles.includes('Admin')) {
+                            this.router.navigateByUrl('/admin');
+                        } else if (roles.includes('Backoffice')) {
+                            this.router.navigateByUrl('/backoffice');
+                        } else {
+                            this.router.navigateByUrl('/client');
+                        }
+                    }, 2000);
+                },
+                error: () => {
+                    this.loading = false;
+                    this.errorMessage = 'Erreur finalisation. Veuillez vous reconnecter.';
+                }
+            });
+        },
+        error: () => {
             this.loading = false;
-            this.successMessage = 'Mot de passe changé avec succès !';
-
-            setTimeout(() => {
-              const roles = this.keycloak.getUserRoles();
-              if (roles.includes('Admin')) {
-                this.router.navigateByUrl('/admin');
-              } else if (roles.includes('Backoffice')) {
-                this.router.navigateByUrl('/backoffice');
-              } else {
-                this.router.navigateByUrl('/client');
-              }
-            }, 2000);
-          },
-          error: () => {
-            this.loading = false;
-            this.errorMessage = 'Erreur finalisation. Veuillez vous reconnecter.';
-          }
-        });
-      },
-      error: () => {
-        this.loading = false;
-        this.errorMessage = 'Erreur lors du changement. Réessayez.';
-      }
+            this.errorMessage = 'Erreur lors du changement. Réessayez.';
+        }
     });
-  }
 }
+  }
