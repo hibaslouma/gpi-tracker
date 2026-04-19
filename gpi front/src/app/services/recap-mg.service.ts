@@ -7,7 +7,7 @@ export interface RecapMg {
   messageId: string;
   uetr: string;
   typeMsg: string;
-  msgType: string; // ✅ pacs.008 / pacs.009 / pacs.009.COV
+  msgType: string;
   senderName: string;
   senderAddress: string;
   senderBic: string;
@@ -67,6 +67,23 @@ export interface XmlResponse {
   content: string;
 }
 
+// ✅ camt.056 annulation
+export interface Camt056 {
+  id: number;
+  messageId: string;
+  originalMsgId: string;
+  uetr: string;
+  bicEmetteur: string;
+  bicRecepteur: string;
+  motif: string;
+  motifDetail: string;
+  statut: string;      // PDNG, ACCP, RJCT
+  motifRefus: string;
+  fileName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RecapMgService {
   private api = 'http://localhost:8080/api/backoffice';
@@ -85,6 +102,7 @@ export class RecapMgService {
     return this.http.get<BackofficeStats>(`${this.api}/stats`);
   }
 
+  // ✅ Returns Blob for file download
   updateStatut(id: number, statut: string, motifRejet?: string): Observable<Blob> {
     return this.http.patch(
       `${this.api}/paiements-recus/${id}/statut`,
@@ -107,5 +125,16 @@ export class RecapMgService {
 
   getXmlRecu(id: number): Observable<XmlResponse> {
     return this.http.get<XmlResponse>(`${this.api}/paiements-recus/${id}/xml`);
+  }
+
+  // ── camt.056 ───────────────────────────────────────────────
+  getCamt056(): Observable<Camt056[]> {
+    return this.http.get<Camt056[]>(`${this.api}/camt056`);
+  }
+
+  envoyerCamt056(originalMsgId: string, motif: string, motifDetail?: string): Observable<Camt056> {
+    return this.http.post<Camt056>(`${this.api}/camt056`, {
+      originalMsgId, motif, motifDetail
+    });
   }
 }

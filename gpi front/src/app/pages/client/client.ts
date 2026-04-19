@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
+import { RecapMgService, RecapMg } from '../../services/recap-mg.service';
 
 export type StatutISO = 'PDNG' | 'ACCP' | 'ACSP' | 'ACSC' | 'RJCT' | 'CANC';
 
@@ -56,33 +57,25 @@ export class Client implements OnInit, OnDestroy {
 
   searchUetr = '';
   selectedTransaction: Transaction | null = null;
+  isLoading = false;
 
-  transactions: Transaction[] = [
-    {
-      statutISO: 'ACSC',
-      uetr: 'biat-1a2b3c4d-5e6f-7890',
-      bicEmetteur: 'BIATTNTTXXX',
-      bicRecepteur: 'BNPAFRPPXXX',
-      montant: 15000,
-      devise: 'TND',
-      date: '22/03/2026',
-      delaiGPI: 2,
-      messages: [
-        { type: 'pacs.008', dateHeure: '22/03/2026 09:00', statut: 'PDNG', ref: 'BIAT-2026-00123', detail: 'Initiation paiement international' },
-        { type: 'pacs.002', dateHeure: '22/03/2026 09:45', statut: 'ACCP', ref: 'BNPA-2026-00456', detail: 'Paiement accepté par la banque réceptrice' },
-        { type: 'pacs.002', dateHeure: '22/03/2026 10:30', statut: 'ACSC', ref: 'BNPA-2026-00789', detail: 'Crédit confirmé au bénéficiaire' }
-      ],
-      agents: [
-        { bic: 'BIATTNTTXXX', pays: 'Tunisie', role: 'emetteur', statut: 'confirme' },
-        { bic: 'BNPAFRPPXXX', pays: 'France', role: 'recepteur', statut: 'confirme' }
-      ]
-    }
-  ];
+  // ── Real data from backend ─────────────────────────────────
+  paiementsEmis: RecapMg[] = [];
+  paiementsRecus: RecapMg[] = [];
 
-  constructor(private router: Router, private route: ActivatedRoute) {}
+  // ── Mapped transactions for display ───────────────────────
+  transactions: Transaction[] = [];
+
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private recapMgService: RecapMgService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
     this.loadUserFromToken();
+    this.loadData();
 
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
@@ -99,8 +92,113 @@ export class Client implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  // ── Load real data from backend ────────────────────────────
+  loadData(): void {
+    this.isLoading = true;
+
+    // Load emis (outgoing payments initiated by client's bank)
+    this.recapMgService.getPaiementsEmis().subscribe({
+      next: (data) => {
+        this.paiementsEmis = data;
+        this.mapTransactions();
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Erreur chargement paiements émis:', err);
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+
+    // Also load recus to show incoming in historique
+    this.recapMgService.getPaiementsRecus().subscribe({
+      next: (data) => {
+        this.paiementsRecus = data;
+        this.mapTransactions();
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Erreur chargement paiements reçus:', err)
+    });
+  }
+
+  // ── Map RecapMg → Transaction ──────────────────────────────
+  private mapTransactions(): void {
+    const all = [...this.paiementsEmis, ...this.paiementsRecus];
+
+    this.transactions = all.map(p => {
+      const statut = (p.statut || 'PDNG') as StatutISO;
+
+      // Build message trace based on statut
+      const messages: MessageTrace[] = [
+        {
+          type: 'pacs.008',
+          dateHeure: p.receivedAt
+            ? new Date(p.receivedAt).toLocaleString('fr-FR')
+            : p.dateValeur || '—',
+          statut: 'PDNG',
+          ref: p.messageId,
+          detail: 'Initiation du paiement'
+        }
+      ];
+
+      if (statut !== 'PDNG') {
+        messages.push({
+          type: 'pacs.002',
+          dateHeure: p.receivedAt
+            ? new Date(p.receivedAt).toLocaleString('fr-FR')
+            : '—',
+          statut: statut,
+          ref: 'ACK-' + p.messageId,
+          detail: this.getStatutDetail(statut, p.motifRejet)
+        });
+      }
+
+      return {
+        statutISO: statut,
+        uetr: p.uetr || p.messageId,
+        bicEmetteur: p.senderBic || '—',
+        bicRecepteur: p.receiverBic || '—',
+        montant: p.montant || 0,
+        devise: p.devise || 'TND',
+        date: p.dateValeur
+          ? new Date(p.dateValeur).toLocaleDateString('fr-FR')
+          : (p.receivedAt ? new Date(p.receivedAt).toLocaleDateString('fr-FR') : '—'),
+        motifRejet: p.motifRejet,
+        messages,
+        agents: [
+          {
+            bic: p.senderBic || '—',
+            pays: '—',
+            role: 'emetteur',
+            statut: 'confirme'
+          },
+          {
+            bic: p.receiverBic || '—',
+            pays: '—',
+            role: 'recepteur',
+            statut: statut === 'ACSC' ? 'confirme' : 'en-attente'
+          }
+        ]
+      } as Transaction;
+    });
+
+    this.cdr.detectChanges();
+  }
+
+  private getStatutDetail(statut: StatutISO, motif?: string): string {
+    switch (statut) {
+      case 'ACSC': return 'Crédit confirmé au bénéficiaire';
+      case 'ACCP': return 'Paiement accepté par la banque';
+      case 'ACSP': return 'Règlement en cours';
+      case 'RJCT': return motif ? `Paiement rejeté — motif: ${motif}` : 'Paiement rejeté';
+      case 'CANC': return 'Paiement annulé';
+      default:     return 'En attente de traitement';
+    }
+  }
+
   private loadUserFromToken() {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -135,12 +233,17 @@ export class Client implements OnInit, OnDestroy {
   get filteredTransactions(): Transaction[] {
     if (!this.searchUetr.trim()) return this.transactions;
     return this.transactions.filter(t =>
-      t.uetr.toLowerCase().includes(this.searchUetr.toLowerCase())
+      t.uetr.toLowerCase().includes(this.searchUetr.toLowerCase()) ||
+      t.bicEmetteur.toLowerCase().includes(this.searchUetr.toLowerCase()) ||
+      t.bicRecepteur.toLowerCase().includes(this.searchUetr.toLowerCase())
     );
   }
 
+  // ── Stats from real data ───────────────────────────────────
   get nbEnAttente(): number {
-    return this.transactions.filter(t => t.statutISO === 'PDNG' || t.statutISO === 'ACCP').length;
+    return this.transactions.filter(t =>
+      t.statutISO === 'PDNG' || t.statutISO === 'ACCP' || t.statutISO === 'ACSP'
+    ).length;
   }
 
   get nbConfirmes(): number {
@@ -148,7 +251,9 @@ export class Client implements OnInit, OnDestroy {
   }
 
   get nbRejetes(): number {
-    return this.transactions.filter(t => t.statutISO === 'RJCT').length;
+    return this.transactions.filter(t =>
+      t.statutISO === 'RJCT' || t.statutISO === 'CANC'
+    ).length;
   }
 
   getStatutClass(s: string): string {
@@ -170,12 +275,12 @@ export class Client implements OnInit, OnDestroy {
   }
 
   formatMontant(n: number): string {
-    return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return (n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
     this.router.navigateByUrl('/auth/login');
   }
 }

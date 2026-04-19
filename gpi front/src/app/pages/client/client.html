@@ -6,10 +6,19 @@
     ═══════════════════════════════════════ -->
     <div *ngIf="activeTab==='dashboard'" class="tab-content">
       <div class="page-title">Tableau de bord</div>
-      
 
-      <div class="stats-grid">
-        <div class="stat-card" (click)="activeTab='paiements'" style="cursor:pointer">
+      <!-- Loading -->
+      <div *ngIf="isLoading" style="text-align:center;padding:2rem;color:#888">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             style="animation:spin 1s linear infinite">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+        </svg>
+        <p style="margin-top:0.5rem;font-size:0.85rem">Chargement des données...</p>
+      </div>
+
+      <!-- Stats -->
+      <div *ngIf="!isLoading" class="stats-grid">
+        <div class="stat-card" (click)="setActiveTab('paiements')" style="cursor:pointer">
           <div class="stat-info">
             <span class="stat-number">{{ transactions.length }}</span>
             <span class="stat-label">Total paiements</span>
@@ -21,7 +30,7 @@
           </div>
         </div>
 
-        <div class="stat-card" (click)="activeTab='paiements'" style="cursor:pointer">
+        <div class="stat-card" (click)="setActiveTab('paiements')" style="cursor:pointer">
           <div class="stat-info">
             <span class="stat-number">{{ nbEnAttente }}</span>
             <span class="stat-label">En cours</span>
@@ -33,7 +42,7 @@
           </div>
         </div>
 
-        <div class="stat-card stat-card--orange" (click)="activeTab='paiements'" style="cursor:pointer">
+        <div class="stat-card stat-card--orange" (click)="setActiveTab('paiements')" style="cursor:pointer">
           <div class="stat-info">
             <span class="stat-number">{{ nbConfirmes }}</span>
             <span class="stat-label">Effectués</span>
@@ -45,7 +54,7 @@
           </div>
         </div>
 
-        <div class="stat-card stat-card--navy" (click)="activeTab='paiements'" style="cursor:pointer">
+        <div class="stat-card stat-card--navy" (click)="setActiveTab('paiements')" style="cursor:pointer">
           <div class="stat-info">
             <span class="stat-number">{{ nbRejetes }}</span>
             <span class="stat-label">Refusés</span>
@@ -59,7 +68,8 @@
         </div>
       </div>
 
-      <div class="content-card">
+      <!-- Last payments -->
+      <div *ngIf="!isLoading" class="content-card">
         <div class="card-header">
           <h2>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -68,7 +78,7 @@
             </svg>
             Derniers paiements
           </h2>
-          <button class="btn-navy" (click)="activeTab='paiements'">
+          <button class="btn-navy" (click)="setActiveTab('paiements')">
             Voir tout
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <polyline points="9 18 15 12 9 6"/>
@@ -86,14 +96,15 @@
         <table *ngIf="transactions.length > 0" class="data-table">
           <thead>
             <tr>
-              <th>Statut</th><th>Référence</th><th>Banque destinataire</th>
-              <th>Montant</th><th>Date</th><th>Détail</th>
+              <th>Statut</th><th>Référence</th><th>BIC Expéditeur</th>
+              <th>BIC Destinataire</th><th>Montant</th><th>Date</th><th>Détail</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let t of transactions.slice(0,5)">
               <td><span class="badge" [ngClass]="getStatutClass(t.statutISO)">{{ getStatutLabel(t.statutISO) }}</span></td>
               <td class="uetr-cell" [title]="t.uetr">{{ t.uetr }}</td>
+              <td><strong>{{ t.bicEmetteur }}</strong></td>
               <td><strong>{{ t.bicRecepteur }}</strong></td>
               <td class="montant-cell">{{ formatMontant(t.montant) }} {{ t.devise }}</td>
               <td>{{ t.date }}</td>
@@ -121,26 +132,36 @@
           <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <input class="search-input" type="text" placeholder="Rechercher par référence..." [(ngModel)]="searchUetr" />
+          <input class="search-input" type="text"
+                 placeholder="Rechercher par référence, BIC..."
+                 [(ngModel)]="searchUetr" />
         </div>
       </div>
 
       <div class="content-card">
         <div class="card-header">
           <h2>Mes paiements GPI</h2>
+          <button class="btn-refresh" (click)="loadData()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            Actualiser
+          </button>
         </div>
         <div class="table-wrapper">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Statut</th><th>Référence</th><th>Banque destinataire</th>
-                <th>Montant</th><th>Devise</th><th>Date</th><th>Détail</th>
+                <th>Statut</th><th>Référence (UETR)</th><th>BIC Expéditeur</th>
+                <th>BIC Destinataire</th><th>Montant</th><th>Devise</th><th>Date</th><th>Détail</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let t of filteredTransactions">
                 <td><span class="badge" [ngClass]="getStatutClass(t.statutISO)">{{ getStatutLabel(t.statutISO) }}</span></td>
                 <td class="uetr-cell" [title]="t.uetr">{{ t.uetr }}</td>
+                <td><strong>{{ t.bicEmetteur }}</strong></td>
                 <td><strong>{{ t.bicRecepteur }}</strong></td>
                 <td class="montant-cell">{{ formatMontant(t.montant) }}</td>
                 <td>{{ t.devise }}</td>
@@ -154,7 +175,7 @@
                 </td>
               </tr>
               <tr *ngIf="filteredTransactions.length === 0">
-                <td colspan="7" class="empty-state">Aucun paiement trouvé</td>
+                <td colspan="8" class="empty-state">Aucun paiement trouvé</td>
               </tr>
             </tbody>
           </table>
@@ -187,7 +208,11 @@
           <p class="lm-card-value">{{ formatMontant(selectedTransaction.montant) }} {{ selectedTransaction.devise }}</p>
         </div>
         <div class="lm-card">
-          <p class="lm-card-label">Banque destinataire</p>
+          <p class="lm-card-label">BIC Expéditeur</p>
+          <p class="lm-card-value">{{ selectedTransaction.bicEmetteur }}</p>
+        </div>
+        <div class="lm-card">
+          <p class="lm-card-label">BIC Destinataire</p>
           <p class="lm-card-value">{{ selectedTransaction.bicRecepteur }}</p>
         </div>
         <div class="lm-card">
@@ -195,7 +220,7 @@
           <p class="lm-card-value">{{ selectedTransaction.date }}</p>
         </div>
         <div class="lm-card lm-card--wide">
-          <p class="lm-card-label">Référence du paiement</p>
+          <p class="lm-card-label">Référence UETR</p>
           <p class="lm-card-uetr">{{ selectedTransaction.uetr }}</p>
         </div>
       </div>
@@ -213,9 +238,7 @@
       </div>
 
       <div class="content-card">
-        <div class="card-header">
-          <h2>Suivi de votre paiement</h2>
-        </div>
+        <div class="card-header"><h2>Suivi de votre paiement</h2></div>
         <div class="msg-timeline">
           <div *ngFor="let msg of selectedTransaction.messages; let last=last" class="msg-step">
             <div class="msg-step-icon" [ngClass]="getStatutClass(msg.statut)">
@@ -226,6 +249,7 @@
             <div class="msg-step-line" *ngIf="!last"></div>
             <div class="msg-step-body">
               <div class="msg-step-top">
+                <span class="msg-type-tag">{{ msg.type }}</span>
                 <span class="badge badge-sm" [ngClass]="getStatutClass(msg.statut)">{{ getStatutLabel(msg.statut) }}</span>
                 <span class="msg-date">{{ msg.dateHeure }}</span>
               </div>
@@ -239,9 +263,7 @@
       </div>
 
       <div class="content-card">
-        <div class="card-header">
-          <h2>Résumé financier</h2>
-        </div>
+        <div class="card-header"><h2>Résumé financier</h2></div>
         <div class="charges-recap">
           <div class="recap-item">
             <span class="recap-label">Montant envoyé</span>
@@ -274,7 +296,9 @@
           <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <input class="search-input" type="text" placeholder="Rechercher par référence..." [(ngModel)]="searchUetr" />
+          <input class="search-input" type="text"
+                 placeholder="Rechercher par référence, BIC..."
+                 [(ngModel)]="searchUetr" />
         </div>
       </div>
 
@@ -283,14 +307,15 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Date</th><th>Référence</th><th>Banque destinataire</th>
-                <th>Montant</th><th>Devise</th><th>Statut</th><th>Détail</th>
+                <th>Date</th><th>Référence (UETR)</th><th>BIC Expéditeur</th>
+                <th>BIC Destinataire</th><th>Montant</th><th>Devise</th><th>Statut</th><th>Détail</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let t of filteredTransactions">
                 <td>{{ t.date }}</td>
                 <td class="uetr-cell" [title]="t.uetr">{{ t.uetr }}</td>
+                <td><strong>{{ t.bicEmetteur }}</strong></td>
                 <td><strong>{{ t.bicRecepteur }}</strong></td>
                 <td class="montant-cell">{{ formatMontant(t.montant) }}</td>
                 <td>{{ t.devise }}</td>
@@ -304,7 +329,7 @@
                 </td>
               </tr>
               <tr *ngIf="filteredTransactions.length === 0">
-                <td colspan="7" class="empty-state">Aucun paiement trouvé</td>
+                <td colspan="8" class="empty-state">Aucun paiement trouvé</td>
               </tr>
             </tbody>
           </table>

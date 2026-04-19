@@ -11,13 +11,16 @@ public class ClientRecuService {
     private final MxParserService mxParserService;
     private final Pacs002ParserService pacs002ParserService;
     private final Pacs009ParserService pacs009ParserService;
+    private final Camt029ParserService camt029ParserService;
 
     public ClientRecuService(MxParserService mxParserService,
                              Pacs002ParserService pacs002ParserService,
-                             Pacs009ParserService pacs009ParserService) {
+                             Pacs009ParserService pacs009ParserService,
+                             Camt029ParserService camt029ParserService) {
         this.mxParserService = mxParserService;
         this.pacs002ParserService = pacs002ParserService;
         this.pacs009ParserService = pacs009ParserService;
+        this.camt029ParserService = camt029ParserService;
     }
 
     public void clientRecu(Path file) {
@@ -27,35 +30,42 @@ public class ClientRecuService {
         if (!Files.isReadable(file)) return;
 
         try {
-            String content = Files.readString(file);
+            String fileName = file.getFileName().toString();
+            String content  = Files.readString(file);
+
+            // ✅ Ignore generated camt.056 files — they are outgoing
+            if (fileName.startsWith("CAMT056-")) {
+                System.out.println("[ClientRecu]  Ignoring outgoing camt.056: " + fileName);
+                return;
+            }
 
             if (content.contains("xsd:pacs.008")) {
-                // ── pacs.008 → customer credit transfer ───────────
                 System.out.println("[ClientRecu]  Type détecté: pacs.008 (RECU)");
                 mxParserService.parsingMx(file, "RECU");
 
             } else if (content.contains("xsd:pacs.009") && content.contains("COV")) {
-                // ── pacs.009 COV → cover payment ──────────────────
                 System.out.println("[ClientRecu]  Type détecté: pacs.009 COV (RECU)");
                 pacs009ParserService.parsingPacs009Cov(file, "RECU");
 
             } else if (content.contains("xsd:pacs.009")) {
-                // ── pacs.009 → FI credit transfer ─────────────────
                 System.out.println("[ClientRecu]  Type détecté: pacs.009 (RECU)");
                 pacs009ParserService.parsingPacs009(file, "RECU");
 
             } else if (content.contains("xsd:pacs.002")) {
-                // ── pacs.002 → status report (update existing) ────
                 System.out.println("[ClientRecu]  Type détecté: pacs.002");
                 pacs002ParserService.parsingPacs002(file);
 
+            } else if (content.contains("xsd:camt.029")) {
+                // ✅ camt.029 — response to our camt.056 cancellation
+                System.out.println("[ClientRecu]  Type détecté: camt.029");
+                camt029ParserService.parsingCamt029(file);
+
             } else {
-                System.err.println("[ClientRecu]  ⚠️ Type de message inconnu: "
-                        + file.getFileName());
+                System.err.println("[ClientRecu]  ⚠️ Type de message inconnu: " + fileName);
                 return;
             }
 
-            System.out.println("[ClientRecu]  ✅ File processed: " + file.getFileName());
+            System.out.println("[ClientRecu]  ✅ File processed: " + fileName);
 
         } catch (Exception e) {
             System.err.println("[ClientRecu]  Failed: " + file.getFileName()

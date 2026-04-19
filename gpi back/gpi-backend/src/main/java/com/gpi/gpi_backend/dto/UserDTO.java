@@ -4,14 +4,27 @@ import lombok.Data;
 
 @Data
 public class UserDTO {
-    private Long id;
-    private String initials;
+    private String id;
     private String name;
+    private String firstName;
+    private String lastName;
     private String email;
-    private String phone;
-    private String role;
     private boolean active;
-    private boolean firstLogin; // ✅ déjà présent
-    private String createdAt;   // ✅ ajouté
-    private String lastLogin;
+    private boolean firstLogin;  // ✅ added
+
+    // only used for create
+    private String password;
+    private String role;
+
+    // ✅ Computed initials for frontend avatar
+    public String getInitials() {
+        if (firstName != null && lastName != null
+                && !firstName.isBlank() && !lastName.isBlank()) {
+            return (firstName.charAt(0) + "" + lastName.charAt(0)).toUpperCase();
+        }
+        if (name != null && name.length() >= 2) {
+            return name.substring(0, 2).toUpperCase();
+        }
+        return "??";
+    }
 }

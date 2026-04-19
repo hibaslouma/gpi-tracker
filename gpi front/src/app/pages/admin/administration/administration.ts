@@ -15,6 +15,11 @@ export class Administration implements OnInit {
   users: User[] = [];
   isLoading = false;
 
+  // ── Stats from real Keycloak data ─────────────────────────
+  get adminCount(): number {
+    return this.users.filter(u => u.role === 'Admin').length;
+  }
+
   get backofficeCount(): number {
     return this.users.filter(u => u.role === 'Backoffice').length;
   }

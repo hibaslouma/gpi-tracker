@@ -36,9 +36,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/admin/**").hasRole("SuperAdmin")
-                        .requestMatchers("/api/backoffice/**").hasAnyRole("SuperAdmin", "Backoffice")
-                        .requestMatchers("/api/banques/**").hasAnyRole("SuperAdmin", "Backoffice", "Client")
+                        .requestMatchers("/api/admin/**").hasRole("Admin")
+                        .requestMatchers("/api/backoffice/**").hasAnyRole("Admin", "Backoffice", "Client")
+                        .requestMatchers("/api/banques/**").hasAnyRole("Admin", "Backoffice", "Client")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

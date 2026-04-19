@@ -235,6 +235,8 @@ export class Utilisateurs implements OnInit {
     return true;
   }
 
+  // Replace the saveUser() method in utilisateurs.ts with this:
+
   saveUser() {
     if (!this.validateForm()) return;
     if (this.isSubmitting) return;
@@ -249,13 +251,38 @@ export class Utilisateurs implements OnInit {
 
     if (this.isEditing && this.selectedUser) {
       this.userService.update(this.selectedUser.id!, userData).subscribe({
-        next: () => { this.isSubmitting = false; this.showModal = false; this.cdr.detectChanges(); this.loadUsers(); this.showSuccess('Utilisateur modifié !'); },
-        error: () => { this.isSubmitting = false; this.formError = 'Erreur lors de la modification.'; this.cdr.detectChanges(); }
+        next: () => {
+          this.isSubmitting = false;
+          this.showModal = false;
+          this.cdr.detectChanges();
+          this.loadUsers();
+          this.showSuccess('Utilisateur modifié !');
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          this.formError = err?.error?.error || 'Erreur lors de la modification.';
+          this.cdr.detectChanges();
+        }
       });
     } else {
       this.userService.create(userData).subscribe({
-        next: () => { this.isSubmitting = false; this.showModal = false; this.cdr.detectChanges(); this.loadUsers(); this.showSuccess('Utilisateur créé !'); },
-        error: () => { this.isSubmitting = false; this.formError = 'Email déjà utilisé ou erreur serveur.'; this.cdr.detectChanges(); }
+        next: () => {
+          this.isSubmitting = false;
+          this.showModal = false;
+          this.cdr.detectChanges();
+          this.loadUsers();
+          this.showSuccess('Utilisateur créé !');
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          // ✅ Show specific error from backend (e.g. user already exists)
+          if (err?.status === 409) {
+            this.formError = 'Un utilisateur avec cet email ou username existe déjà dans Keycloak.';
+          } else {
+            this.formError = err?.error?.error || 'Erreur serveur. Veuillez réessayer.';
+          }
+          this.cdr.detectChanges();
+        }
       });
     }
   }
