@@ -16,7 +16,6 @@ public class Parametrage {
     @Column(name = "ID")
     private Long id;
 
-    // Banque
     @Column(name = "NOM_BANQUE")
     private String nomBanque;
 
@@ -41,24 +40,6 @@ public class Parametrage {
     @Column(name = "SITE_WEB")
     private String siteWeb;
 
-    // SLA
-    @Column(name = "DELAI_CONFIRMATION")
-    private Integer delaiConfirmation;
-
-    @Column(name = "DELAI_ALERTE")
-    private Integer delaiAlerte;
-
-    @Column(name = "DELAI_RECALL")
-    private Integer delaiRecall;
-
-    // Devises
-    @Column(name = "DEVISES_ACTIVES")
-    private String devisesActives;
-
-    @Column(name = "DEVISE_DEFAUT")
-    private String deviseDefaut;
-
-    // XML — lecture seule depuis application.properties
     @Column(name = "DOSSIER_RECU")
     private String dossierRecu;
 

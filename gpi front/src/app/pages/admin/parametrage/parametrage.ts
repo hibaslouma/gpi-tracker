@@ -19,10 +19,8 @@ export class Parametrage implements OnInit {
   hasChanges = false;
 
   sections = [
-    { id: 'banque',  label: 'Informations de la banque', icon: 'pi-building' },
-    { id: 'sla',     label: 'Paramètres SLA',            icon: 'pi-clock'    },
-    { id: 'devises', label: 'Devises',                   icon: 'pi-dollar'   },
-    { id: 'xml',     label: 'Gestion fichiers XML',      icon: 'pi-file'     },
+    { id: 'banque', label: 'Informations de la banque', icon: 'pi-building' },
+    { id: 'xml',    label: 'Gestion fichiers XML',      icon: 'pi-file'     },
   ];
 
   banque = {
@@ -50,16 +48,6 @@ export class Parametrage implements OnInit {
     { code: 'US', nom: 'États-Unis'  },
   ];
 
-  sla = {
-    delaiConfirmation: 30,
-    delaiAlerte:       20,
-    delaiRecall:       60,
-  };
-
-  devisesActives = ['TND', 'EUR', 'USD', 'GBP'];
-  toutesDevises  = ['TND','EUR','USD','GBP','JPY','CNY','CAD','CHF'];
-  deviseDefaut   = 'TND';
-
   xml = {
     dossierRecu: '',
     dossierEmis: '',
@@ -71,42 +59,20 @@ export class Parametrage implements OnInit {
     this.http.get<any>(this.apiUrl).subscribe({
       next: (data) => {
         if (data) {
-          this.banque.nom       = data.nomBanque       || '';
-          this.banque.bic       = data.bic             || '';
-          this.banque.pays      = data.pays            || 'TN';
-          this.banque.fuseau    = data.fuseau          || 'Africa/Tunis';
-          this.banque.adresse   = data.adresse         || '';
-          this.banque.telephone = data.telephone       || '';
-          this.banque.email     = data.email           || '';
-          this.banque.site      = data.siteWeb         || '';
-          this.sla.delaiConfirmation = data.delaiConfirmation || 30;
-          this.sla.delaiAlerte       = data.delaiAlerte       || 20;
-          this.sla.delaiRecall       = data.delaiRecall       || 60;
-          this.devisesActives = data.devisesActives?.split(',') || ['TND'];
-          this.deviseDefaut   = data.deviseDefaut || 'TND';
-          this.xml.dossierRecu = data.dossierRecu || '';
-          this.xml.dossierEmis = data.dossierEmis || '';
+          this.banque.nom       = data.nomBanque || '';
+          this.banque.bic       = data.bic       || '';
+          this.banque.pays      = data.pays      || 'TN';
+          this.banque.fuseau    = data.fuseau    || 'Africa/Tunis';
+          this.banque.adresse   = data.adresse   || '';
+          this.banque.telephone = data.telephone || '';
+          this.banque.email     = data.email     || '';
+          this.banque.site      = data.siteWeb   || '';
+          this.xml.dossierRecu  = data.dossierRecu || '';
+          this.xml.dossierEmis  = data.dossierEmis || '';
         }
       },
       error: (err) => console.error('Erreur chargement paramétrage', err)
     });
-  }
-
-  toggleDevise(devise: string) {
-    const idx = this.devisesActives.indexOf(devise);
-    if (idx >= 0) {
-      if (this.devisesActives.length > 1) {
-        this.devisesActives.splice(idx, 1);
-        this.markChanged();
-      }
-    } else {
-      this.devisesActives.push(devise);
-      this.markChanged();
-    }
-  }
-
-  isDeviseActive(d: string): boolean {
-    return this.devisesActives.includes(d);
   }
 
   setSection(id: string) { this.activeSection = id; }
@@ -115,19 +81,14 @@ export class Parametrage implements OnInit {
 
   sauvegarder() {
     const payload = {
-      nomBanque:         this.banque.nom,
-      bic:               this.banque.bic,
-      pays:              this.banque.pays,
-      fuseau:            this.banque.fuseau,
-      adresse:           this.banque.adresse,
-      telephone:         this.banque.telephone,
-      email:             this.banque.email,
-      siteWeb:           this.banque.site,
-      delaiConfirmation: this.sla.delaiConfirmation,
-      delaiAlerte:       this.sla.delaiAlerte,
-      delaiRecall:       this.sla.delaiRecall,
-      devisesActives:    this.devisesActives.join(','),
-      deviseDefaut:      this.deviseDefaut,
+      nomBanque:  this.banque.nom,
+      bic:        this.banque.bic,
+      pays:       this.banque.pays,
+      fuseau:     this.banque.fuseau,
+      adresse:    this.banque.adresse,
+      telephone:  this.banque.telephone,
+      email:      this.banque.email,
+      siteWeb:    this.banque.site,
     };
 
     this.http.patch<any>(this.apiUrl, payload).subscribe({
@@ -141,11 +102,5 @@ export class Parametrage implements OnInit {
         this.successMessage = 'Erreur lors de la sauvegarde.';
       }
     });
-  }
-
-  formatMinutes(min: number): string {
-    if (min < 60)   return `${min} min`;
-    if (min < 1440) return `${min / 60}h`;
-    return `${min / 1440}j`;
   }
 }

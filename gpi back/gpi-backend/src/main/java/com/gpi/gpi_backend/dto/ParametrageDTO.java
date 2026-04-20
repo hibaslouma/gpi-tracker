@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ParametrageDTO {
 
-    // Banque
     private String nomBanque;
     private String bic;
     private String pays;
@@ -18,17 +17,6 @@ public class ParametrageDTO {
     private String telephone;
     private String email;
     private String siteWeb;
-
-    // SLA
-    private Integer delaiConfirmation;
-    private Integer delaiAlerte;
-    private Integer delaiRecall;
-
-    // Devises
-    private String devisesActives;
-    private String deviseDefaut;
-
-    // XML — lecture seule
     private String dossierRecu;
     private String dossierEmis;
 }

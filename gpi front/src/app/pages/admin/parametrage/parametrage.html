@@ -46,15 +46,15 @@
         <div class="form-grid">
           <div class="form-group span-2">
             <label>Nom de la banque *</label>
-            <input type="text" [(ngModel)]="banque.nom" 
-                   (ngModelChange)="markChanged()" 
+            <input type="text" [(ngModel)]="banque.nom"
+                   (ngModelChange)="markChanged()"
                    placeholder="Ex: Banque Nationale de Tunisie" />
           </div>
           <div class="form-group">
             <label>BIC principal *</label>
-            <input type="text" [(ngModel)]="banque.bic" 
-                   (ngModelChange)="markChanged()" 
-                   placeholder="Ex: BNTNTNTXXXX" 
+            <input type="text" [(ngModel)]="banque.bic"
+                   (ngModelChange)="markChanged()"
+                   placeholder="Ex: BNTNTNTXXXX"
                    class="mono" maxlength="11" />
             <small>8 ou 11 caractères</small>
           </div>
@@ -74,122 +74,32 @@
           </div>
           <div class="form-group">
             <label>Téléphone</label>
-            <input type="text" [(ngModel)]="banque.telephone" 
-                   (ngModelChange)="markChanged()" 
+            <input type="text" [(ngModel)]="banque.telephone"
+                   (ngModelChange)="markChanged()"
                    placeholder="+216 71 000 000" />
           </div>
           <div class="form-group span-2">
             <label>Adresse</label>
-            <input type="text" [(ngModel)]="banque.adresse" 
-                   (ngModelChange)="markChanged()" 
+            <input type="text" [(ngModel)]="banque.adresse"
+                   (ngModelChange)="markChanged()"
                    placeholder="Rue, Ville, Code postal" />
           </div>
           <div class="form-group">
             <label>Email de contact</label>
-            <input type="email" [(ngModel)]="banque.email" 
-                   (ngModelChange)="markChanged()" 
+            <input type="email" [(ngModel)]="banque.email"
+                   (ngModelChange)="markChanged()"
                    placeholder="contact@banque.tn" />
           </div>
           <div class="form-group">
             <label>Site web</label>
-            <input type="url" [(ngModel)]="banque.site" 
-                   (ngModelChange)="markChanged()" 
+            <input type="url" [(ngModel)]="banque.site"
+                   (ngModelChange)="markChanged()"
                    placeholder="https://www.banque.tn" />
           </div>
         </div>
       </section>
 
-      <!-- 2. PARAMÈTRES SLA -->
-      <section *ngIf="activeSection === 'sla'" class="section-panel">
-        <div class="section-title">
-          <div class="section-icon blue"><i class="pi pi-clock"></i></div>
-          <div>
-            <h2>Paramètres SLA</h2>
-            <p>Délais de traitement des paiements SWIFT GPI</p>
-          </div>
-        </div>
-        <div class="info-banner">
-          <i class="pi pi-info-circle"></i>
-          Les SLA définissent les délais maximum imposés par SWIFT GPI.
-          Un dépassement génère une alerte automatique.
-        </div>
-        <div class="sla-grid">
-          <div class="sla-card">
-            <div class="sla-header">
-              <span class="sla-label">Confirmation de paiement</span>
-              <span class="sla-tag blue">pacs.002</span>
-            </div>
-            <div class="sla-control">
-              <input type="range" min="5" max="120" step="5" 
-                     [(ngModel)]="sla.delaiConfirmation" 
-                     (ngModelChange)="markChanged()" />
-              <span class="sla-value">{{ formatMinutes(sla.delaiConfirmation) }}</span>
-            </div>
-            <small>Délai max pour envoyer la confirmation 
-                   après réception d'un pacs.008</small>
-          </div>
-          <div class="sla-card">
-            <div class="sla-header">
-              <span class="sla-label">Alerte avant dépassement</span>
-              <span class="sla-tag amber">Alerte</span>
-            </div>
-            <div class="sla-control">
-              <input type="range" min="5" max="60" step="5" 
-                     [(ngModel)]="sla.delaiAlerte" 
-                     (ngModelChange)="markChanged()" />
-              <span class="sla-value">{{ formatMinutes(sla.delaiAlerte) }}</span>
-            </div>
-            <small>Délai avant la limite SLA pour déclencher 
-                   une alerte préventive</small>
-          </div>
-          <div class="sla-card">
-            <div class="sla-header">
-              <span class="sla-label">Réponse Stop & Recall</span>
-              <span class="sla-tag red">camt.029</span>
-            </div>
-            <div class="sla-control">
-              <input type="range" min="30" max="480" step="30" 
-                     [(ngModel)]="sla.delaiRecall" 
-                     (ngModelChange)="markChanged()" />
-              <span class="sla-value">{{ formatMinutes(sla.delaiRecall) }}</span>
-            </div>
-            <small>Délai max pour répondre à une demande 
-                   d'annulation camt.056</small>
-          </div>
-        </div>
-      </section>
-
-      <!-- 3. DEVISES -->
-      <section *ngIf="activeSection === 'devises'" class="section-panel">
-        <div class="section-title">
-          <div class="section-icon green"><i class="pi pi-dollar"></i></div>
-          <div>
-            <h2>Devises</h2>
-            <p>Devises acceptées pour les paiements SWIFT GPI</p>
-          </div>
-        </div>
-        <h3 class="subsection">Devises activées</h3>
-        <div class="devises-grid">
-          <div *ngFor="let d of toutesDevises"
-               class="devise-chip"
-               [class.active]="isDeviseActive(d)"
-               (click)="toggleDevise(d)">
-            <span>{{ d }}</span>
-            <i [class]="isDeviseActive(d) ? 'pi pi-check' : 'pi pi-plus'"></i>
-          </div>
-        </div>
-        <small style="display:block;margin-top:.5rem">
-          Devises actives : <strong>{{ devisesActives.join(', ') }}</strong>
-        </small>
-        <h3 class="subsection">Devise par défaut</h3>
-        <div class="form-group" style="max-width:200px">
-          <select [(ngModel)]="deviseDefaut" (ngModelChange)="markChanged()">
-            <option *ngFor="let d of devisesActives" [value]="d">{{ d }}</option>
-          </select>
-        </div>
-      </section>
-
-      <!-- 4. GESTION FICHIERS XML -->
+      <!-- 2. GESTION FICHIERS XML -->
       <section *ngIf="activeSection === 'xml'" class="section-panel">
         <div class="section-title">
           <div class="section-icon teal"><i class="pi pi-file"></i></div>
@@ -200,24 +110,23 @@
         </div>
         <div class="info-banner">
           <i class="pi pi-info-circle"></i>
-          Ces chemins sont configurés dans le fichier 
+          Ces chemins sont configurés dans le fichier
           application.properties du serveur Spring Boot.
         </div>
         <div class="form-grid">
           <div class="form-group span-2">
             <label>Dossier entrant</label>
-            <input type="text" 
-                   [value]="xml.dossierRecu" 
-                   class="mono" 
+            <input type="text"
+                   [value]="xml.dossierRecu"
+                   class="mono"
                    readonly />
-            <small>Dossier surveillé pour les fichiers XML entrants
-                   (pacs.008, pacs.009, pacs.002, camt.056, camt.029)</small>
+            <small>Dossier surveillé pour les fichiers XML entrants</small>
           </div>
           <div class="form-group span-2">
             <label>Dossier émis</label>
-            <input type="text" 
-                   [value]="xml.dossierEmis" 
-                   class="mono" 
+            <input type="text"
+                   [value]="xml.dossierEmis"
+                   class="mono"
                    readonly />
             <small>Dossier surveillé pour les fichiers XML émis</small>
           </div>

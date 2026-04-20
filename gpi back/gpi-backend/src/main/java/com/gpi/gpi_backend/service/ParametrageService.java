@@ -37,12 +37,6 @@ public class ParametrageService {
         p.setTelephone(dto.getTelephone());
         p.setEmail(dto.getEmail());
         p.setSiteWeb(dto.getSiteWeb());
-        p.setDelaiConfirmation(dto.getDelaiConfirmation());
-        p.setDelaiAlerte(dto.getDelaiAlerte());
-        p.setDelaiRecall(dto.getDelaiRecall());
-        p.setDevisesActives(dto.getDevisesActives());
-        p.setDeviseDefaut(dto.getDeviseDefaut());
-        // XML — lecture seule depuis application.properties
         p.setDossierRecu(dossierRecu);
         p.setDossierEmis(dossierEmis);
         parametrageRepository.save(p);
@@ -59,11 +53,6 @@ public class ParametrageService {
         dto.setTelephone(p.getTelephone());
         dto.setEmail(p.getEmail());
         dto.setSiteWeb(p.getSiteWeb());
-        dto.setDelaiConfirmation(p.getDelaiConfirmation());
-        dto.setDelaiAlerte(p.getDelaiAlerte());
-        dto.setDelaiRecall(p.getDelaiRecall());
-        dto.setDevisesActives(p.getDevisesActives());
-        dto.setDeviseDefaut(p.getDeviseDefaut());
         dto.setDossierRecu(dossierRecu);
         dto.setDossierEmis(dossierEmis);
         return dto;
