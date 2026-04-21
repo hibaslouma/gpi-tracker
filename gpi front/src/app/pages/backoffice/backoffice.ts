@@ -93,16 +93,13 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     devise: 'TND', typeCharges: 'SHA', motif: ''
   };
 
-  // ── Modal XML ──────────────────────────────────────────────
   showXmlModal = false;
   xmlContent = '';
   xmlFileName = '';
 
-  // ── Modal Timeline ─────────────────────────────────────────
   showTimelineModal = false;
   timelinePaiement: RecapMg | null = null;
 
-  // ── Modal Traitement ───────────────────────────────────────
   showTraitementModal = false;
   paiementATraiter: RecapMg | null = null;
   modalNouveauStatut: StatutISO = 'ACSC';
@@ -115,16 +112,18 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   paiementsEmis: RecapMg[] = [];
   pacs002Recus: Pacs002Recu[] = [];
 
-  // ✅ Real camt.056 data from backend
   camt056List: Camt056[] = [];
-  // ✅ Kept for dashboard template compatibility
   annulations: Annulation[] = [];
   camt056EnvoisEnCours = false;
-
-  // ── camt.056 form ──────────────────────────────────────────
   annulationMessageId = '';
   annulationMotif = 'DUPL';
   annulationRaison = '';
+
+  historiquePacs: RecapMg[] = [];
+  filtreHistPacsSearch = '';
+  filtreHistPacsDirection = '';
+  filtreHistPacsType = '';
+  filtreHistPacsStatut = '';
 
   stats: BackofficeStats = {
     totalRecus: 0, enAttente: 0, acceptes: 0, rejetes: 0,
@@ -175,11 +174,17 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ✅ Load real camt.056 list
   loadCamt056(): void {
     this.recapMgService.getCamt056().subscribe({
       next: (data) => { this.camt056List = data; this.cdr.detectChanges(); },
       error: (err) => console.error('Erreur camt.056:', err)
+    });
+  }
+
+  loadHistoriquePacs(): void {
+    this.recapMgService.getHistoriquePacs().subscribe({
+      next: (data) => { this.historiquePacs = data; this.cdr.detectChanges(); },
+      error: (err) => console.error('Erreur historique pacs:', err)
     });
   }
 
@@ -191,6 +196,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     this.loadStats();
     this.loadHistorique();
     this.loadCamt056();
+    this.loadHistoriquePacs();
 
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
@@ -206,7 +212,6 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // ── Navigation ─────────────────────────────────────────────
   setActiveTab(tab: string): void {
     this.activeTab = tab;
     this.selectedTransaction = null;
@@ -242,41 +247,24 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ── Modal XML ──────────────────────────────────────────────
   voirXmlEmis(p: RecapMg): void {
     this.recapMgService.getXmlEmis(p.id).subscribe({
-      next: (res) => {
-        this.xmlFileName = res.fileName;
-        this.xmlContent = res.content;
-        this.showXmlModal = true;
-        this.cdr.detectChanges();
-      },
+      next: (res) => { this.xmlFileName = res.fileName; this.xmlContent = res.content; this.showXmlModal = true; this.cdr.detectChanges(); },
       error: () => this.displayToast('Erreur chargement XML', 'error')
     });
   }
 
   voirXmlRecu(p: RecapMg): void {
     this.recapMgService.getXmlRecu(p.id).subscribe({
-      next: (res) => {
-        this.xmlFileName = res.fileName;
-        this.xmlContent = res.content;
-        this.showXmlModal = true;
-        this.cdr.detectChanges();
-      },
+      next: (res) => { this.xmlFileName = res.fileName; this.xmlContent = res.content; this.showXmlModal = true; this.cdr.detectChanges(); },
       error: () => this.displayToast('Erreur chargement XML', 'error')
     });
   }
 
   fermerXmlModal(): void { this.showXmlModal = false; }
-
-  // ── Modal Timeline ─────────────────────────────────────────
-  voirTimelineEmis(p: RecapMg): void {
-    this.timelinePaiement = p;
-    this.showTimelineModal = true;
-  }
+  voirTimelineEmis(p: RecapMg): void { this.timelinePaiement = p; this.showTimelineModal = true; }
   fermerTimelineModal(): void { this.showTimelineModal = false; }
 
-  // ── Modal Traitement ───────────────────────────────────────
   ouvrirModalTraitement(p: RecapMg): void {
     this.paiementATraiter = p;
     this.modalNouveauStatut = 'ACSC';
@@ -304,40 +292,31 @@ export class BackofficeComponent implements OnInit, OnDestroy {
       next: (blob: Blob) => {
         this.modalEnvoi = false;
         this.fermerTraitementModal();
-
-        // ✅ Trigger browser download
         const url  = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href  = url;
         link.download = `pacs002_${messageId}_${statutEnvoi}.xml`;
         link.click();
         window.URL.revokeObjectURL(url);
-
         this.displayToast(`✅ pacs.002 généré — ${statutEnvoi}`, 'success');
         this.loadPaiementsRecus();
         this.loadStats();
         this.loadHistorique();
+        this.loadHistoriquePacs();
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Erreur traitement:', err);
         this.modalEnvoi = false;
         this.displayToast('Erreur lors du traitement', 'error');
       }
     });
   }
 
-  // ── camt.056 — REAL implementation ────────────────────────
+  // ── camt.056 — cancel an OUTGOING (EMIS) pacs ─────────────
   envoyerAnnulation(): void {
     if (!this.annulationMessageId.trim()) {
-      this.displayToast('Veuillez sélectionner un paiement', 'error');
-      return;
+      this.displayToast('Veuillez sélectionner un paiement', 'error'); return;
     }
-    if (!this.annulationMotif.trim()) {
-      this.displayToast('Veuillez sélectionner un motif', 'error');
-      return;
-    }
-
     this.camt056EnvoisEnCours = true;
     this.cdr.detectChanges();
 
@@ -351,7 +330,8 @@ export class BackofficeComponent implements OnInit, OnDestroy {
         this.annulationMessageId = '';
         this.annulationRaison = '';
         this.loadCamt056();
-        this.loadPaiementsRecus();
+        this.loadPaiementsEmis();
+        this.loadHistoriquePacs();
         this.displayToast(`✅ camt.056 envoyé — ${result.messageId}`, 'success');
         this.cdr.detectChanges();
       },
@@ -363,7 +343,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Getters Dashboard ──────────────────────────────────────
+  // ── Getters ────────────────────────────────────────────────
   get paiementsEnAttente(): RecapMg[] {
     return this.paiementsRecus.filter(p => p.statut === 'PDNG' || !p.statut);
   }
@@ -382,7 +362,6 @@ export class BackofficeComponent implements OnInit, OnDestroy {
       .map(item => ({ ...item, pct: Math.round((item.count / total) * 100) }));
   }
 
-  // ── Getters Filtres ────────────────────────────────────────
   get paiementsRecusFiltres(): RecapMg[] {
     return this.paiementsRecus.filter(p => {
       const matchSearch = !this.filtreSearch ||
@@ -431,11 +410,11 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     this.filtreHistoriqueStatut = '';
   }
 
+  // ✅ Only EMIS (outgoing) pacs with PDNG statut can be cancelled
   get paiementsAnnulables(): RecapMg[] {
-    return this.paiementsRecus.filter(p => p.statut === 'PDNG' || !p.statut);
+    return this.paiementsEmis.filter(p => p.statut === 'PDNG' || !p.statut);
   }
 
-  // ✅ filteredAnnulations — used by suivi camt.029 tab
   get filteredAnnulations(): Camt056[] {
     if (!this.searchAnnulations) return this.camt056List;
     const q = this.searchAnnulations.toLowerCase();
@@ -446,24 +425,40 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     );
   }
 
-  // ── Traitement pacs.008 ────────────────────────────────────
+  get historiquePacsFiltres(): RecapMg[] {
+    return this.historiquePacs.filter(p => {
+      const matchSearch = !this.filtreHistPacsSearch ||
+        p.messageId?.toLowerCase().includes(this.filtreHistPacsSearch.toLowerCase()) ||
+        p.senderBic?.toLowerCase().includes(this.filtreHistPacsSearch.toLowerCase()) ||
+        p.receiverBic?.toLowerCase().includes(this.filtreHistPacsSearch.toLowerCase());
+      const matchDir    = !this.filtreHistPacsDirection || p.typeMsg === this.filtreHistPacsDirection;
+      // ✅ Treat null msgType as pacs.008 for filter
+      const effectiveMsgType = p.msgType || 'pacs.008';
+      const matchType   = !this.filtreHistPacsType || effectiveMsgType === this.filtreHistPacsType;
+      const matchStatut = !this.filtreHistPacsStatut || p.statut === this.filtreHistPacsStatut;
+      return matchSearch && matchDir && matchType && matchStatut;
+    });
+  }
+
+  resetFiltresHistPacs(): void {
+    this.filtreHistPacsSearch = '';
+    this.filtreHistPacsDirection = '';
+    this.filtreHistPacsType = '';
+    this.filtreHistPacsStatut = '';
+  }
+
   traiterPaiement(p: RecapMg): void { this.ouvrirModalTraitement(p); }
 
   rejeterPaiementRecu(p: RecapMg, motif: string): void {
     this.recapMgService.updateStatut(p.id, 'RJCT', motif).subscribe({
-      next: () => {
-        p.statut = 'RJCT'; p.motifRejet = motif;
-        this.loadStats();
-        this.displayToast('Paiement rejeté — pacs.002 RJCT généré', 'error');
-      },
+      next: () => { p.statut = 'RJCT'; p.motifRejet = motif; this.loadStats(); this.displayToast('Paiement rejeté', 'error'); },
       error: () => this.displayToast('Erreur rejet', 'error')
     });
   }
 
   genererEtEnvoyer(): void {
     if (!this.selectedMessageId || !this.selectedRecapId) {
-      this.displayToast('Veuillez sélectionner un paiement', 'error');
-      return;
+      this.displayToast('Veuillez sélectionner un paiement', 'error'); return;
     }
     this.recapMgService.updateStatut(
       this.selectedRecapId!,
@@ -471,24 +466,18 @@ export class BackofficeComponent implements OnInit, OnDestroy {
       this.confirmationNouveauStatut === 'RJCT' ? this.confirmationMotifRejet : undefined
     ).subscribe({
       next: () => {
-        this.loadStats(); this.loadPaiementsRecus(); this.loadHistorique();
+        this.loadStats(); this.loadPaiementsRecus(); this.loadHistorique(); this.loadHistoriquePacs();
         this.selectedMessageId = ''; this.selectedRecapId = null;
         this.displayToast(`pacs.002 généré — ${this.confirmationNouveauStatut}`, 'success');
-        setTimeout(() => { this.loadPaiementsRecus(); this.setActiveTab('entrants'); }, 1000);
       },
       error: () => this.displayToast('Erreur mise à jour statut', 'error')
     });
   }
 
-  annulerConfirmation(): void {
-    this.confirmationUetr = '';
-    this.confirmationTransaction = null;
-  }
+  annulerConfirmation(): void { this.confirmationUetr = ''; this.confirmationTransaction = null; }
 
   rechercherTransactionConfirmation(): void {
-    if (!this.confirmationUetr.trim()) {
-      this.displayToast('Veuillez saisir un UETR', 'error'); return;
-    }
+    if (!this.confirmationUetr.trim()) { this.displayToast('Veuillez saisir un UETR', 'error'); return; }
     const found = this.transactions.find(t => t.uetr === this.confirmationUetr.trim());
     if (found) { this.confirmationTransaction = found; this.displayToast('Transaction chargée', 'success'); }
     else { this.confirmationTransaction = null; this.displayToast('Aucune transaction trouvée', 'error'); }
@@ -506,17 +495,9 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     this.displayToast('pacs.008 initié', 'success');
   }
 
-  accepterPaiement(p: PaiementEntrant): void {
-    p.statutISO = 'ACSC';
-    this.displayToast('Paiement accepté — pacs.002 ACSC envoyé', 'success');
-  }
+  accepterPaiement(p: PaiementEntrant): void { p.statutISO = 'ACSC'; this.displayToast('Paiement accepté', 'success'); }
+  rejeterPaiement(p: PaiementEntrant, motif: MotifRejet): void { p.statutISO = 'RJCT'; p.motifRejet = motif; this.displayToast(`Rejeté (${motif})`, 'error'); }
 
-  rejeterPaiement(p: PaiementEntrant, motif: MotifRejet): void {
-    p.statutISO = 'RJCT'; p.motifRejet = motif;
-    this.displayToast(`Paiement rejeté — pacs.002 RJCT envoyé (${motif})`, 'error');
-  }
-
-  // ── Statuts ISO ────────────────────────────────────────────
   getStatutLabel(s: StatutISO): string {
     return ({ PDNG: 'PDNG — En attente', ACCP: 'ACCP — Accepté', ACSP: 'ACSP — En cours', ACSC: 'ACSC — Crédit OK', RJCT: 'RJCT — Rejeté', CANC: 'CANC — Annulé' } as any)[s] || s;
   }
@@ -527,22 +508,18 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     return ({ PDNG: 'badge-pdng', ACCP: 'badge-accp', ACSP: 'badge-acsp', ACSC: 'badge-acsc', RJCT: 'badge-rjct', CANC: 'badge-canc' } as any)[s] || '';
   }
   getStatutDesc(s: StatutISO): string {
-    return ({ PDNG: 'En attente de traitement', ACCP: 'Accepté par la banque', ACSP: 'Règlement en cours', ACSC: 'Crédit confirmé', RJCT: 'Rejeté', CANC: 'Annulé' } as any)[s] || '';
+    return ({ PDNG: 'En attente', ACCP: 'Accepté', ACSP: 'Règlement en cours', ACSC: 'Crédit confirmé', RJCT: 'Rejeté', CANC: 'Annulé' } as any)[s] || '';
   }
   getMotifRejetLabel(m: MotifRejet | undefined): string {
     if (!m) return '';
-    return ({ AC01: 'AC01 — IBAN incorrect', AC04: 'AC04 — Compte clôturé', AG01: 'AG01 — Banque ne traite pas', FF01: 'FF01 — Code invalide', MS03: 'MS03 — Motif non spécifié', NARR: 'NARR — Voir détail' } as any)[m] || m;
+    return ({ AC01: 'AC01 — IBAN incorrect', AC04: 'AC04 — Compte clôturé', AG01: 'AG01 — Banque ne traite pas', FF01: 'FF01 — Code invalide', MS03: 'MS03 — Non spécifié', NARR: 'NARR — Voir détail' } as any)[m] || m;
   }
   getMotifRefusCamtLabel(m: MotifRefusCamt | undefined): string {
     if (!m) return '';
     return ({ LEGL: 'LEGL — Raison légale', CUST: 'CUST — Décision client', AGET: 'AGET — Décision agent', NARR: 'NARR — Voir détail' } as any)[m] || m;
   }
-  getAnnulStatutClass(s: string): string {
-    return ({ ACCP: 'badge-acsc', PDNG: 'badge-pdng', RJCT: 'badge-rjct' } as any)[s] || '';
-  }
-  getAnnulStatutLabel(s: string): string {
-    return ({ ACCP: 'ACCP — Acceptée', PDNG: 'PDNG — En attente', RJCT: 'RJCT — Refusée' } as any)[s] || s;
-  }
+  getAnnulStatutClass(s: string): string { return ({ ACCP: 'badge-acsc', PDNG: 'badge-pdng', RJCT: 'badge-rjct' } as any)[s] || ''; }
+  getAnnulStatutLabel(s: string): string { return ({ ACCP: 'ACCP — Acceptée', PDNG: 'PDNG — En attente', RJCT: 'RJCT — Refusée' } as any)[s] || s; }
   getDelaiClass(h: number | undefined): string { if (!h) return ''; return h <= 24 ? 'delai-ok' : 'delai-retard'; }
   getDelaiLabel(h: number | undefined): string { if (!h) return '—'; if (h < 1) return '< 1h'; return `${h}h`; }
   getRoleLabel(role: string): string { return ({ emetteur: 'Emetteur', intermediaire: 'Intermédiaire', recepteur: 'Recepteur' } as any)[role] || role; }

@@ -152,12 +152,11 @@ public class RecapMgController {
         } catch (IOException e) {
             System.err.println("[RecapMgController] ❌ Erreur lecture pacs.002 : "
                     + e.getMessage());
-            // Fallback: return 200 without file
             return ResponseEntity.ok().build();
         }
     }
 
-    // ── Historique ─────────────────────────────────────────────
+    // ── Historique (pacs.008 + pacs.002) ──────────────────────
     @GetMapping("/historique")
     public ResponseEntity<List<Map<String, Object>>> getHistorique() {
         List<RecapMg> tous = recapMgRepository.findAll();
@@ -165,7 +164,7 @@ public class RecapMgController {
 
         for (RecapMg r : tous) {
             Map<String, Object> pacs008 = new HashMap<>();
-            pacs008.put("type", "pacs.008");
+            pacs008.put("type", r.getMsgType() != null ? r.getMsgType() : "pacs.008");
             pacs008.put("messageId", r.getMessageId());
             pacs008.put("senderBic", r.getSenderBic());
             pacs008.put("receiverBic", r.getReceiverBic());
@@ -194,5 +193,20 @@ public class RecapMgController {
         }
 
         return ResponseEntity.ok(historique);
+    }
+    @GetMapping("/historique-pacs")
+    public ResponseEntity<List<RecapMg>> getHistoriquePacs() {
+        List<RecapMg> tous = recapMgRepository.findAll();
+        List<RecapMg> pacsOnly = tous.stream()
+                .filter(r -> r.getMsgType() == null
+                        || r.getMsgType().startsWith("pacs.008")
+                        || r.getMsgType().startsWith("pacs.009"))
+                .sorted((a, b) -> {
+                    if (a.getReceivedAt() == null) return 1;
+                    if (b.getReceivedAt() == null) return -1;
+                    return b.getReceivedAt().compareTo(a.getReceivedAt());
+                })
+                .toList();
+        return ResponseEntity.ok(pacsOnly);
     }
 }

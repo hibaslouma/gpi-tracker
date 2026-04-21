@@ -67,7 +67,6 @@ export interface XmlResponse {
   content: string;
 }
 
-// ✅ camt.056 annulation
 export interface Camt056 {
   id: number;
   messageId: string;
@@ -77,7 +76,7 @@ export interface Camt056 {
   bicRecepteur: string;
   motif: string;
   motifDetail: string;
-  statut: string;      // PDNG, ACCP, RJCT
+  statut: string;
   motifRefus: string;
   fileName: string;
   createdAt: string;
@@ -102,7 +101,6 @@ export class RecapMgService {
     return this.http.get<BackofficeStats>(`${this.api}/stats`);
   }
 
-  // ✅ Returns Blob for file download
   updateStatut(id: number, statut: string, motifRejet?: string): Observable<Blob> {
     return this.http.patch(
       `${this.api}/paiements-recus/${id}/statut`,
@@ -113,6 +111,11 @@ export class RecapMgService {
 
   getHistorique(): Observable<HistoriqueItem[]> {
     return this.http.get<HistoriqueItem[]>(`${this.api}/historique`);
+  }
+
+  // ✅ Historique pacs only (pacs.008 + pacs.009, no pacs.002)
+  getHistoriquePacs(): Observable<RecapMg[]> {
+    return this.http.get<RecapMg[]>(`${this.api}/historique-pacs`);
   }
 
   getPacs002Recus(): Observable<Pacs002Recu[]> {
@@ -127,7 +130,6 @@ export class RecapMgService {
     return this.http.get<XmlResponse>(`${this.api}/paiements-recus/${id}/xml`);
   }
 
-  // ── camt.056 ───────────────────────────────────────────────
   getCamt056(): Observable<Camt056[]> {
     return this.http.get<Camt056[]>(`${this.api}/camt056`);
   }

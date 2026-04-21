@@ -181,14 +181,26 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Message ID</th><th>UETR</th><th>Expéditeur</th><th>Destinataire</th>
+                <th>Message ID</th><th>Type MSG</th><th>UETR</th><th>Expéditeur</th><th>Destinataire</th>
                 <th>Montant</th><th>Devise</th><th>Date Valeur</th><th>Statut</th>
                 <th>Motif Rejet</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let p of paiementsEmis">
-                <td><strong>{{ p.messageId }}</strong></td>
+               <td><strong>{{ p.messageId }}</strong></td>
+                <td>
+                  <span *ngIf="p.msgType === 'pacs.008' || !p.msgType"
+                    style="background:#eff6ff;color:#3b82f6;border:1.5px solid #3b82f6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
+                    pacs.008
+                  </span>
+                  <span *ngIf="p.msgType === 'pacs.009'"
+                    style="background:#f5f3ff;color:#8b5cf6;border:1.5px solid #8b5cf6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
+                    pacs.009
+                  </span>
+                 <span *ngIf="p.msgType === 'pacs.009.COV'" class="badge-type-cov">
+                    pacs.009 COV
+                  </span>
                 <td class="uetr-cell" [title]="p.uetr">{{ p.uetr }}</td>
                 <td>{{ p.senderName }}</td>
                 <td>{{ p.receiverName }}</td>
@@ -214,7 +226,7 @@
                 </td>
               </tr>
               <tr *ngIf="paiementsEmis.length === 0">
-                <td colspan="10" class="empty-state">Aucun paiement émis pour l'instant</td>
+                <td colspan="11" class="empty-state">Aucun paiement émis pour l'instant</td>
               </tr>
             </tbody>
           </table>
@@ -501,6 +513,110 @@
         </div>
       </div>
     </div>
+    <!-- ═══════════════════════════════════════════════════
+     TAB : HISTORIQUE PACS
+═══════════════════════════════════════════════════ -->
+<div *ngIf="activeTab==='historique-pacs'" class="tab-content">
+  <div class="page-title">Historique des Messages pacs</div>
+  <div class="content-card">
+    <div class="card-header">
+      <div>
+        <h2>Tous les messages pacs.008 / pacs.009</h2>
+        <p class="content-sub">Paiements entrants (RECU) et sortants (EMIS) — pacs.002 exclus</p>
+      </div>
+      <button class="btn-refresh" (click)="loadHistoriquePacs()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Actualiser
+      </button>
+    </div>
+    <div class="filtres-bar">
+      <div class="filtre-item filtre-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" [(ngModel)]="filtreHistPacsSearch" placeholder="Rechercher messageId, BIC..." />
+      </div>
+      <div class="filtre-item">
+        <select [(ngModel)]="filtreHistPacsDirection">
+          <option value="">Tous (RECU + EMIS)</option>
+          <option value="RECU">RECU — Entrants</option>
+          <option value="EMIS">EMIS — Sortants</option>
+        </select>
+      </div>
+      <div class="filtre-item">
+        <select [(ngModel)]="filtreHistPacsType">
+          <option value="">Tous les types</option>
+          <option value="pacs.008">pacs.008</option>
+          <option value="pacs.009">pacs.009</option>
+          <option value="pacs.009.COV">pacs.009 COV</option>
+        </select>
+      </div>
+      <div class="filtre-item">
+        <select [(ngModel)]="filtreHistPacsStatut">
+          <option value="">Tous les statuts</option>
+          <option value="PDNG">PDNG</option>
+          <option value="ACCP">ACCP</option>
+          <option value="ACSC">ACSC</option>
+          <option value="RJCT">RJCT</option>
+          <option value="CANC">CANC</option>
+        </select>
+      </div>
+      <button class="btn-reset" (click)="resetFiltresHistPacs()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Réinitialiser
+      </button>
+    </div>
+    <div class="filtres-count">{{ historiquePacsFiltres.length }} résultat(s) sur {{ historiquePacs.length }} messages</div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Direction</th><th>Type MSG</th><th>Message ID</th><th>UETR</th>
+            <th>BIC Expéditeur</th><th>BIC Destinataire</th><th>Montant</th>
+            <th>Devise</th><th>Statut</th><th>Date Réception</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of historiquePacsFiltres">
+            <td>
+              <span *ngIf="p.typeMsg === 'RECU'"
+                style="background:#f0fdf4;color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
+                ↓ RECU
+              </span>
+              <span *ngIf="p.typeMsg === 'EMIS'"
+                style="background:#eff6ff;color:#2563eb;border:1.5px solid #2563eb;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
+                ↑ EMIS
+              </span>
+            </td>
+            <td>
+              <span *ngIf="p.msgType === 'pacs.008' || !p.msgType"
+                style="background:#eff6ff;color:#3b82f6;border:1.5px solid #3b82f6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
+                pacs.008
+              </span>
+              <span *ngIf="p.msgType === 'pacs.009'"
+                style="background:#f5f3ff;color:#8b5cf6;border:1.5px solid #8b5cf6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
+                pacs.009
+              </span>
+              <span *ngIf="p.msgType === 'pacs.009.COV'"
+                style="background:#fdf4ff;color:#a855f7;border:1.5px solid #a855f7;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
+                pacs.009 COV
+              </span>
+            </td>
+            <td><strong>{{ p.messageId }}</strong></td>
+            <td class="uetr-cell" [title]="p.uetr">{{ p.uetr || '—' }}</td>
+            <td><strong>{{ p.senderBic }}</strong></td>
+            <td><strong>{{ p.receiverBic }}</strong></td>
+            <td class="montant-cell">{{ formatMontant(p.montant) }}</td>
+            <td>{{ p.devise }}</td>
+            <td><span class="badge" [ngClass]="getStatutClass(p.statut)">{{ p.statut || 'PDNG' }}</span></td>
+            <td>{{ p.receivedAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          </tr>
+          <tr *ngIf="historiquePacsFiltres.length === 0">
+            <td colspan="10" class="empty-state">Aucun message pacs trouvé</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
   </main>
 </div>
@@ -590,6 +706,7 @@
     </div>
   </div>
 </div>
+
 
 <!-- ═══════════════════════════════════════════════════
      MODAL : TIMELINE

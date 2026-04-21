@@ -41,10 +41,10 @@ export class AppMenu implements OnInit, OnChanges {
                     {
                         label: 'Administration',
                         items: [
-                            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/admin'] },
-                            { label: 'Gestion des utilisateurs', icon: 'pi pi-fw pi-users', routerLink: ['/admin/utilisateurs'] },
-                            { label: 'Paramétrage', icon: 'pi pi-fw pi-cog', routerLink: ['/admin/parametrage'] },
-                            { label: "Mise à jour de l'annuaire", icon: 'pi pi-fw pi-book', routerLink: ['/admin/annuaire'] }
+                            { label: 'Dashboard',                  icon: 'pi pi-fw pi-home',    routerLink: ['/admin'] },
+                            { label: 'Gestion des utilisateurs',   icon: 'pi pi-fw pi-users',   routerLink: ['/admin/utilisateurs'] },
+                            { label: 'Paramétrage',                icon: 'pi pi-fw pi-cog',     routerLink: ['/admin/parametrage'] },
+                            { label: "Mise à jour de l'annuaire",  icon: 'pi pi-fw pi-book',    routerLink: ['/admin/annuaire'] }
                         ]
                     }
                 ];
@@ -76,10 +76,18 @@ export class AppMenu implements OnInit, OnChanges {
                     {
                         label: 'Annulations',
                         items: [
-                            { label: 'Envoyer camt.056', icon: 'pi pi-fw pi-times-circle',
+                            { label: 'Demande Annulation', icon: 'pi pi-fw pi-times-circle',
                               routerLink: ['/backoffice'], queryParams: { tab: 'annulation' } },
-                            { label: 'Suivi camt.029', icon: 'pi pi-fw pi-file',
+                            { label: 'Réponse Annulation', icon: 'pi pi-fw pi-file',
                               routerLink: ['/backoffice'], queryParams: { tab: 'annulations' } }
+                        ]
+                    },
+                    {
+                        // ✅ New — full pacs message history (pacs.008 + pacs.009, no pacs.002)
+                        label: 'Historique',
+                        items: [
+                            { label: 'Historique pacs', icon: 'pi pi-fw pi-history',
+                              routerLink: ['/backoffice'], queryParams: { tab: 'historique-pacs' } }
                         ]
                     }
                 ];
@@ -90,14 +98,17 @@ export class AppMenu implements OnInit, OnChanges {
                     {
                         label: 'Vue générale',
                         items: [
-                            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/client'], queryParams: { tab: 'dashboard' } }
+                            { label: 'Dashboard', icon: 'pi pi-fw pi-home',
+                              routerLink: ['/client'], queryParams: { tab: 'dashboard' } }
                         ]
                     },
                     {
                         label: 'Mes transactions',
                         items: [
-                            { label: 'Mes paiements', icon: 'pi pi-fw pi-send', routerLink: ['/client'], queryParams: { tab: 'paiements' } },
-                            { label: 'Historique', icon: 'pi pi-fw pi-history', routerLink: ['/client'], queryParams: { tab: 'historique' } }
+                            { label: 'Mes paiements', icon: 'pi pi-fw pi-send',
+                              routerLink: ['/client'], queryParams: { tab: 'paiements' } },
+                            { label: 'Historique', icon: 'pi pi-fw pi-history',
+                              routerLink: ['/client'], queryParams: { tab: 'historique' } }
                         ]
                     }
                 ];
