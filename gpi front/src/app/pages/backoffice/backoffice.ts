@@ -89,8 +89,12 @@ export class BackofficeComponent implements OnInit, OnDestroy {
 
   showFormInitiation = false;
   nouveauPaiement: NouveauPaiement = {
-    bicDestinataire: '', iban: '', montant: 0,
-    devise: 'TND', typeCharges: 'SHA', motif: ''
+    bicDestinataire: '',
+    iban: '',
+    montant: 0,
+    devise: 'TND',
+    typeCharges: 'SHA',
+    motif: ''
   };
 
   showXmlModal = false;
@@ -115,6 +119,8 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   camt056List: Camt056[] = [];
   annulations: Annulation[] = [];
   camt056EnvoisEnCours = false;
+  camt029EnvoisEnCours = false;
+
   annulationMessageId = '';
   annulationMotif = 'DUPL';
   annulationRaison = '';
@@ -126,9 +132,16 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   filtreHistPacsStatut = '';
 
   stats: BackofficeStats = {
-    totalRecus: 0, enAttente: 0, acceptes: 0, rejetes: 0,
-    totalEmis: 0, emisEnAttente: 0, emisAcceptes: 0, emisRejetes: 0
+    totalRecus: 0,
+    enAttente: 0,
+    acceptes: 0,
+    rejetes: 0,
+    totalEmis: 0,
+    emisEnAttente: 0,
+    emisAcceptes: 0,
+    emisRejetes: 0
   };
+
   historiqueReel: HistoriqueItem[] = [];
   historique: any[] = [];
   selectedMessageId = '';
@@ -145,45 +158,62 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   userName = '';
   userInitials = '';
 
-  // ── Data Loading ───────────────────────────────────────────
   loadPaiementsRecus(): void {
     this.recapMgService.getPaiementsRecus().subscribe({
-      next: (data) => { this.paiementsRecus = [...data]; this.cdr.detectChanges(); },
+      next: (data) => {
+        this.paiementsRecus = [...data];
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur paiements reçus:', err)
     });
   }
 
   loadPaiementsEmis(): void {
     this.recapMgService.getPaiementsEmis().subscribe({
-      next: (data) => { this.paiementsEmis = [...data]; this.cdr.detectChanges(); },
+      next: (data) => {
+        this.paiementsEmis = [...data];
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur paiements émis:', err)
     });
   }
 
   loadStats(): void {
     this.recapMgService.getStats().subscribe({
-      next: (data) => { this.stats = data; this.cdr.detectChanges(); },
+      next: (data) => {
+        this.stats = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur stats:', err)
     });
   }
 
   loadHistorique(): void {
     this.recapMgService.getHistorique().subscribe({
-      next: (data) => { this.historiqueReel = data; this.cdr.detectChanges(); },
+      next: (data) => {
+        this.historiqueReel = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur historique:', err)
     });
   }
 
   loadCamt056(): void {
     this.recapMgService.getCamt056().subscribe({
-      next: (data) => { this.camt056List = data; this.cdr.detectChanges(); },
+      next: (data) => {
+        this.camt056List = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur camt.056:', err)
     });
   }
 
   loadHistoriquePacs(): void {
     this.recapMgService.getHistoriquePacs().subscribe({
-      next: (data) => { this.historiquePacs = data; this.cdr.detectChanges(); },
+      next: (data) => {
+        this.historiquePacs = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur historique pacs:', err)
     });
   }
@@ -191,6 +221,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadUserFromToken();
     this.activeTab = this.route.snapshot.queryParams['tab'] || 'dashboard';
+
     this.loadPaiementsRecus();
     this.loadPaiementsEmis();
     this.loadStats();
@@ -224,7 +255,10 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     this.router.navigateByUrl('/auth/login');
   }
 
-  ouvrirDetailLigne(t: Transaction): void { this.selectedTransaction = t; }
+  ouvrirDetailLigne(t: Transaction): void {
+    this.selectedTransaction = t;
+  }
+
   ouvrirDetailDashboard(t: Transaction): void {
     this.activeTab = 'vue-transactionnelle';
     this.selectedTransaction = t;
@@ -240,7 +274,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
         this.userInitials = parts.length >= 2
           ? (parts[0][0] + parts[1][0]).toUpperCase()
           : this.userName.substring(0, 2).toUpperCase();
-      } catch (e) {
+      } catch {
         this.userName = 'Utilisateur';
         this.userInitials = 'U';
       }
@@ -249,21 +283,40 @@ export class BackofficeComponent implements OnInit, OnDestroy {
 
   voirXmlEmis(p: RecapMg): void {
     this.recapMgService.getXmlEmis(p.id).subscribe({
-      next: (res) => { this.xmlFileName = res.fileName; this.xmlContent = res.content; this.showXmlModal = true; this.cdr.detectChanges(); },
+      next: (res) => {
+        this.xmlFileName = res.fileName;
+        this.xmlContent = res.content;
+        this.showXmlModal = true;
+        this.cdr.detectChanges();
+      },
       error: () => this.displayToast('Erreur chargement XML', 'error')
     });
   }
 
   voirXmlRecu(p: RecapMg): void {
     this.recapMgService.getXmlRecu(p.id).subscribe({
-      next: (res) => { this.xmlFileName = res.fileName; this.xmlContent = res.content; this.showXmlModal = true; this.cdr.detectChanges(); },
+      next: (res) => {
+        this.xmlFileName = res.fileName;
+        this.xmlContent = res.content;
+        this.showXmlModal = true;
+        this.cdr.detectChanges();
+      },
       error: () => this.displayToast('Erreur chargement XML', 'error')
     });
   }
 
-  fermerXmlModal(): void { this.showXmlModal = false; }
-  voirTimelineEmis(p: RecapMg): void { this.timelinePaiement = p; this.showTimelineModal = true; }
-  fermerTimelineModal(): void { this.showTimelineModal = false; }
+  fermerXmlModal(): void {
+    this.showXmlModal = false;
+  }
+
+  voirTimelineEmis(p: RecapMg): void {
+    this.timelinePaiement = p;
+    this.showTimelineModal = true;
+  }
+
+  fermerTimelineModal(): void {
+    this.showTimelineModal = false;
+  }
 
   ouvrirModalTraitement(p: RecapMg): void {
     this.paiementATraiter = p;
@@ -280,9 +333,10 @@ export class BackofficeComponent implements OnInit, OnDestroy {
 
   confirmerTraitement(): void {
     if (!this.paiementATraiter) return;
+
     this.modalEnvoi = true;
     const statutEnvoi = this.modalNouveauStatut;
-    const messageId   = this.paiementATraiter.messageId;
+    const messageId = this.paiementATraiter.messageId;
 
     this.recapMgService.updateStatut(
       this.paiementATraiter.id,
@@ -292,12 +346,14 @@ export class BackofficeComponent implements OnInit, OnDestroy {
       next: (blob: Blob) => {
         this.modalEnvoi = false;
         this.fermerTraitementModal();
-        const url  = window.URL.createObjectURL(blob);
+
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href  = url;
+        link.href = url;
         link.download = `pacs002_${messageId}_${statutEnvoi}.xml`;
         link.click();
         window.URL.revokeObjectURL(url);
+
         this.displayToast(`✅ pacs.002 généré — ${statutEnvoi}`, 'success');
         this.loadPaiementsRecus();
         this.loadStats();
@@ -305,18 +361,19 @@ export class BackofficeComponent implements OnInit, OnDestroy {
         this.loadHistoriquePacs();
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: () => {
         this.modalEnvoi = false;
         this.displayToast('Erreur lors du traitement', 'error');
       }
     });
   }
 
-  // ── camt.056 — cancel an OUTGOING (EMIS) pacs ─────────────
   envoyerAnnulation(): void {
     if (!this.annulationMessageId.trim()) {
-      this.displayToast('Veuillez sélectionner un paiement', 'error'); return;
+      this.displayToast('Veuillez sélectionner un paiement', 'error');
+      return;
     }
+
     this.camt056EnvoisEnCours = true;
     this.cdr.detectChanges();
 
@@ -329,9 +386,11 @@ export class BackofficeComponent implements OnInit, OnDestroy {
         this.camt056EnvoisEnCours = false;
         this.annulationMessageId = '';
         this.annulationRaison = '';
+
         this.loadCamt056();
         this.loadPaiementsEmis();
         this.loadHistoriquePacs();
+
         this.displayToast(`✅ camt.056 envoyé — ${result.messageId}`, 'success');
         this.cdr.detectChanges();
       },
@@ -343,7 +402,35 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Getters ────────────────────────────────────────────────
+  genererCamt029(a: Camt056): void {
+    if (!a?.uetr) {
+      this.displayToast('UETR introuvable pour cette annulation', 'error');
+      return;
+    }
+
+    this.camt029EnvoisEnCours = true;
+    this.cdr.detectChanges();
+
+    this.recapMgService.genererCamt029(a.uetr).subscribe({
+      next: (res: any) => {
+        this.camt029EnvoisEnCours = false;
+        this.displayToast(`✅ camt.029 généré — ${res.fileName}`, 'success');
+
+        this.loadPaiementsRecus();
+        this.loadHistoriquePacs();
+        this.loadCamt056();
+        this.loadStats();
+
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.camt029EnvoisEnCours = false;
+        this.displayToast(err?.error?.error || 'Erreur génération camt.029', 'error');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   get paiementsEnAttente(): RecapMg[] {
     return this.paiementsRecus.filter(p => p.statut === 'PDNG' || !p.statut);
   }
@@ -351,7 +438,9 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   get repartitionStatuts(): { statut: string; count: number; pct: number }[] {
     const total = this.paiementsRecus.length;
     if (total === 0) return [];
+
     const statuts = ['PDNG', 'ACCP', 'ACSP', 'ACSC', 'RJCT', 'CANC'];
+
     return statuts
       .map(s => ({
         statut: s,
@@ -367,10 +456,12 @@ export class BackofficeComponent implements OnInit, OnDestroy {
       const matchSearch = !this.filtreSearch ||
         p.messageId?.toLowerCase().includes(this.filtreSearch.toLowerCase()) ||
         p.senderName?.toLowerCase().includes(this.filtreSearch.toLowerCase());
+
       const matchStatut = !this.filtreStatut || p.statut === this.filtreStatut;
       const matchDevise = !this.filtreDevise || p.devise === this.filtreDevise;
       const matchBic = !this.filtreBicExp || p.senderBic === this.filtreBicExp;
       const matchDateDu = !this.filtreDateDu || new Date(p.dateValeur) >= new Date(this.filtreDateDu);
+
       return matchSearch && matchStatut && matchDevise && matchBic && matchDateDu;
     });
   }
@@ -384,8 +475,12 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   }
 
   resetFiltres(): void {
-    this.filtreSearch = ''; this.filtreStatut = ''; this.filtreDevise = '';
-    this.filtreBicExp = ''; this.filtreDateDu = ''; this.filtreDateAu = '';
+    this.filtreSearch = '';
+    this.filtreStatut = '';
+    this.filtreDevise = '';
+    this.filtreBicExp = '';
+    this.filtreDateDu = '';
+    this.filtreDateAu = '';
   }
 
   get pacs002Emis(): HistoriqueItem[] {
@@ -398,8 +493,10 @@ export class BackofficeComponent implements OnInit, OnDestroy {
         h.messageId?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
         h.senderBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
         h.receiverBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase());
+
       const matchType = !this.filtreHistoriqueType || h.type === this.filtreHistoriqueType;
       const matchStatut = !this.filtreHistoriqueStatut || h.statut === this.filtreHistoriqueStatut;
+
       return matchSearch && matchType && matchStatut;
     });
   }
@@ -410,7 +507,6 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     this.filtreHistoriqueStatut = '';
   }
 
-  // ✅ Only EMIS (outgoing) pacs with PDNG statut can be cancelled
   get paiementsAnnulables(): RecapMg[] {
     return this.paiementsEmis.filter(p => p.statut === 'PDNG' || !p.statut);
   }
@@ -418,6 +514,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   get filteredAnnulations(): Camt056[] {
     if (!this.searchAnnulations) return this.camt056List;
     const q = this.searchAnnulations.toLowerCase();
+
     return this.camt056List.filter(c =>
       c.messageId?.toLowerCase().includes(q) ||
       c.uetr?.toLowerCase().includes(q) ||
@@ -431,11 +528,12 @@ export class BackofficeComponent implements OnInit, OnDestroy {
         p.messageId?.toLowerCase().includes(this.filtreHistPacsSearch.toLowerCase()) ||
         p.senderBic?.toLowerCase().includes(this.filtreHistPacsSearch.toLowerCase()) ||
         p.receiverBic?.toLowerCase().includes(this.filtreHistPacsSearch.toLowerCase());
-      const matchDir    = !this.filtreHistPacsDirection || p.typeMsg === this.filtreHistPacsDirection;
-      // ✅ Treat null msgType as pacs.008 for filter
+
+      const matchDir = !this.filtreHistPacsDirection || p.typeMsg === this.filtreHistPacsDirection;
       const effectiveMsgType = p.msgType || 'pacs.008';
-      const matchType   = !this.filtreHistPacsType || effectiveMsgType === this.filtreHistPacsType;
+      const matchType = !this.filtreHistPacsType || effectiveMsgType === this.filtreHistPacsType;
       const matchStatut = !this.filtreHistPacsStatut || p.statut === this.filtreHistPacsStatut;
+
       return matchSearch && matchDir && matchType && matchStatut;
     });
   }
@@ -447,86 +545,228 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     this.filtreHistPacsStatut = '';
   }
 
-  traiterPaiement(p: RecapMg): void { this.ouvrirModalTraitement(p); }
+  traiterPaiement(p: RecapMg): void {
+    this.ouvrirModalTraitement(p);
+  }
 
   rejeterPaiementRecu(p: RecapMg, motif: string): void {
     this.recapMgService.updateStatut(p.id, 'RJCT', motif).subscribe({
-      next: () => { p.statut = 'RJCT'; p.motifRejet = motif; this.loadStats(); this.displayToast('Paiement rejeté', 'error'); },
+      next: () => {
+        p.statut = 'RJCT';
+        p.motifRejet = motif;
+        this.loadStats();
+        this.displayToast('Paiement rejeté', 'error');
+      },
       error: () => this.displayToast('Erreur rejet', 'error')
     });
   }
 
   genererEtEnvoyer(): void {
     if (!this.selectedMessageId || !this.selectedRecapId) {
-      this.displayToast('Veuillez sélectionner un paiement', 'error'); return;
+      this.displayToast('Veuillez sélectionner un paiement', 'error');
+      return;
     }
+
     this.recapMgService.updateStatut(
       this.selectedRecapId!,
       this.confirmationNouveauStatut,
       this.confirmationNouveauStatut === 'RJCT' ? this.confirmationMotifRejet : undefined
     ).subscribe({
       next: () => {
-        this.loadStats(); this.loadPaiementsRecus(); this.loadHistorique(); this.loadHistoriquePacs();
-        this.selectedMessageId = ''; this.selectedRecapId = null;
+        this.loadStats();
+        this.loadPaiementsRecus();
+        this.loadHistorique();
+        this.loadHistoriquePacs();
+        this.selectedMessageId = '';
+        this.selectedRecapId = null;
         this.displayToast(`pacs.002 généré — ${this.confirmationNouveauStatut}`, 'success');
       },
       error: () => this.displayToast('Erreur mise à jour statut', 'error')
     });
   }
 
-  annulerConfirmation(): void { this.confirmationUetr = ''; this.confirmationTransaction = null; }
-
-  rechercherTransactionConfirmation(): void {
-    if (!this.confirmationUetr.trim()) { this.displayToast('Veuillez saisir un UETR', 'error'); return; }
-    const found = this.transactions.find(t => t.uetr === this.confirmationUetr.trim());
-    if (found) { this.confirmationTransaction = found; this.displayToast('Transaction chargée', 'success'); }
-    else { this.confirmationTransaction = null; this.displayToast('Aucune transaction trouvée', 'error'); }
+  annulerConfirmation(): void {
+    this.confirmationUetr = '';
+    this.confirmationTransaction = null;
   }
 
-  toggleFormInitiation(): void { this.showFormInitiation = !this.showFormInitiation; }
+  rechercherTransactionConfirmation(): void {
+    if (!this.confirmationUetr.trim()) {
+      this.displayToast('Veuillez saisir un UETR', 'error');
+      return;
+    }
+
+    const found = this.transactions.find(t => t.uetr === this.confirmationUetr.trim());
+
+    if (found) {
+      this.confirmationTransaction = found;
+      this.displayToast('Transaction chargée', 'success');
+    } else {
+      this.confirmationTransaction = null;
+      this.displayToast('Aucune transaction trouvée', 'error');
+    }
+  }
+
+  toggleFormInitiation(): void {
+    this.showFormInitiation = !this.showFormInitiation;
+  }
 
   initierPaiement(): void {
-    const { bicDestinataire, iban, montant, devise, motif } = this.nouveauPaiement;
+    const { bicDestinataire, iban, montant, motif } = this.nouveauPaiement;
+
     if (!bicDestinataire || !iban || !montant || !motif) {
-      this.displayToast('Veuillez remplir tous les champs obligatoires', 'error'); return;
+      this.displayToast('Veuillez remplir tous les champs obligatoires', 'error');
+      return;
     }
+
     this.showFormInitiation = false;
-    this.nouveauPaiement = { bicDestinataire: '', iban: '', montant: 0, devise: 'TND', typeCharges: 'SHA', motif: '' };
+    this.nouveauPaiement = {
+      bicDestinataire: '',
+      iban: '',
+      montant: 0,
+      devise: 'TND',
+      typeCharges: 'SHA',
+      motif: ''
+    };
+
     this.displayToast('pacs.008 initié', 'success');
   }
 
-  accepterPaiement(p: PaiementEntrant): void { p.statutISO = 'ACSC'; this.displayToast('Paiement accepté', 'success'); }
-  rejeterPaiement(p: PaiementEntrant, motif: MotifRejet): void { p.statutISO = 'RJCT'; p.motifRejet = motif; this.displayToast(`Rejeté (${motif})`, 'error'); }
+  accepterPaiement(p: PaiementEntrant): void {
+    p.statutISO = 'ACSC';
+    this.displayToast('Paiement accepté', 'success');
+  }
+
+  rejeterPaiement(p: PaiementEntrant, motif: MotifRejet): void {
+    p.statutISO = 'RJCT';
+    p.motifRejet = motif;
+    this.displayToast(`Rejeté (${motif})`, 'error');
+  }
 
   getStatutLabel(s: StatutISO): string {
-    return ({ PDNG: 'PDNG — En attente', ACCP: 'ACCP — Accepté', ACSP: 'ACSP — En cours', ACSC: 'ACSC — Crédit OK', RJCT: 'RJCT — Rejeté', CANC: 'CANC — Annulé' } as any)[s] || s;
+    return ({
+      PDNG: 'PDNG — En attente',
+      ACCP: 'ACCP — Accepté',
+      ACSP: 'ACSP — En cours',
+      ACSC: 'ACSC — Crédit OK',
+      RJCT: 'RJCT — Rejeté',
+      CANC: 'CANC — Annulé'
+    } as any)[s] || s;
   }
+
   getStatutLabelCourt(s: StatutISO): string {
-    return ({ PDNG: 'PDNG', ACCP: 'ACCP', ACSP: 'ACSP', ACSC: 'ACSC', RJCT: 'RJCT', CANC: 'CANC' } as any)[s] || s;
+    return ({
+      PDNG: 'PDNG',
+      ACCP: 'ACCP',
+      ACSP: 'ACSP',
+      ACSC: 'ACSC',
+      RJCT: 'RJCT',
+      CANC: 'CANC'
+    } as any)[s] || s;
   }
+
   getStatutClass(s: string): string {
-    return ({ PDNG: 'badge-pdng', ACCP: 'badge-accp', ACSP: 'badge-acsp', ACSC: 'badge-acsc', RJCT: 'badge-rjct', CANC: 'badge-canc' } as any)[s] || '';
+    return ({
+      PDNG: 'badge-pdng',
+      ACCP: 'badge-accp',
+      ACSP: 'badge-acsp',
+      ACSC: 'badge-acsc',
+      RJCT: 'badge-rjct',
+      CANC: 'badge-canc'
+    } as any)[s] || '';
   }
+
   getStatutDesc(s: StatutISO): string {
-    return ({ PDNG: 'En attente', ACCP: 'Accepté', ACSP: 'Règlement en cours', ACSC: 'Crédit confirmé', RJCT: 'Rejeté', CANC: 'Annulé' } as any)[s] || '';
+    return ({
+      PDNG: 'En attente',
+      ACCP: 'Accepté',
+      ACSP: 'Règlement en cours',
+      ACSC: 'Crédit confirmé',
+      RJCT: 'Rejeté',
+      CANC: 'Annulé'
+    } as any)[s] || '';
   }
+
   getMotifRejetLabel(m: MotifRejet | undefined): string {
     if (!m) return '';
-    return ({ AC01: 'AC01 — IBAN incorrect', AC04: 'AC04 — Compte clôturé', AG01: 'AG01 — Banque ne traite pas', FF01: 'FF01 — Code invalide', MS03: 'MS03 — Non spécifié', NARR: 'NARR — Voir détail' } as any)[m] || m;
+    return ({
+      AC01: 'AC01 — IBAN incorrect',
+      AC04: 'AC04 — Compte clôturé',
+      AG01: 'AG01 — Banque ne traite pas',
+      FF01: 'FF01 — Code invalide',
+      MS03: 'MS03 — Non spécifié',
+      NARR: 'NARR — Voir détail'
+    } as any)[m] || m;
   }
+
   getMotifRefusCamtLabel(m: MotifRefusCamt | undefined): string {
     if (!m) return '';
-    return ({ LEGL: 'LEGL — Raison légale', CUST: 'CUST — Décision client', AGET: 'AGET — Décision agent', NARR: 'NARR — Voir détail' } as any)[m] || m;
+    return ({
+      LEGL: 'LEGL — Raison légale',
+      CUST: 'CUST — Décision client',
+      AGET: 'AGET — Décision agent',
+      NARR: 'NARR — Voir détail'
+    } as any)[m] || m;
   }
-  getAnnulStatutClass(s: string): string { return ({ ACCP: 'badge-acsc', PDNG: 'badge-pdng', RJCT: 'badge-rjct' } as any)[s] || ''; }
-  getAnnulStatutLabel(s: string): string { return ({ ACCP: 'ACCP — Acceptée', PDNG: 'PDNG — En attente', RJCT: 'RJCT — Refusée' } as any)[s] || s; }
-  getDelaiClass(h: number | undefined): string { if (!h) return ''; return h <= 24 ? 'delai-ok' : 'delai-retard'; }
-  getDelaiLabel(h: number | undefined): string { if (!h) return '—'; if (h < 1) return '< 1h'; return `${h}h`; }
-  getRoleLabel(role: string): string { return ({ emetteur: 'Emetteur', intermediaire: 'Intermédiaire', recepteur: 'Recepteur' } as any)[role] || role; }
-  getAgentStatutClass(s: string): string { return ({ confirme: 'agent-confirme', 'en-transit': 'agent-transit', 'en-attente': 'agent-attente' } as any)[s] || ''; }
-  get allCharges(): Charge[] { return this.selectedTransaction?.agents.flatMap(a => a.charges) ?? []; }
-  totalChargesAll(): number { return this.allCharges.reduce((s, c) => s + c.montant, 0); }
-  getMsgTypeClass(t: string): string { return t.startsWith('pacs') ? 'badge-msg-pacs' : t === 'camt.056' ? 'badge-msg-camt056' : 'badge-msg-camt029'; }
+
+  getAnnulStatutClass(s: string): string {
+    return ({
+      ACCP: 'badge-acsc',
+      PDNG: 'badge-pdng',
+      RJCT: 'badge-rjct'
+    } as any)[s] || '';
+  }
+
+  getAnnulStatutLabel(s: string): string {
+    return ({
+      ACCP: 'ACCP — Acceptée',
+      PDNG: 'PDNG — En attente',
+      RJCT: 'RJCT — Refusée'
+    } as any)[s] || s;
+  }
+
+  getDelaiClass(h: number | undefined): string {
+    if (!h) return '';
+    return h <= 24 ? 'delai-ok' : 'delai-retard';
+  }
+
+  getDelaiLabel(h: number | undefined): string {
+    if (!h) return '—';
+    if (h < 1) return '< 1h';
+    return `${h}h`;
+  }
+
+  getRoleLabel(role: string): string {
+    return ({
+      emetteur: 'Emetteur',
+      intermediaire: 'Intermédiaire',
+      recepteur: 'Recepteur'
+    } as any)[role] || role;
+  }
+
+  getAgentStatutClass(s: string): string {
+    return ({
+      confirme: 'agent-confirme',
+      'en-transit': 'agent-transit',
+      'en-attente': 'agent-attente'
+    } as any)[s] || '';
+  }
+
+  get allCharges(): Charge[] {
+    return this.selectedTransaction?.agents.flatMap(a => a.charges) ?? [];
+  }
+
+  totalChargesAll(): number {
+    return this.allCharges.reduce((s, c) => s + c.montant, 0);
+  }
+
+  getMsgTypeClass(t: string): string {
+    return t.startsWith('pacs')
+      ? 'badge-msg-pacs'
+      : t === 'camt.056'
+      ? 'badge-msg-camt056'
+      : 'badge-msg-camt029';
+  }
 
   get filteredTransactions(): Transaction[] {
     return this.transactions.filter(t => {
@@ -535,27 +775,56 @@ export class BackofficeComponent implements OnInit, OnDestroy {
       return matchStatut && matchDevise;
     });
   }
+
   get paginatedTransactions(): Transaction[] {
     const s = (this.currentPage - 1) * this.pageSize;
     return this.filteredTransactions.slice(s, s + this.pageSize);
   }
-  get totalPages(): number { return Math.ceil(this.filteredTransactions.length / this.pageSize); }
-  get totalPagesArray(): number[] { return Array.from({ length: this.totalPages }, (_, i) => i + 1); }
-  goToPage(p: number): void { if (p >= 1 && p <= this.totalPages) this.currentPage = p; }
 
-  get nbEntrantsEnAttente(): number { return this.paiementsEnAttente.length; }
-  get nbAnnulationsPdng(): number { return this.camt056List.filter(c => c.statut === 'PDNG').length; }
+  get totalPages(): number {
+    return Math.ceil(this.filteredTransactions.length / this.pageSize);
+  }
+
+  get totalPagesArray(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
+  goToPage(p: number): void {
+    if (p >= 1 && p <= this.totalPages) {
+      this.currentPage = p;
+    }
+  }
+
+  get nbEntrantsEnAttente(): number {
+    return this.paiementsEnAttente.length;
+  }
+
+  get nbAnnulationsPdng(): number {
+    return this.camt056List.filter(c => c.statut === 'PDNG').length;
+  }
 
   get statutsRepartition(): { statut: StatutISO; count: number; pct: number }[] {
-    return this.repartitionStatuts.map(r => ({ statut: r.statut as StatutISO, count: r.count, pct: r.pct }));
+    return this.repartitionStatuts.map(r => ({
+      statut: r.statut as StatutISO,
+      count: r.count,
+      pct: r.pct
+    }));
   }
 
   displayToast(msg: string, type: 'success' | 'error' | 'info'): void {
-    this.toastMessage = msg; this.toastType = type; this.showToast = true;
-    setTimeout(() => { this.showToast = false; }, 4000);
+    this.toastMessage = msg;
+    this.toastType = type;
+    this.showToast = true;
+
+    setTimeout(() => {
+      this.showToast = false;
+    }, 4000);
   }
 
   formatMontant(n: number | undefined): string {
-    return n?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00';
+    return n?.toLocaleString('fr-FR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }) || '0,00';
   }
 }

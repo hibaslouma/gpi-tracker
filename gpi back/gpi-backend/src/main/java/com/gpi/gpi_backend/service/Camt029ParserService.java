@@ -1,7 +1,7 @@
 package com.gpi.gpi_backend.service;
 
-import com.gpi.gpi_backend.repository.Camt056Repository;
-import com.gpi.gpi_backend.model.Camt056;
+import com.gpi.gpi_backend.model.RecapMg;
+import com.gpi.gpi_backend.repository.RecapMgRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
@@ -17,8 +17,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class Camt029ParserService {
 
-    private final Camt056Repository camt056Repository;
-    private final Camt056Service camt056Service;
+    private final RecapMgRepository recapMgRepository;
 
     public void parsingCamt029(Path file) {
         System.out.println("[Camt029Parser] 🔍 Parsing camt.029: " + file.getFileName());
@@ -32,50 +31,63 @@ public class Camt029ParserService {
 
             XPath xpath = XPathFactory.newInstance().newXPath();
 
-            // Extract fields from camt.029
-            String orgnlMsgId  = extractFirst(xpath, doc, "//*[local-name()='OrgnlMsgId']");
-            String orgnlUetr   = extractFirst(xpath, doc, "//*[local-name()='OrgnlUETR']");
-            String cxlSts      = extractFirst(xpath, doc, "//*[local-name()='CxlSts']");    // ACCP or RJCT
-            String rjctRsn     = extractFirst(xpath, doc, "//*[local-name()='Cd']");
+            String orgnlMsgId = extractFirst(xpath, doc, "//*[local-name()='OrgnlMsgId']");
+            String orgnlUetr  = extractFirst(xpath, doc, "//*[local-name()='OrgnlUETR']");
+            String cxlSts     = extractFirst(xpath, doc, "//*[local-name()='CxlSts']");
+            String rjctRsn    = extractFirst(xpath, doc,
+                    "//*[local-name()='StsRsnInf']/*[local-name()='Rsn']/*[local-name()='Cd']");
 
             System.out.println("[Camt029Parser] OrgnlMsgId : " + orgnlMsgId);
             System.out.println("[Camt029Parser] OrgnlUETR  : " + orgnlUetr);
             System.out.println("[Camt029Parser] CxlSts     : " + cxlSts);
             System.out.println("[Camt029Parser] RjctRsn    : " + rjctRsn);
 
-            if (orgnlUetr == null && orgnlMsgId == null) {
+            if ((orgnlUetr == null || orgnlUetr.isBlank()) &&
+                    (orgnlMsgId == null || orgnlMsgId.isBlank())) {
                 System.err.println("[Camt029Parser] ⚠️ Aucune référence trouvée");
                 return;
             }
 
-            // Find camt.056 by UETR or original message ID
-            Optional<Camt056> camt056Opt = orgnlUetr != null
-                    ? camt056Repository.findByUetr(orgnlUetr)
-                    : Optional.empty();
+            Optional<RecapMg> recapOpt = Optional.empty();
 
-            if (camt056Opt.isEmpty()) {
-                System.err.println("[Camt029Parser] ⚠️ camt.056 introuvable pour UETR: " + orgnlUetr);
+            if (orgnlUetr != null && !orgnlUetr.isBlank()) {
+                recapOpt = recapMgRepository.findByUetr(orgnlUetr);
+            }
+
+            if (recapOpt.isEmpty() && orgnlMsgId != null && !orgnlMsgId.isBlank()) {
+                recapOpt = recapMgRepository.findByMessageId(orgnlMsgId);
+            }
+
+            if (recapOpt.isEmpty()) {
+                System.err.println("[Camt029Parser] ⚠️ RecapMg introuvable");
                 return;
             }
 
-            // Map camt.029 status to our statut
+            RecapMg recap = recapOpt.get();
             String statut = mapCamt029Status(cxlSts);
-            camt056Service.updateStatut(orgnlUetr, statut, rjctRsn);
 
-            System.out.println("[Camt029Parser] ✅ camt.056 mis à jour: "
-                    + orgnlUetr + " → " + statut);
+            recap.setStatut(statut);
+
+            if ("RJCT".equals(statut) && rjctRsn != null && !rjctRsn.isBlank()) {
+                recap.setMotifRejet(rjctRsn);
+            }
+
+            recapMgRepository.save(recap);
+
+            System.out.println("[Camt029Parser] ✅ RecapMg mis à jour: "
+                    + recap.getMessageId() + " → " + statut);
 
         } catch (Exception e) {
             System.err.println("[Camt029Parser] ❌ Error: "
                     + file.getFileName() + " → " + e.getMessage());
-            throw new RuntimeException("Camt029 parsing failed: " + e.getMessage());
+            throw new RuntimeException("Camt029 parsing failed: " + e.getMessage(), e);
         }
     }
 
     private String mapCamt029Status(String cxlSts) {
         if (cxlSts == null) return "PDNG";
         return switch (cxlSts.toUpperCase()) {
-            case "ACCP", "ACCW" -> "ACCP";
+            case "ACCP", "ACCW" -> "CANC";
             case "RJCT"         -> "RJCT";
             default             -> "PDNG";
         };

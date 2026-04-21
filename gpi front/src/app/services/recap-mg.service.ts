@@ -139,4 +139,7 @@ export class RecapMgService {
       originalMsgId, motif, motifDetail
     });
   }
+  genererCamt029(uetr: string) {
+  return this.http.post<any>('http://localhost:8080/api/backoffice/camt029', { uetr });
+}
 }
