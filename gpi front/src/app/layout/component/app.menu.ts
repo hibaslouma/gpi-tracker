@@ -94,25 +94,33 @@ export class AppMenu implements OnInit, OnChanges {
                 break;
 
             case 'Client':
-                this.model = [
-                    {
-                        label: 'Vue générale',
-                        items: [
-                            { label: 'Dashboard', icon: 'pi pi-fw pi-home',
-                              routerLink: ['/client'], queryParams: { tab: 'dashboard' } }
-                        ]
-                    },
-                    {
-                        label: 'Mes transactions',
-                        items: [
-                            { label: 'Mes paiements', icon: 'pi pi-fw pi-send',
-                              routerLink: ['/client'], queryParams: { tab: 'paiements' } },
-                            { label: 'Historique', icon: 'pi pi-fw pi-history',
-                              routerLink: ['/client'], queryParams: { tab: 'historique' } }
-                        ]
-                    }
-                ];
-                break;
+                    this.model = [
+        {
+            label: 'Client',
+            items: [
+                {
+                    label: 'Dashboard',
+                    icon: 'pi pi-fw pi-home',
+                    routerLink: ['/client'],
+                    queryParams: { tab: 'dashboard' }
+                },
+                {
+                    label: 'Paiements Émis',
+                    icon: 'pi pi-fw pi-send',
+                    routerLink: ['/client'],
+                    queryParams: { tab: 'emis' }
+                },
+                {
+                    label: 'Paiements Reçus',
+                    icon: 'pi pi-fw pi-download',
+                    routerLink: ['/client'],
+                    queryParams: { tab: 'recus' }
+                }
+            ]
+        }
+    ];
+break;
+            
 
             default:
                 this.model = [];

@@ -827,4 +827,40 @@ export class BackofficeComponent implements OnInit, OnDestroy {
       maximumFractionDigits: 2
     }) || '0,00';
   }
+  get bicExpediteursEmisDistincts(): string[] {
+  return [...new Set(this.paiementsEmis.map(p => p.senderBic).filter(b => !!b))];
+}
+
+get devisesEmisDistinctes(): string[] {
+  return [...new Set(this.paiementsEmis.map(p => p.devise).filter(d => !!d))];
+}
+
+get paiementsEmisFiltres(): RecapMg[] {
+  return this.paiementsEmis.filter(p => {
+    const matchSearch = !this.filtreEmisSearch ||
+      p.messageId?.toLowerCase().includes(this.filtreEmisSearch.toLowerCase()) ||
+      p.senderName?.toLowerCase().includes(this.filtreEmisSearch.toLowerCase()) ||
+      p.senderBic?.toLowerCase().includes(this.filtreEmisSearch.toLowerCase());
+
+    const matchStatut = !this.filtreEmisStatut || p.statut === this.filtreEmisStatut;
+    const matchDevise = !this.filtreEmisDevise || p.devise === this.filtreEmisDevise;
+    const matchBic = !this.filtreEmisBicExp || p.senderBic === this.filtreEmisBicExp;
+    const matchDateDu = !this.filtreEmisDateDu || new Date(p.dateValeur) >= new Date(this.filtreEmisDateDu);
+
+    return matchSearch && matchStatut && matchDevise && matchBic && matchDateDu;
+  });
+}
+
+resetFiltresEmis(): void {
+  this.filtreEmisSearch = '';
+  this.filtreEmisStatut = '';
+  this.filtreEmisDevise = '';
+  this.filtreEmisBicExp = '';
+  this.filtreEmisDateDu = '';
+}
+filtreEmisSearch = '';
+filtreEmisStatut = '';
+filtreEmisDevise = '';
+filtreEmisBicExp = '';
+filtreEmisDateDu = '';
 }
