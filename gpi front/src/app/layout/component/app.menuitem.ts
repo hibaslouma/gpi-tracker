@@ -26,15 +26,14 @@ import { filter } from 'rxjs/operators';
                 (click)="itemClick($event)"
                 [ngClass]="item().class"
                 [routerLink]="item().routerLink"
-                routerLinkActive="active-route"
-                [routerLinkActiveOptions]="item().routerLinkActiveOptions || { paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }"
+                [queryParams]="item().queryParams"
+                [class.active-route]="isMenuItemActive()"
                 [fragment]="item().fragment"
                 [queryParamsHandling]="item().queryParamsHandling"
                 [preserveFragment]="item().preserveFragment"
                 [skipLocationChange]="item().skipLocationChange"
                 [replaceUrl]="item().replaceUrl"
                 [state]="item().state"
-                [queryParams]="item().queryParams"
                 [attr.target]="item().target"
                 tabindex="0"
                 pRipple
@@ -63,77 +62,69 @@ import { filter } from 'rxjs/operators';
             .p-submenu-enter {
                 animation: p-animate-submenu-expand 450ms cubic-bezier(0.86, 0, 0.07, 1) forwards;
             }
-
             .p-submenu-leave {
                 animation: p-animate-submenu-collapse 450ms cubic-bezier(0.86, 0, 0.07, 1) forwards;
             }
-
             @keyframes p-animate-submenu-expand {
-                from {
-                    max-height: 0;
-                    overflow: hidden;
-                }
-                to {
-                    max-height: 1000px;
-                    overflow: visible;
-                }
+                from { max-height: 0; overflow: hidden; }
+                to   { max-height: 1000px; overflow: visible; }
             }
-
             @keyframes p-animate-submenu-collapse {
-                from {
-                    max-height: 1000px;
-                    overflow: hidden;
-                }
-                to {
-                    max-height: 0;
-                    overflow: hidden;
-                }
+                from { max-height: 1000px; overflow: hidden; }
+                to   { max-height: 0; overflow: hidden; }
             }
         `
     ]
 })
 export class AppMenuitem {
     layoutService = inject(LayoutService);
-
     router = inject(Router);
 
     item = input<any>(null);
-
     root = input<boolean>(false);
-
     parentPath = input<string | null>(null);
 
-    isVisible = computed(() => this.item()?.visible !== false);
-
+    isVisible  = computed(() => this.item()?.visible !== false);
     hasChildren = computed(() => this.item()?.items && this.item()?.items.length > 0);
-
     hasRouterLink = computed(() => !!this.item()?.routerLink);
 
     fullPath = computed(() => {
         const itemPath = this.item()?.path;
         if (!itemPath) return this.parentPath();
         const parent = this.parentPath();
-        if (parent && !itemPath.startsWith(parent)) {
-            return parent + itemPath;
-        }
+        if (parent && !itemPath.startsWith(parent)) return parent + itemPath;
         return itemPath;
     });
 
+    initialized = signal<boolean>(false);
+    currentUrl  = signal<string>(this.router.url);
+
+    // ── isActive: controls active-menuitem host class (parent highlight) ──
     isActive = computed(() => {
-        const activePath = this.layoutService.layoutState().activePath;
-        if (this.item()?.path) {
+        const item = this.item();
+        const url  = this.currentUrl();
+        if (!item) return false;
+
+        // Tab-based navigation — check queryParam in URL
+        if (item?.routerLink && item?.queryParams?.['tab']) {
+            return url.includes(`tab=${item.queryParams['tab']}`);
+        }
+
+        // Path-based navigation
+        if (item?.path) {
+            const activePath = this.layoutService.layoutState().activePath;
             return activePath?.startsWith(this.fullPath() ?? '') ?? false;
         }
+
         return false;
     });
 
-    initialized = signal<boolean>(false);
-
     constructor() {
-        this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
-            if (this.item()?.routerLink) {
-                this.updateActiveStateFromRoute();
-            }
+        // Keep currentUrl signal reactive on navigation
+        this.router.events.pipe(
+            filter((event) => event instanceof NavigationEnd)
+        ).subscribe((event: any) => {
+            this.currentUrl.set(event.urlAfterRedirects || event.url);
         });
     }
 
@@ -144,9 +135,26 @@ export class AppMenuitem {
     }
 
     ngAfterViewInit() {
-        setTimeout(() => {
-            this.initialized.set(true);
-        });
+        setTimeout(() => this.initialized.set(true));
+    }
+
+    // ── isMenuItemActive: controls active-route class on <a> tag ──────────
+    isMenuItemActive(): boolean {
+        const item = this.item();
+        if (!item) return false;
+        const url = this.currentUrl();
+
+        // Tab-based: match both path and tab queryParam
+        if (item?.routerLink && item?.queryParams?.['tab']) {
+            return url.includes(`tab=${item.queryParams['tab']}`);
+        }
+
+        // Path-based: exact path match (ignore queryParams)
+        if (item?.routerLink) {
+            return url.split('?')[0] === item.routerLink[0];
+        }
+
+        return false;
     }
 
     updateActiveStateFromRoute() {
@@ -173,28 +181,14 @@ export class AppMenuitem {
 
     itemClick(event: Event) {
         const item = this.item();
-
-        if (item?.disabled) {
-            event.preventDefault();
-            return;
-        }
-
-        if (item?.command) {
-            item.command({ originalEvent: event, item: item });
-        }
+        if (item?.disabled) { event.preventDefault(); return; }
+        if (item?.command)  { item.command({ originalEvent: event, item }); }
 
         if (this.hasChildren()) {
             if (this.isActive()) {
-                this.layoutService.layoutState.update((val) => ({
-                    ...val,
-                    activePath: this.parentPath()
-                }));
+                this.layoutService.layoutState.update((val) => ({ ...val, activePath: this.parentPath() }));
             } else {
-                this.layoutService.layoutState.update((val) => ({
-                    ...val,
-                    activePath: this.fullPath(),
-                    menuHoverActive: true
-                }));
+                this.layoutService.layoutState.update((val) => ({ ...val, activePath: this.fullPath(), menuHoverActive: true }));
             }
         } else {
             this.layoutService.layoutState.update((val) => ({

@@ -1,0 +1,114 @@
+<data>
+
+    <!-- UP HEADER (Business Application Header) -->
+    <AppHdr>
+        <Fr> 
+            <FIId>
+                <FinInstnId>
+                    <BICFI>BIATTNTT</BICFI>
+                </FinInstnId>
+            </FIId>
+        </Fr>
+
+        <To>
+            <FIId>
+                <FinInstnId>
+                    <BICFI>BCTNTNTT</BICFI>
+                </FinInstnId>
+            </FIId>
+        </To>
+
+        <BizMsgIdr>TN202604230002</BizMsgIdr>
+        <MsgDefIdr>pacs.008.001.08</MsgDefIdr>
+        <BizSvc>swift.cbprplus.02</BizSvc>
+        <CreDt>2026-04-23T10:00:00</CreDt>
+    </AppHdr>
+
+
+    <!-- DOCUMENT pacs.008 -->
+    <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08">
+
+        <FIToFICstmrCdtTrf>
+
+            <!-- Group Header -->
+            <GrpHdr>
+                <MsgId>MSG-TN-0002</MsgId>
+                <CreDtTm>2026-04-23T09:59:00</CreDtTm>
+                <NbOfTxs>1</NbOfTxs>
+                <SttlmInf>
+                    <SttlmMtd>CLRG</SttlmMtd>
+                </SttlmInf>
+            </GrpHdr>
+
+            <!-- Credit Transfer Transaction -->
+            <CdtTrfTxInf>
+
+                <PmtId>
+                    <InstrId>INST-TN-02</InstrId>
+                    <EndToEndId>E2E-TN-9989</EndToEndId>
+                    <TxId>TX-TN-5567</TxId>
+                    <UETR>550e8400-e29b-41d4-a716-446655440002</UETR>
+                </PmtId>
+
+                <PmtTpInf>
+                    <SvcLvl>
+                        <Cd>SEPA</Cd>
+                    </SvcLvl>
+                </PmtTpInf>
+
+                <IntrBkSttlmAmt Ccy="TND">2500.000</IntrBkSttlmAmt>
+                <IntrBkSttlmDt>2026-04-23</IntrBkSttlmDt>
+
+                <!-- Debtor -->
+                <Dbtr>
+                    <Nm>Ahmed Ben Ali</Nm>
+                    <PstlAdr>
+                        <Ctry>TN</Ctry>
+                        <AdrLine>15 Avenue Habib Bourguiba, Tunis</AdrLine>
+                    </PstlAdr>
+                </Dbtr>
+
+                <DbtrAcct>
+                    <Id>
+                        <IBAN>TN11100000000012345679</IBAN>
+                    </Id>
+                </DbtrAcct>
+
+                <DbtrAgt>
+                    <FinInstnId>
+                        <BICFI>BIATTNTT</BICFI>
+                    </FinInstnId>
+                </DbtrAgt>
+
+                <!-- Creditor -->
+                <CdtrAgt>
+                    <FinInstnId>
+                        <BICFI>STUSTNTT</BICFI>
+                    </FinInstnId>
+                </CdtrAgt>
+
+                <Cdtr>
+                    <Nm>Societe Generale Tunis</Nm>
+                    <PstlAdr>
+                        <Ctry>TN</Ctry>
+                        <AdrLine>Zone Industrielle, Sousse</AdrLine>
+                    </PstlAdr>
+                </Cdtr>
+
+                <CdtrAcct>
+                    <Id>
+                        <IBAN>TN22200000000087654322</IBAN>
+                    </Id>
+                </CdtrAcct>
+
+                <!-- Remittance -->
+                <RmtInf>
+                    <Ustrd>Facture 2026-04</Ustrd>
+                </RmtInf>
+
+            </CdtTrfTxInf>
+
+        </FIToFICstmrCdtTrf>
+    </Document>
+
+</data>

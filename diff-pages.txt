@@ -1,0 +1,3543 @@
+diff --git a/gpi front/src/app/pages/admin/administration/administration.html b/gpi front/src/app/pages/admin/administration/administration.html
+index fa82a87..bf3a46d 100644
+--- a/gpi front/src/app/pages/admin/administration/administration.html	
++++ b/gpi front/src/app/pages/admin/administration/administration.html	
+@@ -1,26 +1,8 @@
+ <div class="admin-container">
+ 
+   <div class="page-title">Dashboard</div>
+-
+-  <!-- ── Loading spinner ───────────────────────────────────── -->
+-  <div *ngIf="isLoading" style="text-align:center;padding:2rem;color:#888">
+-    <i class="pi pi-spin pi-spinner" style="font-size:1.5rem"></i>
+-    <p style="margin-top:0.5rem;font-size:0.85rem">Chargement depuis Keycloak...</p>
+-  </div>
+-
+-  <!-- ── Stats Cards ────────────────────────────────────────── -->
+-  <div *ngIf="!isLoading" class="stats-grid">
+-
+-    <div class="stat-card">
+-      <div class="stat-info">
+-        <span class="stat-number">{{ adminCount }}</span>
+-        <span class="stat-label">Administrateurs</span>
+-      </div>
+-      <div class="stat-icon">
+-        <i class="pi pi-shield"></i>
+-      </div>
+-    </div>
+-
++  <!-- Stats Cards -->
++  <div class="stats-grid">
+     <div class="stat-card">
+       <div class="stat-info">
+         <span class="stat-number">{{ backofficeCount }}</span>
+@@ -60,62 +42,10 @@
+         <i class="pi pi-check-circle"></i>
+       </div>
+     </div>
+-
+-  </div>
+-
+-  <!-- ── Répartition par rôle ───────────────────────────────── -->
+-  <div *ngIf="!isLoading && totalCount > 0" class="content-grid" style="margin-bottom:1.25rem">
+-    <div class="content-card">
+-      <div class="card-header">
+-        <h2>Répartition par rôle</h2>
+-      </div>
+-      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;padding:0.5rem 0">
+-
+-        <!-- Admin -->
+-        <div style="flex:1;min-width:140px">
+-          <div style="display:flex;justify-content:space-between;margin-bottom:0.4rem">
+-            <span style="font-size:0.8rem;font-weight:700;color:#1B2A4A">Admin</span>
+-            <span style="font-size:0.8rem;font-weight:700">{{ adminCount }}</span>
+-          </div>
+-          <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden">
+-            <div [style.width.%]="totalCount > 0 ? (adminCount / totalCount * 100) : 0"
+-                 style="height:100%;background:#E8421A;border-radius:4px;transition:width 0.6s ease">
+-            </div>
+-          </div>
+-        </div>
+-
+-        <!-- Backoffice -->
+-        <div style="flex:1;min-width:140px">
+-          <div style="display:flex;justify-content:space-between;margin-bottom:0.4rem">
+-            <span style="font-size:0.8rem;font-weight:700;color:#1B2A4A">Backoffice</span>
+-            <span style="font-size:0.8rem;font-weight:700">{{ backofficeCount }}</span>
+-          </div>
+-          <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden">
+-            <div [style.width.%]="totalCount > 0 ? (backofficeCount / totalCount * 100) : 0"
+-                 style="height:100%;background:#1B2A4A;border-radius:4px;transition:width 0.6s ease">
+-            </div>
+-          </div>
+-        </div>
+-
+-        <!-- Client -->
+-        <div style="flex:1;min-width:140px">
+-          <div style="display:flex;justify-content:space-between;margin-bottom:0.4rem">
+-            <span style="font-size:0.8rem;font-weight:700;color:#1B2A4A">Client</span>
+-            <span style="font-size:0.8rem;font-weight:700">{{ clientCount }}</span>
+-          </div>
+-          <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden">
+-            <div [style.width.%]="totalCount > 0 ? (clientCount / totalCount * 100) : 0"
+-                 style="height:100%;background:#22c55e;border-radius:4px;transition:width 0.6s ease">
+-            </div>
+-          </div>
+-        </div>
+-
+-      </div>
+-    </div>
+   </div>
+ 
+-  <!-- ── Derniers utilisateurs ──────────────────────────────── -->
+-  <div *ngIf="!isLoading" class="content-grid">
++  <!-- Derniers utilisateurs -->
++  <div class="content-grid">
+     <div class="content-card">
+       <div class="card-header">
+         <h2>Derniers utilisateurs</h2>
+@@ -123,13 +53,7 @@
+           Voir tout <i class="pi pi-arrow-right"></i>
+         </button>
+       </div>
+-
+-      <div *ngIf="recentUsers.length === 0"
+-           style="text-align:center;color:#aaa;padding:2rem;font-size:0.85rem">
+-        Aucun utilisateur trouvé
+-      </div>
+-
+-      <table *ngIf="recentUsers.length > 0" class="data-table">
++      <table class="data-table">
+         <thead>
+           <tr>
+             <th>Nom</th>
+@@ -149,11 +73,8 @@
+               </div>
+             </td>
+             <td>
+-              <span class="role-badge"
+-                    [class.admin]="user.role === 'Admin'"
+-                    [class.backoffice]="user.role === 'Backoffice'"
+-                    [class.client]="user.role === 'Client'">
+-                {{ user.role || '—' }}
++              <span class="role-badge" [class.backoffice]="user.role === 'Backoffice'">
++                {{ user.role }}
+               </span>
+             </td>
+             <td>
+diff --git a/gpi front/src/app/pages/admin/administration/administration.ts b/gpi front/src/app/pages/admin/administration/administration.ts
+index 75c63ac..467ae1f 100644
+--- a/gpi front/src/app/pages/admin/administration/administration.ts	
++++ b/gpi front/src/app/pages/admin/administration/administration.ts	
+@@ -15,11 +15,6 @@ export class Administration implements OnInit {
+   users: User[] = [];
+   isLoading = false;
+ 
+-  // ── Stats from real Keycloak data ─────────────────────────
+-  get adminCount(): number {
+-    return this.users.filter(u => u.role === 'Admin').length;
+-  }
+-
+   get backofficeCount(): number {
+     return this.users.filter(u => u.role === 'Backoffice').length;
+   }
+diff --git a/gpi front/src/app/pages/admin/parametrage/parametrage.html b/gpi front/src/app/pages/admin/parametrage/parametrage.html
+index b27903e..78a9670 100644
+--- a/gpi front/src/app/pages/admin/parametrage/parametrage.html	
++++ b/gpi front/src/app/pages/admin/parametrage/parametrage.html	
+@@ -46,17 +46,24 @@
+         <div class="form-grid">
+           <div class="form-group span-2">
+             <label>Nom de la banque *</label>
+-            <input type="text" [(ngModel)]="banque.nom" (ngModelChange)="markChanged()" placeholder="Ex: Banque Nationale de Tunisie" />
++            <input type="text" [(ngModel)]="banque.nom"
++                   (ngModelChange)="markChanged()"
++                   placeholder="Ex: Banque Nationale de Tunisie" />
+           </div>
+           <div class="form-group">
+             <label>BIC principal *</label>
+-            <input type="text" [(ngModel)]="banque.bic" (ngModelChange)="markChanged()" placeholder="Ex: BNTNTNTXXXX" class="mono" maxlength="11" />
++            <input type="text" [(ngModel)]="banque.bic"
++                   (ngModelChange)="markChanged()"
++                   placeholder="Ex: BNTNTNTXXXX"
++                   class="mono" maxlength="11" />
+             <small>8 ou 11 caractères</small>
+           </div>
+           <div class="form-group">
+             <label>Pays</label>
+             <select [(ngModel)]="banque.pays" (ngModelChange)="markChanged()">
+-              <option *ngFor="let p of pays" [value]="p.code">{{ p.code }} — {{ p.nom }}</option>
++              <option *ngFor="let p of pays" [value]="p.code">
++                {{ p.code }} — {{ p.nom }}
++              </option>
+             </select>
+           </div>
+           <div class="form-group">
+@@ -67,227 +74,32 @@
+           </div>
+           <div class="form-group">
+             <label>Téléphone</label>
+-            <input type="text" [(ngModel)]="banque.telephone" (ngModelChange)="markChanged()" placeholder="+216 71 000 000" />
++            <input type="text" [(ngModel)]="banque.telephone"
++                   (ngModelChange)="markChanged()"
++                   placeholder="+216 71 000 000" />
+           </div>
+           <div class="form-group span-2">
+             <label>Adresse</label>
+-            <input type="text" [(ngModel)]="banque.adresse" (ngModelChange)="markChanged()" placeholder="Rue, Ville, Code postal" />
++            <input type="text" [(ngModel)]="banque.adresse"
++                   (ngModelChange)="markChanged()"
++                   placeholder="Rue, Ville, Code postal" />
+           </div>
+           <div class="form-group">
+             <label>Email de contact</label>
+-            <input type="email" [(ngModel)]="banque.email" (ngModelChange)="markChanged()" placeholder="contact@banque.tn" />
++            <input type="email" [(ngModel)]="banque.email"
++                   (ngModelChange)="markChanged()"
++                   placeholder="contact@banque.tn" />
+           </div>
+           <div class="form-group">
+             <label>Site web</label>
+-            <input type="url" [(ngModel)]="banque.site" (ngModelChange)="markChanged()" placeholder="https://www.banque.tn" />
++            <input type="url" [(ngModel)]="banque.site"
++                   (ngModelChange)="markChanged()"
++                   placeholder="https://www.banque.tn" />
+           </div>
+         </div>
+       </section>
+ 
+-      <!-- 2. PARAMÈTRES SLA -->
+-      <section *ngIf="activeSection === 'sla'" class="section-panel">
+-        <div class="section-title">
+-          <div class="section-icon blue"><i class="pi pi-clock"></i></div>
+-          <div>
+-            <h2>Paramètres SLA</h2>
+-            <p>Délais de traitement des paiements SWIFT GPI</p>
+-          </div>
+-        </div>
+-        <div class="info-banner">
+-          <i class="pi pi-info-circle"></i>
+-          Les SLA définissent les délais maximum imposés par SWIFT GPI. Un dépassement génère une alerte automatique.
+-        </div>
+-        <div class="sla-grid">
+-          <div class="sla-card">
+-            <div class="sla-header">
+-              <span class="sla-label">Confirmation de paiement</span>
+-              <span class="sla-tag blue">pacs.002</span>
+-            </div>
+-            <div class="sla-control">
+-              <input type="range" min="5" max="120" step="5" [(ngModel)]="sla.delaiConfirmation" (ngModelChange)="markChanged()" />
+-              <span class="sla-value">{{ formatMinutes(sla.delaiConfirmation) }}</span>
+-            </div>
+-            <small>Délai max pour envoyer la confirmation après réception d'un pacs.008</small>
+-          </div>
+-          <div class="sla-card">
+-            <div class="sla-header">
+-              <span class="sla-label">Alerte avant dépassement</span>
+-              <span class="sla-tag amber">Alerte</span>
+-            </div>
+-            <div class="sla-control">
+-              <input type="range" min="5" max="60" step="5" [(ngModel)]="sla.delaiAlerte" (ngModelChange)="markChanged()" />
+-              <span class="sla-value">{{ formatMinutes(sla.delaiAlerte) }}</span>
+-            </div>
+-            <small>Délai avant la limite SLA pour déclencher une alerte préventive</small>
+-          </div>
+-          <div class="sla-card">
+-            <div class="sla-header">
+-              <span class="sla-label">Réponse Stop & Recall</span>
+-              <span class="sla-tag red">camt.029</span>
+-            </div>
+-            <div class="sla-control">
+-              <input type="range" min="30" max="480" step="30" [(ngModel)]="sla.delaiRecall" (ngModelChange)="markChanged()" />
+-              <span class="sla-value">{{ formatMinutes(sla.delaiRecall) }}</span>
+-            </div>
+-            <small>Délai max pour répondre à une demande d'annulation camt.056</small>
+-          </div>
+-          <div class="sla-card">
+-            <div class="sla-header">
+-              <span class="sla-label">Crédit bénéficiaire max</span>
+-              <span class="sla-tag green">GPI</span>
+-            </div>
+-            <div class="sla-control">
+-              <input type="range" min="60" max="2880" step="60" [(ngModel)]="sla.delaiCreditMax" (ngModelChange)="markChanged()" />
+-              <span class="sla-value">{{ formatMinutes(sla.delaiCreditMax) }}</span>
+-            </div>
+-            <small>Délai maximum total pour que le bénéficiaire soit crédité</small>
+-          </div>
+-        </div>
+-        <div class="toggle-group">
+-          <div class="toggle-row">
+-            <div>
+-              <span class="toggle-label">Alerte dépassement SLA</span>
+-              <span class="toggle-desc">Notification automatique si le délai de confirmation est dépassé</span>
+-            </div>
+-            <label class="toggle-switch">
+-              <input type="checkbox" [(ngModel)]="sla.alerteDepassement" (ngModelChange)="markChanged()">
+-              <span class="slider"></span>
+-            </label>
+-          </div>
+-          <div class="toggle-row">
+-            <div>
+-              <span class="toggle-label">Alerte retard de traitement</span>
+-              <span class="toggle-desc">Notification si un paiement reste en transit plus de 4h</span>
+-            </div>
+-            <label class="toggle-switch">
+-              <input type="checkbox" [(ngModel)]="sla.alerteRetard" (ngModelChange)="markChanged()">
+-              <span class="slider"></span>
+-            </label>
+-          </div>
+-        </div>
+-      </section>
+-
+-      <!-- 3. NOTIFICATIONS -->
+-      <section *ngIf="activeSection === 'notifications'" class="section-panel">
+-        <div class="section-title">
+-          <div class="section-icon purple"><i class="pi pi-bell"></i></div>
+-          <div>
+-            <h2>Notifications & alertes</h2>
+-            <p>Choisissez quand et comment être notifié</p>
+-          </div>
+-        </div>
+-        <h3 class="subsection">Déclencheurs d'alerte email</h3>
+-        <div class="toggle-group">
+-          <div class="toggle-row">
+-            <div>
+-              <span class="toggle-label">Paiement rejeté</span>
+-              <span class="toggle-desc">Envoyer un email à chaque rejet de paiement</span>
+-            </div>
+-            <label class="toggle-switch">
+-              <input type="checkbox" [(ngModel)]="notifications.emailPaiementRejet" (ngModelChange)="markChanged()">
+-              <span class="slider"></span>
+-            </label>
+-          </div>
+-          <div class="toggle-row">
+-            <div>
+-              <span class="toggle-label">Dépassement SLA</span>
+-              <span class="toggle-desc">Alerte si un paiement dépasse le délai configuré</span>
+-            </div>
+-            <label class="toggle-switch">
+-              <input type="checkbox" [(ngModel)]="notifications.emailDepassementSLA" (ngModelChange)="markChanged()">
+-              <span class="slider"></span>
+-            </label>
+-          </div>
+-          <div class="toggle-row">
+-            <div>
+-              <span class="toggle-label">Stop & Recall en attente</span>
+-              <span class="toggle-desc">Rappel si une demande d'annulation est sans réponse</span>
+-            </div>
+-            <label class="toggle-switch">
+-              <input type="checkbox" [(ngModel)]="notifications.emailRecallEnAttente" (ngModelChange)="markChanged()">
+-              <span class="slider"></span>
+-            </label>
+-          </div>
+-          <div class="toggle-row">
+-            <div>
+-              <span class="toggle-label">Nouveau paiement reçu</span>
+-              <span class="toggle-desc">Notification à chaque pacs.008 entrant</span>
+-            </div>
+-            <label class="toggle-switch">
+-              <input type="checkbox" [(ngModel)]="notifications.emailNouveauPaiement" (ngModelChange)="markChanged()">
+-              <span class="slider"></span>
+-            </label>
+-          </div>
+-        </div>
+-        <h3 class="subsection">Destinataires</h3>
+-        <div class="form-grid">
+-          <div class="form-group span-2">
+-            <label>Adresse email principale</label>
+-            <input type="email" [(ngModel)]="notifications.emailAdresse" (ngModelChange)="markChanged()" placeholder="admin@banque.tn" />
+-          </div>
+-          <div class="form-group span-2">
+-            <label>Email en copie (CC)</label>
+-            <input type="email" [(ngModel)]="notifications.emailCopie" (ngModelChange)="markChanged()" placeholder="direction@banque.tn (optionnel)" />
+-          </div>
+-        </div>
+-        <h3 class="subsection">Rapport périodique</h3>
+-        <div class="form-group" style="max-width:300px">
+-          <label>Fréquence d'envoi du rapport</label>
+-          <select [(ngModel)]="notifications.frequenceRapport" (ngModelChange)="markChanged()">
+-            <option *ngFor="let f of frequences" [value]="f">{{ frequencesLabels[f] }}</option>
+-          </select>
+-        </div>
+-      </section>
+-
+-      <!-- 4. DEVISES ET LIMITES -->
+-      <section *ngIf="activeSection === 'devises'" class="section-panel">
+-        <div class="section-title">
+-          <div class="section-icon green"><i class="pi pi-dollar"></i></div>
+-          <div>
+-            <h2>Devises et limites</h2>
+-            <p>Devises acceptées et seuils de transaction</p>
+-          </div>
+-        </div>
+-        <h3 class="subsection">Devises activées</h3>
+-        <div class="devises-grid">
+-          <div *ngFor="let d of toutesDevises"
+-               class="devise-chip"
+-               [class.active]="isDeviseActive(d)"
+-               (click)="toggleDevise(d)">
+-            <span>{{ d }}</span>
+-            <i [class]="isDeviseActive(d) ? 'pi pi-check' : 'pi pi-plus'"></i>
+-          </div>
+-        </div>
+-        <small style="display:block;margin-top:.5rem">
+-          Devises actives : <strong>{{ devisesActives.join(', ') }}</strong>
+-        </small>
+-        <h3 class="subsection">Limites de transaction</h3>
+-        <div class="form-grid">
+-          <div class="form-group">
+-            <label>Montant minimum ({{ limites.deviseDefaut }})</label>
+-            <input type="number" [(ngModel)]="limites.montantMin" (ngModelChange)="markChanged()" min="0" />
+-            <small>Montant minimum par transaction</small>
+-          </div>
+-          <div class="form-group">
+-            <label>Montant maximum ({{ limites.deviseDefaut }})</label>
+-            <input type="number" [(ngModel)]="limites.montantMax" (ngModelChange)="markChanged()" min="0" />
+-            <small>Montant maximum par transaction</small>
+-          </div>
+-          <div class="form-group">
+-            <label>Seuil d'alerte ({{ limites.deviseDefaut }})</label>
+-            <input type="number" [(ngModel)]="limites.seuilAlerte" (ngModelChange)="markChanged()" min="0" />
+-            <small>Alerte pour les transactions dépassant ce montant</small>
+-          </div>
+-          <div class="form-group">
+-            <label>Devise par défaut</label>
+-            <select [(ngModel)]="limites.deviseDefaut" (ngModelChange)="markChanged()">
+-              <option *ngFor="let d of devisesActives" [value]="d">{{ d }}</option>
+-            </select>
+-          </div>
+-        </div>
+-      </section>
+-
+-      <!-- 5. GESTION FICHIERS XML -->
++      <!-- 2. GESTION FICHIERS XML -->
+       <section *ngIf="activeSection === 'xml'" class="section-panel">
+         <div class="section-title">
+           <div class="section-icon teal"><i class="pi pi-file"></i></div>
+@@ -296,148 +108,29 @@
+             <p>Configuration du traitement des messages ISO 20022</p>
+           </div>
+         </div>
+-        <div class="statut-xml-grid">
+-          <div class="statut-card" [class.on]="statutXml.actif">
+-            <span class="statut-dot"></span>
+-            <span>{{ statutXml.actif ? 'Traitement actif' : 'Traitement arrêté' }}</span>
+-          </div>
+-          <div class="statut-card info">
+-            <i class="pi pi-calendar"></i>
+-            <span>Dernière exécution : <strong>{{ statutXml.derniereExec }}</strong></span>
+-          </div>
+-          <div class="statut-card success">
+-            <i class="pi pi-check-circle"></i>
+-            <span>Fichiers traités : <strong>{{ statutXml.fichiersTraites }}</strong></span>
+-          </div>
+-          <div class="statut-card error">
+-            <i class="pi pi-times-circle"></i>
+-            <span>Fichiers en erreur : <strong>{{ statutXml.fichiersErreur }}</strong></span>
+-          </div>
++        <div class="info-banner">
++          <i class="pi pi-info-circle"></i>
++          Ces chemins sont configurés dans le fichier
++          application.properties du serveur Spring Boot.
+         </div>
+-        <h3 class="subsection">Dossiers de traitement</h3>
+         <div class="form-grid">
+           <div class="form-group span-2">
+             <label>Dossier entrant</label>
+-            <input type="text" [(ngModel)]="xml.dossierEntrant" (ngModelChange)="markChanged()" class="mono" placeholder="/opt/gpi/incoming" />
+-            <small>Dossier surveillé pour les fichiers pacs.008, pacs.009, pacs.002, camt.056, camt.029</small>
+-          </div>
+-          <div class="form-group span-2">
+-            <label>Dossier d'archive</label>
+-            <input type="text" [(ngModel)]="xml.dossierArchive" (ngModelChange)="markChanged()" class="mono" placeholder="/opt/gpi/archive" />
+-            <small>Fichiers traités avec succès déplacés ici</small>
+-          </div>
+-          <div class="form-group span-2">
+-            <label>Dossier des erreurs</label>
+-            <input type="text" [(ngModel)]="xml.dossierErreur" (ngModelChange)="markChanged()" class="mono" placeholder="/opt/gpi/error" />
+-            <small>Fichiers ayant échoué au traitement</small>
+-          </div>
+-        </div>
+-        <h3 class="subsection">Options de traitement</h3>
+-        <div class="form-grid">
+-          <div class="form-group">
+-            <label>Fréquence de lecture (secondes)</label>
+-            <input type="number" [(ngModel)]="xml.frequenceLecture" (ngModelChange)="markChanged()" min="5" max="300" step="5" />
+-            <small>Intervalle de vérification du dossier entrant</small>
+-          </div>
+-          <div class="form-group">
+-            <label>Rétention des archives (jours)</label>
+-            <input type="number" [(ngModel)]="xml.retentionJours" (ngModelChange)="markChanged()" min="30" max="3650" />
+-            <small>Durée de conservation des fichiers archivés</small>
++            <input type="text"
++                   [value]="xml.dossierRecu"
++                   class="mono"
++                   readonly />
++            <small>Dossier surveillé pour les fichiers XML entrants</small>
+           </div>
+           <div class="form-group span-2">
+-            <label>Format de date</label>
+-            <input type="text" [(ngModel)]="xml.formatDate" (ngModelChange)="markChanged()" class="mono" placeholder="dd/MM/yyyy HH:mm:ss" />
++            <label>Dossier émis</label>
++            <input type="text"
++                   [value]="xml.dossierEmis"
++                   class="mono"
++                   readonly />
++            <small>Dossier surveillé pour les fichiers XML émis</small>
+           </div>
+         </div>
+-        <div class="toggle-group">
+-          <div class="toggle-row">
+-            <div>
+-              <span class="toggle-label">Traitement automatique</span>
+-              <span class="toggle-desc">Traiter les fichiers entrants automatiquement</span>
+-            </div>
+-            <label class="toggle-switch">
+-              <input type="checkbox" [(ngModel)]="xml.traitementAuto" (ngModelChange)="markChanged()">
+-              <span class="slider"></span>
+-            </label>
+-          </div>
+-          <div class="toggle-row">
+-            <div>
+-              <span class="toggle-label">Archivage automatique</span>
+-              <span class="toggle-desc">Déplacer automatiquement les fichiers traités vers l'archive</span>
+-            </div>
+-            <label class="toggle-switch">
+-              <input type="checkbox" [(ngModel)]="xml.archivageAuto" (ngModelChange)="markChanged()">
+-              <span class="slider"></span>
+-            </label>
+-          </div>
+-        </div>
+-      </section>
+-
+-      <!-- 6. SÉCURITÉ & SESSIONS -->
+-      <section *ngIf="activeSection === 'securite'" class="section-panel">
+-        <div class="section-title">
+-          <div class="section-icon red"><i class="pi pi-shield"></i></div>
+-          <div>
+-            <h2>Sécurité & sessions</h2>
+-            <p>Politique de sécurité et gestion des accès</p>
+-          </div>
+-        </div>
+-
+-        <h3 class="subsection">Sessions utilisateur</h3>
+-        <div class="form-grid">
+-          <div class="form-group">
+-            <label>Durée de session (minutes)</label>
+-            <input type="number" [(ngModel)]="securite.dureeSession" (ngModelChange)="markChanged()" min="5" max="480" step="5" />
+-            <small>Déconnexion automatique après inactivité</small>
+-          </div>
+-        </div>
+-
+-        <h3 class="subsection">Politique de connexion</h3>
+-        <div class="form-grid">
+-          <div class="form-group">
+-            <label>Tentatives max avant blocage</label>
+-            <input type="number" [(ngModel)]="securite.tentativesMax" (ngModelChange)="markChanged()" min="3" max="10" />
+-          </div>
+-          <div class="form-group">
+-            <label>Durée de blocage (minutes)</label>
+-            <input type="number" [(ngModel)]="securite.blocageDuree" (ngModelChange)="markChanged()" min="5" max="1440" />
+-          </div>
+-        </div>
+-
+-        <h3 class="subsection">Options avancées</h3>
+-
+-        <div class="keycloak-banner">
+-          <div class="keycloak-icon">
+-            <i class="pi pi-shield"></i>
+-          </div>
+-          <div>
+-            <span class="keycloak-title">Authentification gérée par Keycloak</span>
+-            <span class="keycloak-desc">
+-              La politique des mots de passe, le double facteur (2FA) et la gestion
+-              avancée des sessions sont configurés directement dans la console Keycloak
+-              (OAuth2 / OpenID Connect).
+-            </span>
+-          </div>
+-        </div>
+-
+-        <div class="toggle-group">
+-          <div class="toggle-row">
+-            <div>
+-              <span class="toggle-label">Journalisation des accès</span>
+-              <span class="toggle-desc">Enregistrer toutes les actions dans les logs d'audit GPI Tracker</span>
+-            </div>
+-            <label class="toggle-switch">
+-              <input type="checkbox" [(ngModel)]="securite.journalisation" (ngModelChange)="markChanged()">
+-              <span class="slider"></span>
+-            </label>
+-          </div>
+-        </div>
+-
+-        <div class="form-group" style="max-width:300px;margin-top:1.5rem">
+-          <label>Rétention des logs (jours)</label>
+-          <input type="number" [(ngModel)]="securite.retentionLogsJours" (ngModelChange)="markChanged()" min="30" max="3650" />
+-          <small>Durée de conservation des journaux d'audit</small>
+-        </div>
+       </section>
+ 
+     </main>
+diff --git a/gpi front/src/app/pages/admin/parametrage/parametrage.scss b/gpi front/src/app/pages/admin/parametrage/parametrage.scss
+index 5a9e65e..f163445 100644
+--- a/gpi front/src/app/pages/admin/parametrage/parametrage.scss	
++++ b/gpi front/src/app/pages/admin/parametrage/parametrage.scss	
+@@ -7,8 +7,6 @@
+ .param-header {
+   display: flex; justify-content: space-between; align-items: flex-start;
+   margin-bottom: 1.5rem;
+-  h1 { font-size: 1.5rem; font-weight: 700; color: var(--gti-text-primary); margin: 0 0 .25rem; }
+-  p  { font-size: 0.85rem; color: var(--gti-text-hint); margin: 0; }
+ }
+ 
+ .header-actions { display: flex; gap: .75rem; align-items: center; }
+@@ -93,18 +91,7 @@
+   display: flex; align-items: center; justify-content: center;
+   font-size: 1.1rem; flex-shrink: 0;
+   &.orange { background: var(--gti-orange-light); color: var(--gti-orange); }
+-  &.blue   { background: var(--gti-info-bg);      color: var(--gti-navy);   }
+-  &.purple { background: #F3E8FF;                  color: #9333EA;           }
+-  &.green  { background: var(--gti-success-bg);   color: var(--gti-success);}
+-  &.teal   { background: #F0FDFA;                  color: #0D9488;           }
+-  &.red    { background: var(--gti-danger-bg);    color: var(--gti-danger); }
+-}
+-
+-.subsection {
+-  font-size: .82rem; font-weight: 700; color: var(--gti-text-hint);
+-  text-transform: uppercase; letter-spacing: .8px;
+-  margin: 1.75rem 0 1rem; padding-bottom: .5rem;
+-  border-bottom: 1px solid var(--gti-border);
++  &.teal   { background: #F0FDFA; color: #0D9488; }
+ }
+ 
+ .info-banner {
+@@ -130,7 +117,8 @@
+     border-radius: var(--gti-radius-md); font-size: .88rem;
+     color: var(--gti-text-primary); outline: none; transition: border .2s;
+     background: var(--gti-bg-card);
+-    &:focus { border-color: var(--gti-orange); box-shadow: 0 0 0 3px rgba(232, 66, 26, 0.12); }
++    &:focus { border-color: var(--gti-orange); box-shadow: 0 0 0 3px rgba(232,66,26,0.12); }
++    &[readonly] { background: var(--gti-bg-page); cursor: not-allowed; color: var(--gti-text-hint); }
+   }
+ 
+   small { font-size: .75rem; color: var(--gti-text-hint); }
+@@ -138,132 +126,19 @@
+ 
+ .mono { font-family: 'Courier New', monospace; font-weight: 600; letter-spacing: .5px; }
+ 
+-.toggle-group {
+-  border: 1px solid var(--gti-border); border-radius: var(--gti-radius-lg);
+-  overflow: hidden; margin-top: 1.25rem;
+-}
+-
+-.toggle-row {
+-  display: flex; justify-content: space-between; align-items: center;
+-  padding: 1rem 1.25rem; border-bottom: 1px solid var(--gti-bg-page);
+-  &:last-child { border-bottom: none; }
+-  &:hover { background: var(--gti-bg-page); }
+-}
+-
+-.toggle-label { display: block; font-size: .88rem; font-weight: 600; color: var(--gti-text-primary); }
+-.toggle-desc  { display: block; font-size: .78rem; color: var(--gti-text-hint); margin-top: .2rem; }
+-
+-.toggle-switch {
+-  position: relative; display: inline-block;
+-  width: 44px; height: 24px; flex-shrink: 0;
+-  input { opacity: 0; width: 0; height: 0; }
+-}
+-
+-.slider {
+-  position: absolute; cursor: pointer; inset: 0;
+-  background: var(--gti-border); border-radius: 24px; transition: .3s;
+-  &::before {
+-    content: ''; position: absolute;
+-    width: 18px; height: 18px; left: 3px; bottom: 3px;
+-    background: white; border-radius: 50%;
+-    transition: .3s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+-  }
+-}
+-
+-input:checked + .slider {
+-  background: var(--gti-orange);
+-  &::before { transform: translateX(20px); }
+-}
+-
+-.sla-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem; }
+-
+-.sla-card {
+-  background: var(--gti-bg-page); border: 1px solid var(--gti-border);
+-  border-radius: var(--gti-radius-lg); padding: 1.25rem;
+-  small { font-size: .75rem; color: var(--gti-text-hint); display: block; margin-top: .5rem; }
+-}
+-
+-.sla-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem; }
+-.sla-label  { font-size: .88rem; font-weight: 600; color: var(--gti-text-primary); }
+-
+-.sla-tag {
+-  font-size: .7rem; font-weight: 700; padding: .2rem .6rem;
+-  border-radius: 20px; font-family: monospace;
+-  &.blue   { background: var(--gti-info-bg);    color: var(--gti-navy);    }
+-  &.amber  { background: var(--gti-warning-bg); color: var(--gti-warning); }
+-  &.red    { background: var(--gti-danger-bg);  color: var(--gti-danger);  }
+-  &.green  { background: var(--gti-success-bg); color: var(--gti-success); }
+-}
+-
+-.sla-control {
+-  display: flex; align-items: center; gap: 1rem;
+-  input[type="range"] { flex: 1; accent-color: var(--gti-orange); height: 4px; cursor: pointer; }
+-}
+-
+-.sla-value { font-size: .95rem; font-weight: 700; color: var(--gti-orange); min-width: 48px; text-align: right; }
+-
+-.devises-grid { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: .5rem; }
+-
+-.devise-chip {
+-  display: flex; align-items: center; gap: .4rem;
+-  padding: .4rem .9rem; border-radius: 20px;
+-  border: 1px solid var(--gti-border); background: var(--gti-bg-card);
+-  font-size: .82rem; font-weight: 600; color: var(--gti-text-secondary);
+-  cursor: pointer; transition: all .2s;
+-  i { font-size: .7rem; }
+-  &:hover  { border-color: var(--gti-navy); color: var(--gti-navy); background: var(--gti-bg-navy-soft); }
+-  &.active { background: var(--gti-navy); color: white; border-color: var(--gti-navy); }
+-}
+-
+-.statut-xml-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.75rem; }
+-
+-.statut-card {
+-  display: flex; align-items: center; gap: .6rem; padding: .85rem 1rem;
+-  border-radius: var(--gti-radius-md); border: 1px solid var(--gti-border);
+-  background: var(--gti-bg-page); font-size: .82rem; color: var(--gti-text-secondary);
+-  strong { color: var(--gti-text-primary); }
+-
+-  &.on      { background: var(--gti-success-bg); border-color: var(--gti-success-border); color: var(--gti-success); strong { color: var(--gti-success); } .statut-dot { background: var(--gti-success); animation: pulse 1.5s infinite; } }
+-  &.info    { background: var(--gti-info-bg);    border-color: var(--gti-info-border);    color: var(--gti-navy);    strong { color: var(--gti-navy-light); } }
+-  &.success { background: var(--gti-success-bg); border-color: var(--gti-success-border); color: var(--gti-success); strong { color: var(--gti-success); } }
+-  &.error   { background: var(--gti-danger-bg);  border-color: var(--gti-danger-border);  color: var(--gti-danger);  strong { color: var(--gti-danger); } }
+-  i { font-size: .9rem; flex-shrink: 0; }
+-}
+-
+-.statut-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gti-border); flex-shrink: 0; }
+-
+-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+-
+-.keycloak-banner {
+-  display: flex; align-items: flex-start; gap: 1rem;
+-  background: var(--gti-success-bg); border: 1px solid var(--gti-success-border);
+-  border-left: 4px solid var(--gti-success);
+-  border-radius: var(--gti-radius-md); padding: 1rem 1.25rem; margin-bottom: 1.25rem;
+-}
+-
+-.keycloak-icon {
+-  width: 36px; height: 36px; border-radius: var(--gti-radius-md);
+-  background: #DCFCE7; color: var(--gti-success);
+-  display: flex; align-items: center; justify-content: center;
+-  font-size: 1rem; flex-shrink: 0;
+-}
+-
+-.keycloak-title { display: block; font-size: .88rem; font-weight: 700; color: #15803D; margin-bottom: .25rem; }
+-.keycloak-desc  { display: block; font-size: .8rem; color: #166534; line-height: 1.5; }
+-
+ @media (max-width: 1024px) {
+   .param-layout { grid-template-columns: 1fr; }
+   .param-sidebar { position: static; }
+   nav { flex-direction: row; flex-wrap: wrap; }
+-  .nav-item { flex: 1; min-width: 140px; justify-content: center; border-bottom: none; border-right: 1px solid var(--gti-bg-page); }
+-  .statut-xml-grid { grid-template-columns: repeat(2,1fr); }
++  .nav-item {
++    flex: 1; min-width: 140px; justify-content: center;
++    border-bottom: none; border-right: 1px solid var(--gti-bg-page);
++  }
+ }
+ 
+ @media (max-width: 640px) {
+   .param-container { padding: 1rem; }
+   .form-grid { grid-template-columns: 1fr; }
+   .form-group.span-2 { grid-column: span 1; }
+-  .sla-grid { grid-template-columns: 1fr; }
+-  .statut-xml-grid { grid-template-columns: 1fr; }
+   .param-header { flex-direction: column; gap: 1rem; align-items: flex-start; }
+ }
+\ No newline at end of file
+diff --git a/gpi front/src/app/pages/admin/parametrage/parametrage.ts b/gpi front/src/app/pages/admin/parametrage/parametrage.ts
+index 9d77b1d..03fee4c 100644
+--- a/gpi front/src/app/pages/admin/parametrage/parametrage.ts	
++++ b/gpi front/src/app/pages/admin/parametrage/parametrage.ts	
+@@ -1,6 +1,7 @@
+ import { CommonModule } from '@angular/common';
+-import { Component } from '@angular/core';
++import { Component, OnInit } from '@angular/core';
+ import { FormsModule } from '@angular/forms';
++import { HttpClient } from '@angular/common/http';
+ 
+ @Component({
+   selector: 'app-parametrage',
+@@ -9,30 +10,28 @@ import { FormsModule } from '@angular/forms';
+   templateUrl: './parametrage.html',
+   styleUrl: './parametrage.scss'
+ })
+-export class Parametrage {
++export class Parametrage implements OnInit {
++
++  private apiUrl = 'http://localhost:8080/api/parametrage';
+ 
+   activeSection = 'banque';
+   successMessage = '';
+   hasChanges = false;
+ 
+   sections = [
+-    { id: 'banque',        label: 'Informations de la banque', icon: 'pi-building' },
+-    { id: 'sla',           label: 'Paramètres SLA',            icon: 'pi-clock' },
+-    { id: 'notifications', label: 'Notifications & alertes',   icon: 'pi-bell' },
+-    { id: 'devises',       label: 'Devises et limites',        icon: 'pi-dollar' },
+-    { id: 'xml',           label: 'Gestion fichiers XML',      icon: 'pi-file' },
+-    { id: 'securite',      label: 'Sécurité & sessions',       icon: 'pi-shield' },
++    { id: 'banque', label: 'Informations de la banque', icon: 'pi-building' },
++    { id: 'xml',    label: 'Gestion fichiers XML',      icon: 'pi-file'     },
+   ];
+ 
+   banque = {
+-    nom:       'Banque Nationale de Tunisie',
+-    bic:       'BNTNTNTXXXX',
++    nom:       '',
++    bic:       '',
+     pays:      'TN',
+     fuseau:    'Africa/Tunis',
+-    adresse:   'Rue Hédi Nouira, Tunis 1001',
+-    telephone: '+216 71 340 000',
+-    email:     'gpi@bnt.com.tn',
+-    site:      'https://www.bnt.com.tn',
++    adresse:   '',
++    telephone: '',
++    email:     '',
++    site:      '',
+   };
+ 
+   fuseaux = [
+@@ -41,107 +40,67 @@ export class Parametrage {
+   ];
+ 
+   pays = [
+-    { code: 'TN', nom: 'Tunisie' }, { code: 'FR', nom: 'France' },
+-    { code: 'BE', nom: 'Belgique' }, { code: 'DE', nom: 'Allemagne' },
+-    { code: 'GB', nom: 'Royaume-Uni' }, { code: 'US', nom: 'États-Unis' },
++    { code: 'TN', nom: 'Tunisie'     },
++    { code: 'FR', nom: 'France'      },
++    { code: 'BE', nom: 'Belgique'    },
++    { code: 'DE', nom: 'Allemagne'   },
++    { code: 'GB', nom: 'Royaume-Uni' },
++    { code: 'US', nom: 'États-Unis'  },
+   ];
+ 
+-  sla = {
+-    delaiConfirmation:  30,
+-    delaiAlerte:        20,
+-    delaiRecall:        60,
+-    delaiCreditMax:     1440,
+-    alerteDepassement:  true,
+-    alerteRetard:       true,
+-  };
+-
+-  notifications = {
+-    emailPaiementRejet:   true,
+-    emailDepassementSLA:  true,
+-    emailRecallEnAttente: true,
+-    emailNouveauPaiement: false,
+-    emailAdresse:         'admin@bnt.com.tn',
+-    emailCopie:           '',
+-    frequenceRapport:     'quotidien',
+-  };
+-
+-  frequences = ['temps-reel', 'toutes-les-heures', 'quotidien', 'hebdomadaire'];
+-  frequencesLabels: { [key: string]: string } = {
+-    'temps-reel':        'Temps réel',
+-    'toutes-les-heures': 'Toutes les heures',
+-    'quotidien':         'Quotidien',
+-    'hebdomadaire':      'Hebdomadaire',
+-  };
+-
+-  devisesActives = ['TND', 'EUR', 'USD', 'GBP'];
+-  toutesDevises  = ['TND','EUR','USD','GBP','JPY','CNY','CAD','CHF','AUD','NZD','SEK','NOK','DKK','INR','BRL'];
+-
+-  limites = {
+-    montantMin:   100,
+-    montantMax:   10000000,
+-    seuilAlerte:  500000,
+-    deviseDefaut: 'TND',
+-  };
+-
+-  toggleDevise(devise: string) {
+-    const idx = this.devisesActives.indexOf(devise);
+-    if (idx >= 0) {
+-      if (this.devisesActives.length > 1) {
+-        this.devisesActives.splice(idx, 1);
+-        this.markChanged();
+-      }
+-    } else {
+-      this.devisesActives.push(devise);
+-      this.markChanged();
+-    }
+-  }
+-
+-  isDeviseActive(d: string): boolean {
+-    return this.devisesActives.includes(d);
+-  }
+-
+   xml = {
+-    dossierEntrant:   '/opt/gpi/incoming',
+-    dossierArchive:   '/opt/gpi/archive',
+-    dossierErreur:    '/opt/gpi/error',
+-    frequenceLecture: 30,
+-    traitementAuto:   true,
+-    archivageAuto:    true,
+-    retentionJours:   90,
+-    formatDate:       'dd/MM/yyyy HH:mm:ss',
+-  };
+-
+-  statutXml = {
+-    actif:           true,
+-    derniereExec:    '14/03/2026 09:45:12',
+-    fichiersTraites: 1247,
+-    fichiersErreur:  3,
++    dossierRecu: '',
++    dossierEmis: '',
+   };
+ 
+-  // loak gère : mdp, 2FA, politique de session
+-  securite = {
+-    dureeSession:       30,
+-    tentativesMax:      5,
+-    blocageDuree:       15,
+-    journalisation:     true,
+-    retentionLogsJours: 365,
+-  };
++  constructor(private http: HttpClient) {}
++
++  ngOnInit() {
++    this.http.get<any>(this.apiUrl).subscribe({
++      next: (data) => {
++        if (data) {
++          this.banque.nom       = data.nomBanque || '';
++          this.banque.bic       = data.bic       || '';
++          this.banque.pays      = data.pays      || 'TN';
++          this.banque.fuseau    = data.fuseau    || 'Africa/Tunis';
++          this.banque.adresse   = data.adresse   || '';
++          this.banque.telephone = data.telephone || '';
++          this.banque.email     = data.email     || '';
++          this.banque.site      = data.siteWeb   || '';
++          this.xml.dossierRecu  = data.dossierRecu || '';
++          this.xml.dossierEmis  = data.dossierEmis || '';
++        }
++      },
++      error: (err) => console.error('Erreur chargement paramétrage', err)
++    });
++  }
+ 
+   setSection(id: string) { this.activeSection = id; }
+-
+   markChanged() { this.hasChanges = true; }
+-
+-  sauvegarder() {
+-    this.hasChanges = false;
+-    this.successMessage = 'Paramètres enregistrés avec succès.';
+-    setTimeout(() => this.successMessage = '', 3500);
+-  }
+-
+   annuler() { this.hasChanges = false; }
+ 
+-  formatMinutes(min: number): string {
+-    if (min < 60)   return `${min} min`;
+-    if (min < 1440) return `${min / 60}h`;
+-    return `${min / 1440}j`;
++  sauvegarder() {
++    const payload = {
++      nomBanque:  this.banque.nom,
++      bic:        this.banque.bic,
++      pays:       this.banque.pays,
++      fuseau:     this.banque.fuseau,
++      adresse:    this.banque.adresse,
++      telephone:  this.banque.telephone,
++      email:      this.banque.email,
++      siteWeb:    this.banque.site,
++    };
++
++    this.http.patch<any>(this.apiUrl, payload).subscribe({
++      next: () => {
++        this.hasChanges = false;
++        this.successMessage = 'Paramètres enregistrés avec succès.';
++        setTimeout(() => this.successMessage = '', 3500);
++      },
++      error: (err) => {
++        console.error('Erreur sauvegarde', err);
++        this.successMessage = 'Erreur lors de la sauvegarde.';
++      }
++    });
+   }
+ }
+\ No newline at end of file
+diff --git a/gpi front/src/app/pages/admin/utilisateurs/utilisateurs.ts b/gpi front/src/app/pages/admin/utilisateurs/utilisateurs.ts
+index 320a531..9f555a5 100644
+--- a/gpi front/src/app/pages/admin/utilisateurs/utilisateurs.ts	
++++ b/gpi front/src/app/pages/admin/utilisateurs/utilisateurs.ts	
+@@ -32,7 +32,7 @@ export class Utilisateurs implements OnInit {
+   selectedUserLogs: LogDTO[] = [];
+   newUser: Partial<User> = this.emptyUser();
+ 
+-  // ✅ Erreurs par champ
++  // Erreurs par champ
+   errors: { [key: string]: string } = {};
+   touched: { [key: string]: boolean } = {};
+ 
+@@ -130,7 +130,7 @@ export class Utilisateurs implements OnInit {
+     this.cdr.detectChanges();
+   }
+ 
+-  // ✅ Prénom/Nom — bloque chiffres et caractères spéciaux à la saisie
++  //  Prénom/Nom — bloque chiffres et caractères spéciaux à la saisie
+   onNameInput(event: Event, field: 'firstName' | 'lastName') {
+     const input = event.target as HTMLInputElement;
+     const cleaned = input.value.replace(/[^a-zA-ZÀ-ÿ\s\-']/g, '');
+@@ -140,7 +140,7 @@ export class Utilisateurs implements OnInit {
+     this.cdr.detectChanges();
+   }
+ 
+-  // ✅ Téléphone — bloque les chiffres invalides dès la saisie
++  //  Téléphone — bloque les chiffres invalides dès la saisie
+   onPhoneInput(event: Event) {
+     const input = event.target as HTMLInputElement;
+     let val = input.value.replace(/\D/g, '');
+@@ -157,14 +157,14 @@ export class Utilisateurs implements OnInit {
+     this.cdr.detectChanges();
+   }
+ 
+-  // ✅ Validation en temps réel à la sortie du champ (blur)
++  // Validation en temps réel à la sortie du champ (blur)
+   onBlur(field: string) {
+     this.touched[field] = true;
+     this.validateField(field);
+     this.cdr.detectChanges();
+   }
+ 
+-  // ✅ Validation d'un champ spécifique
++  // Validation d'un champ spécifique
+   validateField(field: string) {
+     this.errors[field] = '';
+ 
+@@ -208,7 +208,7 @@ export class Utilisateurs implements OnInit {
+     }
+   }
+ 
+-  // ✅ Validation complète avant soumission
++  //  Validation complète avant soumission
+   private validateForm(): boolean {
+     this.touched = { firstName: true, lastName: true, email: true, phone: true };
+     ['firstName', 'lastName', 'email', 'phone'].forEach(f => this.validateField(f));
+@@ -235,8 +235,6 @@ export class Utilisateurs implements OnInit {
+     return true;
+   }
+ 
+-  // Replace the saveUser() method in utilisateurs.ts with this:
+-
+   saveUser() {
+     if (!this.validateForm()) return;
+     if (this.isSubmitting) return;
+@@ -251,38 +249,13 @@ export class Utilisateurs implements OnInit {
+ 
+     if (this.isEditing && this.selectedUser) {
+       this.userService.update(this.selectedUser.id!, userData).subscribe({
+-        next: () => {
+-          this.isSubmitting = false;
+-          this.showModal = false;
+-          this.cdr.detectChanges();
+-          this.loadUsers();
+-          this.showSuccess('Utilisateur modifié !');
+-        },
+-        error: (err) => {
+-          this.isSubmitting = false;
+-          this.formError = err?.error?.error || 'Erreur lors de la modification.';
+-          this.cdr.detectChanges();
+-        }
++        next: () => { this.isSubmitting = false; this.showModal = false; this.cdr.detectChanges(); this.loadUsers(); this.showSuccess('Utilisateur modifié !'); },
++        error: () => { this.isSubmitting = false; this.formError = 'Erreur lors de la modification.'; this.cdr.detectChanges(); }
+       });
+     } else {
+       this.userService.create(userData).subscribe({
+-        next: () => {
+-          this.isSubmitting = false;
+-          this.showModal = false;
+-          this.cdr.detectChanges();
+-          this.loadUsers();
+-          this.showSuccess('Utilisateur créé !');
+-        },
+-        error: (err) => {
+-          this.isSubmitting = false;
+-          // ✅ Show specific error from backend (e.g. user already exists)
+-          if (err?.status === 409) {
+-            this.formError = 'Un utilisateur avec cet email ou username existe déjà dans Keycloak.';
+-          } else {
+-            this.formError = err?.error?.error || 'Erreur serveur. Veuillez réessayer.';
+-          }
+-          this.cdr.detectChanges();
+-        }
++        next: () => { this.isSubmitting = false; this.showModal = false; this.cdr.detectChanges(); this.loadUsers(); this.showSuccess('Utilisateur créé !'); },
++        error: () => { this.isSubmitting = false; this.formError = 'Email déjà utilisé ou erreur serveur.'; this.cdr.detectChanges(); }
+       });
+     }
+   }
+diff --git a/gpi front/src/app/pages/auth/change-password/change-password.ts b/gpi front/src/app/pages/auth/change-password/change-password.ts
+index 36ed5af..edb7422 100644
+--- a/gpi front/src/app/pages/auth/change-password/change-password.ts	
++++ b/gpi front/src/app/pages/auth/change-password/change-password.ts	
+@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
+ import { Component } from '@angular/core';
+ import { FormBuilder, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+ import { Router } from '@angular/router';
+-import { HttpClient, HttpHeaders } from '@angular/common/http';
++import { AuthService } from '../../../services/auth.service';
+ import { ButtonModule } from 'primeng/button';
+ import { PasswordModule } from 'primeng/password';
+ import { InputTextModule } from 'primeng/inputtext';
+@@ -83,8 +83,8 @@ export class ChangePasswordComponent {
+   constructor(
+     private fb: FormBuilder,
+     private router: Router,
+-    private http: HttpClient,
+-    private keycloak: KeycloakService  // ✅ Keycloak
++    private authService: AuthService,
++    private keycloak: KeycloakService  // Keycloak
+   ) {
+     this.form = this.fb.group({
+       newPassword: ['', [Validators.required, Validators.minLength(8)]],
+@@ -98,68 +98,51 @@ export class ChangePasswordComponent {
+     return newPassword === confirmPassword ? null : { mismatch: true };
+   }
+ 
+-  async onSubmit() {
++ async onSubmit() {
+     if (this.form.invalid) {
+-      this.form.markAllAsTouched();
+-      return;
++        this.form.markAllAsTouched();
++        return;
+     }
+ 
+     const newPassword = this.form.value.newPassword!;
+-
+-    // ✅ Récupérer l'email depuis Keycloak
+     const profile = await this.keycloak.loadUserProfile();
+     const email = profile.email;
+ 
+     if (!email) {
+-      this.errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+-      this.keycloak.login();
+-      return;
++        this.errorMessage = 'Session expirée. Veuillez vous reconnecter.';
++        this.keycloak.login();
++        return;
+     }
+ 
+     this.loading = true;
+ 
+-    // ✅ Récupérer le token depuis Keycloak
+-    const token = await this.keycloak.getToken();
+-
+-    // ✅ Étape 1 — changer le mot de passe
+-    this.http.post<any>('http://localhost:8080/api/auth/change-password', {
+-      email,
+-      newPassword
+-    }, {
+-      headers: new HttpHeaders({ Authorization: `Bearer ${token}` })
+-    }).subscribe({
+-      next: () => {
+-        // ✅ Étape 2 — finaliser inscription
+-        this.http.patch<any>(
+-          'http://localhost:8080/api/auth/finaliser-inscription',
+-          {},
+-          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) }
+-        ).subscribe({
+-          next: () => {
++    this.authService.changePassword(email, newPassword).subscribe({
++        next: () => {
++            this.authService.finaliserInscription().subscribe({
++                next: () => {
++                    this.loading = false;
++                    this.successMessage = 'Mot de passe changé avec succès !';
++                    setTimeout(() => {
++                        const roles = this.keycloak.getUserRoles();
++                        if (roles.includes('Admin')) {
++                            this.router.navigateByUrl('/admin');
++                        } else if (roles.includes('Backoffice')) {
++                            this.router.navigateByUrl('/backoffice');
++                        } else {
++                            this.router.navigateByUrl('/client');
++                        }
++                    }, 2000);
++                },
++                error: () => {
++                    this.loading = false;
++                    this.errorMessage = 'Erreur finalisation. Veuillez vous reconnecter.';
++                }
++            });
++        },
++        error: () => {
+             this.loading = false;
+-            this.successMessage = 'Mot de passe changé avec succès !';
+-
+-            setTimeout(() => {
+-              const roles = this.keycloak.getUserRoles();
+-              if (roles.includes('Admin')) {
+-                this.router.navigateByUrl('/admin');
+-              } else if (roles.includes('Backoffice')) {
+-                this.router.navigateByUrl('/backoffice');
+-              } else {
+-                this.router.navigateByUrl('/client');
+-              }
+-            }, 2000);
+-          },
+-          error: () => {
+-            this.loading = false;
+-            this.errorMessage = 'Erreur finalisation. Veuillez vous reconnecter.';
+-          }
+-        });
+-      },
+-      error: () => {
+-        this.loading = false;
+-        this.errorMessage = 'Erreur lors du changement. Réessayez.';
+-      }
++            this.errorMessage = 'Erreur lors du changement. Réessayez.';
++        }
+     });
+-  }
+-}
+\ No newline at end of file
++}
++  }
+\ No newline at end of file
+diff --git a/gpi front/src/app/pages/auth/login.ts b/gpi front/src/app/pages/auth/login.ts
+deleted file mode 100644
+index f855c77..0000000
+--- a/gpi front/src/app/pages/auth/login.ts	
++++ /dev/null
+@@ -1,198 +0,0 @@
+-import { CommonModule } from '@angular/common';
+-import { Component, ChangeDetectorRef } from '@angular/core';
+-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+-import { Router, RouterModule } from '@angular/router';
+-import { ButtonModule } from 'primeng/button';
+-import { CheckboxModule } from 'primeng/checkbox';
+-import { InputTextModule } from 'primeng/inputtext';
+-import { PasswordModule } from 'primeng/password';
+-import { RippleModule } from 'primeng/ripple';
+-import { AuthService } from '../../services/auth.service';
+-
+-@Component({
+-  selector: 'app-login',
+-  standalone: true,
+-  imports: [
+-    CommonModule,
+-    ReactiveFormsModule,
+-    RouterModule,
+-    ButtonModule,
+-    CheckboxModule,
+-    InputTextModule,
+-    PasswordModule,
+-    RippleModule
+-  ],
+-  template: `
+-    <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden">
+-      <div class="flex flex-col items-center justify-center">
+-        <div style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
+-          <div class="w-full bg-surface-0 dark:bg-surface-900 py-20 px-8 sm:px-20" style="border-radius: 53px">
+-            <div class="text-center mb-8">
+-              <img src="logo-gpi.png" class="mb-8 w-24 mx-auto" />
+-              <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Se connecter à mon compte</div>
+-              <span class="text-muted-color font-medium">Continuer vers la plateforme</span>
+-            </div>
+-
+-            <!-- MESSAGE ERREUR -->
+-            <div *ngIf="errorMessage"
+-                 style="background:#fff0f0; border:1px solid #ffcccc; color:#cc0000; border-radius:8px; padding:12px 16px; margin-bottom:16px; text-align:center; font-size:14px;">
+-              ⚠️ {{ errorMessage }}
+-            </div>
+-
+-            <form [formGroup]="form" (ngSubmit)="onSubmit()">
+-              <!-- EMAIL -->
+-              <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
+-              <input
+-                pInputText
+-                id="email1"
+-                type="email"
+-                placeholder="Adresse e-mail"
+-                class="w-full md:w-120 mb-2"
+-                formControlName="email"
+-                autocomplete="email"
+-              />
+-              <small class="text-red-500" *ngIf="isInvalid('email')">
+-                <ng-container *ngIf="form.get('email')?.errors?.['required']">Email obligatoire.</ng-container>
+-                <ng-container *ngIf="form.get('email')?.errors?.['email']">Format email invalide (ex: nom@domaine.com).</ng-container>
+-              </small>
+-
+-              <!-- PASSWORD -->
+-              <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2 mt-6">Mot de passe</label>
+-              <p-password
+-                id="password1"
+-                formControlName="password"
+-                placeholder="Mot de passe"
+-                [toggleMask]="true"
+-                styleClass="mb-2"
+-                [fluid]="true"
+-                [feedback]="false"
+-                autocomplete="current-password"
+-              ></p-password>
+-
+-              <small class="text-red-500" *ngIf="isInvalid('password')">
+-                <ng-container *ngIf="form.get('password')?.errors?.['required']">Mot de passe obligatoire.</ng-container>
+-                <ng-container *ngIf="form.get('password')?.errors?.['minlength']">Minimum 8 caractères.</ng-container>
+-              </small>
+-
+-              <!-- REMEMBER + FORGOT -->
+-              <div class="flex items-center justify-between mt-6 mb-8 gap-8">
+-                <div class="flex items-center">
+-                  <p-checkbox formControlName="remember" id="rememberme1" binary class="mr-2"></p-checkbox>
+-                  <label for="rememberme1">Rester connecté(e)</label>
+-                </div>
+-                <a class="font-medium no-underline ml-2 text-right cursor-pointer text-primary" routerLink="/auth/forgot-password">
+-                  Mot de passe oublié ?
+-                </a>
+-              </div>
+-
+-              <!-- BUTTON -->
+-              <p-button
+-                label="Se connecter"
+-                styleClass="w-full login-orange-btn"
+-                type="submit"
+-                [disabled]="form.invalid || loading"
+-                [loading]="loading"
+-              ></p-button>
+-            </form>
+-          </div>
+-        </div>
+-      </div>
+-    </div>
+-  `
+-})
+-export class Login {
+-  loading = false;
+-  submitted = false;
+-  errorMessage = '';
+-  form;
+-
+-  constructor(
+-    private fb: FormBuilder,
+-    private router: Router,
+-    private authService: AuthService,
+-    private cdr: ChangeDetectorRef
+-  ) {
+-    this.form = this.fb.group({
+-      email: ['', [Validators.required, Validators.email]],
+-      password: ['', [Validators.required, Validators.minLength(8)]],
+-      remember: [false]
+-    });
+-  }
+-
+-  isInvalid(controlName: 'email' | 'password') {
+-    const c = this.form.get(controlName);
+-    return !!c && c.invalid && c.touched;
+-  }
+-
+-  onSubmit() {
+-    this.submitted = true;
+-    this.errorMessage = '';
+-
+-    if (this.form.invalid) {
+-      this.form.markAllAsTouched();
+-      return;
+-    }
+-
+-    this.loading = true;
+-    const { email, password } = this.form.value;
+-
+-    this.authService.login(email!, password!).subscribe({
+-      next: (res) => {
+-        // ✅ Appeler /api/auth/me pour récupérer firstLogin
+-        this.authService.getMe().subscribe({
+-          next: (me) => {
+-            if (me.firstLogin) {
+-              this.router.navigateByUrl('/auth/change-password');
+-              return;
+-            }
+-            if (res.role === 'Admin') {
+-              this.router.navigateByUrl('/admin');
+-            } else if (res.role === 'Backoffice') {
+-              // ✅ Include ?tab=dashboard so data loads correctly on first render
+-              this.router.navigate(['/backoffice'], { queryParams: { tab: 'dashboard' } });
+-            } else {
+-              this.router.navigateByUrl('/client');
+-            }
+-          },
+-          error: () => {
+-            // Si /me échoue, rediriger selon le rôle quand même
+-            if (res.role === 'Admin') {
+-              this.router.navigateByUrl('/admin');
+-            } else if (res.role === 'Backoffice') {
+-              // ✅ Include ?tab=dashboard so data loads correctly on first render
+-              this.router.navigate(['/backoffice'], { queryParams: { tab: 'dashboard' } });
+-            } else {
+-              this.router.navigateByUrl('/client');
+-            }
+-          }
+-        });
+-      },
+-      error: (err) => {
+-        this.loading = false;
+-
+-        let errDesc = '';
+-        try {
+-          const errorObj = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
+-          errDesc = errorObj?.error_description || '';
+-        } catch (e) {
+-          errDesc = '';
+-        }
+-
+-        if (err.status === 401 || err.status === 400) {
+-          if (errDesc.includes('Invalid user credentials')) {
+-            this.errorMessage = 'Email ou mot de passe incorrect.';
+-          } else if (errDesc.includes('Account is not fully set up')) {
+-            this.router.navigateByUrl('/auth/change-password');
+-          } else if (errDesc.includes('Account disabled')) {
+-            this.errorMessage = 'Votre compte a été désactivé. Contactez l\'administrateur.';
+-          } else {
+-            this.errorMessage = 'Email ou mot de passe incorrect.';
+-          }
+-        } else {
+-          this.errorMessage = 'Erreur de connexion. Veuillez réessayer.';
+-        }
+-        this.cdr.detectChanges();
+-      }
+-    });
+-  }
+-}
+\ No newline at end of file
+diff --git a/gpi front/src/app/pages/client/client.html b/gpi front/src/app/pages/client/client.html
+index 9c45b34..f58a7d8 100644
+--- a/gpi front/src/app/pages/client/client.html	
++++ b/gpi front/src/app/pages/client/client.html	
+@@ -6,17 +6,10 @@
+     ═══════════════════════════════════════ -->
+     <div *ngIf="activeTab==='dashboard'" class="tab-content">
+       <div class="page-title">Tableau de bord</div>
++      
+ 
+-      <div *ngIf="isLoading" class="loading-state">
+-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+-             style="animation:spin 1s linear infinite">
+-          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+-        </svg>
+-        <p>Chargement des données...</p>
+-      </div>
+-
+-      <div *ngIf="!isLoading" class="stats-grid">
+-        <div class="stat-card" (click)="setActiveTab('paiements')" style="cursor:pointer">
++      <div class="stats-grid">
++        <div class="stat-card" (click)="activeTab='paiements'" style="cursor:pointer">
+           <div class="stat-info">
+             <span class="stat-number">{{ transactions.length }}</span>
+             <span class="stat-label">Total paiements</span>
+@@ -27,7 +20,8 @@
+             </svg>
+           </div>
+         </div>
+-        <div class="stat-card" (click)="setActiveTab('paiements')" style="cursor:pointer">
++
++        <div class="stat-card" (click)="activeTab='paiements'" style="cursor:pointer">
+           <div class="stat-info">
+             <span class="stat-number">{{ nbEnAttente }}</span>
+             <span class="stat-label">En cours</span>
+@@ -38,7 +32,8 @@
+             </svg>
+           </div>
+         </div>
+-        <div class="stat-card stat-card--orange" (click)="setActiveTab('paiements')" style="cursor:pointer">
++
++        <div class="stat-card stat-card--orange" (click)="activeTab='paiements'" style="cursor:pointer">
+           <div class="stat-info">
+             <span class="stat-number">{{ nbConfirmes }}</span>
+             <span class="stat-label">Effectués</span>
+@@ -49,7 +44,8 @@
+             </svg>
+           </div>
+         </div>
+-        <div class="stat-card stat-card--navy" (click)="setActiveTab('paiements')" style="cursor:pointer">
++
++        <div class="stat-card stat-card--navy" (click)="activeTab='paiements'" style="cursor:pointer">
+           <div class="stat-info">
+             <span class="stat-number">{{ nbRejetes }}</span>
+             <span class="stat-label">Refusés</span>
+@@ -63,7 +59,7 @@
+         </div>
+       </div>
+ 
+-      <div *ngIf="!isLoading" class="content-card">
++      <div class="content-card">
+         <div class="card-header">
+           <h2>
+             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+@@ -72,31 +68,32 @@
+             </svg>
+             Derniers paiements
+           </h2>
+-          <button class="btn-navy" (click)="setActiveTab('paiements')">
++          <button class="btn-navy" (click)="activeTab='paiements'">
+             Voir tout
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+               <polyline points="9 18 15 12 9 6"/>
+             </svg>
+           </button>
+         </div>
++
+         <div *ngIf="transactions.length === 0" class="dash-empty">
+           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+             <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+           </svg>
+           <p>Aucun paiement pour l'instant</p>
+         </div>
++
+         <table *ngIf="transactions.length > 0" class="data-table">
+           <thead>
+             <tr>
+-              <th>Statut</th><th>Référence</th><th>BIC Expéditeur</th>
+-              <th>BIC Destinataire</th><th>Montant</th><th>Date</th><th>Détail</th>
++              <th>Statut</th><th>Référence</th><th>Banque destinataire</th>
++              <th>Montant</th><th>Date</th><th>Détail</th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr *ngFor="let t of transactions.slice(0,5)">
+               <td><span class="badge" [ngClass]="getStatutClass(t.statutISO)">{{ getStatutLabel(t.statutISO) }}</span></td>
+               <td class="uetr-cell" [title]="t.uetr">{{ t.uetr }}</td>
+-              <td><strong>{{ t.bicEmetteur }}</strong></td>
+               <td><strong>{{ t.bicRecepteur }}</strong></td>
+               <td class="montant-cell">{{ formatMontant(t.montant) }} {{ t.devise }}</td>
+               <td>{{ t.date }}</td>
+@@ -111,37 +108,6 @@
+           </tbody>
+         </table>
+       </div>
+-
+-      <div *ngIf="!isLoading" class="dash-grid">
+-        <div class="content-card dash-card" style="cursor:pointer" (click)="setActiveTab('recus')">
+-          <div class="card-header">
+-            <h2>
+-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+-              </svg>
+-              Paiements Reçus
+-            </h2>
+-            <button class="btn-navy">
+-              Voir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+-            </button>
+-          </div>
+-          <p style="font-size:0.82rem;color:#888;padding:0 0 0.5rem">{{ paiementsRecus.length }} paiement(s) reçu(s)</p>
+-        </div>
+-        <div class="content-card dash-card" style="cursor:pointer" (click)="setActiveTab('emis')">
+-          <div class="card-header">
+-            <h2>
+-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+-              </svg>
+-              Paiements Émis
+-            </h2>
+-            <button class="btn-navy">
+-              Voir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+-            </button>
+-          </div>
+-          <p style="font-size:0.82rem;color:#888;padding:0 0 0.5rem">{{ paiementsEmis.length }} paiement(s) émis</p>
+-        </div>
+-      </div>
+     </div>
+ 
+     <!-- ═══════════════════════════════════════
+@@ -149,37 +115,32 @@
+     ═══════════════════════════════════════ -->
+     <div *ngIf="activeTab==='paiements' && !selectedTransaction" class="tab-content">
+       <div class="page-title">Mes paiements</div>
++
+       <div class="search-section">
+         <div class="search-wrapper">
+           <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+           </svg>
+-          <input class="search-input" type="text" placeholder="Rechercher par référence, BIC..." [(ngModel)]="searchUetr" />
++          <input class="search-input" type="text" placeholder="Rechercher par référence..." [(ngModel)]="searchUetr" />
+         </div>
+       </div>
++
+       <div class="content-card">
+         <div class="card-header">
+           <h2>Mes paiements GPI</h2>
+-          <button class="btn-refresh" (click)="loadData()">
+-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+-            </svg>
+-            Actualiser
+-          </button>
+         </div>
+         <div class="table-wrapper">
+           <table class="data-table">
+             <thead>
+               <tr>
+-                <th>Statut</th><th>Référence (UETR)</th><th>BIC Expéditeur</th>
+-                <th>BIC Destinataire</th><th>Montant</th><th>Devise</th><th>Date</th><th>Détail</th>
++                <th>Statut</th><th>Référence</th><th>Banque destinataire</th>
++                <th>Montant</th><th>Devise</th><th>Date</th><th>Détail</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr *ngFor="let t of filteredTransactions">
+                 <td><span class="badge" [ngClass]="getStatutClass(t.statutISO)">{{ getStatutLabel(t.statutISO) }}</span></td>
+                 <td class="uetr-cell" [title]="t.uetr">{{ t.uetr }}</td>
+-                <td><strong>{{ t.bicEmetteur }}</strong></td>
+                 <td><strong>{{ t.bicRecepteur }}</strong></td>
+                 <td class="montant-cell">{{ formatMontant(t.montant) }}</td>
+                 <td>{{ t.devise }}</td>
+@@ -193,171 +154,7 @@
+                 </td>
+               </tr>
+               <tr *ngIf="filteredTransactions.length === 0">
+-                <td colspan="8" class="empty-state">Aucun paiement trouvé</td>
+-              </tr>
+-            </tbody>
+-          </table>
+-        </div>
+-      </div>
+-    </div>
+-
+-    <!-- ═══════════════════════════════════════
+-         PAIEMENTS REÇUS
+-    ═══════════════════════════════════════ -->
+-    <div *ngIf="activeTab==='recus'" class="tab-content">
+-      <div class="page-title">Paiements Reçus</div>
+-      <div class="content-card">
+-        <div class="card-header">
+-          <div>
+-            <h2>
+-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+-              </svg>
+-              Paiements reçus
+-            </h2>
+-            <p class="content-sub">Paiements entrants reçus par votre banque</p>
+-          </div>
+-          <button class="btn-refresh" (click)="loadData()">
+-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+-            </svg>
+-            Actualiser
+-          </button>
+-        </div>
+-
+-        <div class="filtres-bar">
+-          <div class="filtre-item filtre-search">
+-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+-            </svg>
+-            <input type="text" [(ngModel)]="searchUetrRecus" placeholder="Rechercher par UETR..." />
+-          </div>
+-          <button class="btn-reset" (click)="searchUetrRecus = ''">
+-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+-            </svg>
+-            Réinitialiser
+-          </button>
+-        </div>
+-
+-        <div class="filtres-count">
+-          {{ filteredPaiementsRecus.length }} résultat(s) sur {{ paiementsRecus.length }} paiements
+-        </div>
+-
+-        <div class="table-wrapper">
+-          <table class="data-table">
+-            <thead>
+-              <tr>
+-                <th>UETR</th>
+-                <th>Devise</th>
+-                <th>Date</th>
+-                <th>Statut</th>
+-                <th>Timeline</th>
+-              </tr>
+-            </thead>
+-            <tbody>
+-              <tr *ngFor="let p of filteredPaiementsRecus">
+-                <td class="uetr-cell" [title]="p.uetr">{{ p.uetr || '—' }}</td>
+-                <td>{{ p.devise || '—' }}</td>
+-                <td>{{ formatDate(p.dateValeur || p.receivedAt) }}</td>
+-                <td>
+-                  <span class="badge" [ngClass]="getStatutClass(p.statut)">{{ p.statut || 'PDNG' }}</span>
+-                </td>
+-                <td>
+-                  <button class="btn-timeline" (click)="ouvrirTimeline(p)" title="Voir la timeline">
+-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-                      <line x1="12" y1="20" x2="12" y2="10"/>
+-                      <line x1="18" y1="20" x2="18" y2="4"/>
+-                      <line x1="6" y1="20" x2="6" y2="16"/>
+-                    </svg>
+-                    Timeline
+-                  </button>
+-                </td>
+-              </tr>
+-              <tr *ngIf="filteredPaiementsRecus.length === 0">
+-                <td colspan="5" class="empty-state">Aucun paiement reçu trouvé</td>
+-              </tr>
+-            </tbody>
+-          </table>
+-        </div>
+-      </div>
+-    </div>
+-
+-    <!-- ═══════════════════════════════════════
+-         PAIEMENTS ÉMIS
+-    ═══════════════════════════════════════ -->
+-    <div *ngIf="activeTab==='emis'" class="tab-content">
+-      <div class="page-title">Paiements Émis</div>
+-      <div class="content-card">
+-        <div class="card-header">
+-          <div>
+-            <h2>
+-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+-              </svg>
+-              Paiements émis
+-            </h2>
+-            <p class="content-sub">Paiements envoyés depuis votre banque</p>
+-          </div>
+-          <button class="btn-refresh" (click)="loadData()">
+-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+-            </svg>
+-            Actualiser
+-          </button>
+-        </div>
+-
+-        <div class="filtres-bar">
+-          <div class="filtre-item filtre-search">
+-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+-            </svg>
+-            <input type="text" [(ngModel)]="searchUetrEmis" placeholder="Rechercher par UETR..." />
+-          </div>
+-          <button class="btn-reset" (click)="searchUetrEmis = ''">
+-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+-            </svg>
+-            Réinitialiser
+-          </button>
+-        </div>
+-
+-        <div class="filtres-count">
+-          {{ filteredPaiementsEmis.length }} résultat(s) sur {{ paiementsEmis.length }} paiements
+-        </div>
+-
+-        <div class="table-wrapper">
+-          <table class="data-table">
+-            <thead>
+-              <tr>
+-                <th>UETR</th>
+-                <th>Devise</th>
+-                <th>Date</th>
+-                <th>Statut</th>
+-                <th>Timeline</th>
+-              </tr>
+-            </thead>
+-            <tbody>
+-              <tr *ngFor="let p of filteredPaiementsEmis">
+-                <td class="uetr-cell" [title]="p.uetr">{{ p.uetr || '—' }}</td>
+-                <td>{{ p.devise || '—' }}</td>
+-                <td>{{ formatDate(p.dateValeur || p.receivedAt) }}</td>
+-                <td>
+-                  <span class="badge" [ngClass]="getStatutClass(p.statut)">{{ p.statut || 'PDNG' }}</span>
+-                </td>
+-                <td>
+-                  <button class="btn-timeline" (click)="ouvrirTimeline(p)" title="Voir la timeline">
+-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-                      <line x1="12" y1="20" x2="12" y2="10"/>
+-                      <line x1="18" y1="20" x2="18" y2="4"/>
+-                      <line x1="6" y1="20" x2="6" y2="16"/>
+-                    </svg>
+-                    Timeline
+-                  </button>
+-                </td>
+-              </tr>
+-              <tr *ngIf="filteredPaiementsEmis.length === 0">
+-                <td colspan="5" class="empty-state">Aucun paiement émis trouvé</td>
++                <td colspan="7" class="empty-state">Aucun paiement trouvé</td>
+               </tr>
+             </tbody>
+           </table>
+@@ -375,22 +172,22 @@
+         </svg>
+         Retour aux paiements
+       </button>
++
+       <div class="page-title">Détail du paiement</div>
++
+       <div class="lm-header-cards">
+         <div class="lm-card">
+           <p class="lm-card-label">Statut</p>
+-          <span class="badge" [ngClass]="getStatutClass(selectedTransaction.statutISO)">{{ getStatutLabel(selectedTransaction.statutISO) }}</span>
++          <span class="badge" [ngClass]="getStatutClass(selectedTransaction.statutISO)">
++            {{ getStatutLabel(selectedTransaction.statutISO) }}
++          </span>
+         </div>
+         <div class="lm-card">
+           <p class="lm-card-label">Montant envoyé</p>
+           <p class="lm-card-value">{{ formatMontant(selectedTransaction.montant) }} {{ selectedTransaction.devise }}</p>
+         </div>
+         <div class="lm-card">
+-          <p class="lm-card-label">BIC Expéditeur</p>
+-          <p class="lm-card-value">{{ selectedTransaction.bicEmetteur }}</p>
+-        </div>
+-        <div class="lm-card">
+-          <p class="lm-card-label">BIC Destinataire</p>
++          <p class="lm-card-label">Banque destinataire</p>
+           <p class="lm-card-value">{{ selectedTransaction.bicRecepteur }}</p>
+         </div>
+         <div class="lm-card">
+@@ -398,10 +195,11 @@
+           <p class="lm-card-value">{{ selectedTransaction.date }}</p>
+         </div>
+         <div class="lm-card lm-card--wide">
+-          <p class="lm-card-label">Référence UETR</p>
++          <p class="lm-card-label">Référence du paiement</p>
+           <p class="lm-card-uetr">{{ selectedTransaction.uetr }}</p>
+         </div>
+       </div>
++
+       <div *ngIf="selectedTransaction.statutISO==='RJCT'" class="alert-rejet">
+         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+           <circle cx="12" cy="12" r="10"/>
+@@ -413,8 +211,11 @@
+           <p>Veuillez contacter votre conseiller pour plus d'informations.</p>
+         </div>
+       </div>
++
+       <div class="content-card">
+-        <div class="card-header"><h2>Suivi de votre paiement</h2></div>
++        <div class="card-header">
++          <h2>Suivi de votre paiement</h2>
++        </div>
+         <div class="msg-timeline">
+           <div *ngFor="let msg of selectedTransaction.messages; let last=last" class="msg-step">
+             <div class="msg-step-icon" [ngClass]="getStatutClass(msg.statut)">
+@@ -425,7 +226,6 @@
+             <div class="msg-step-line" *ngIf="!last"></div>
+             <div class="msg-step-body">
+               <div class="msg-step-top">
+-                <span class="msg-type-tag">{{ msg.type }}</span>
+                 <span class="badge badge-sm" [ngClass]="getStatutClass(msg.statut)">{{ getStatutLabel(msg.statut) }}</span>
+                 <span class="msg-date">{{ msg.dateHeure }}</span>
+               </div>
+@@ -437,8 +237,11 @@
+           </div>
+         </div>
+       </div>
++
+       <div class="content-card">
+-        <div class="card-header"><h2>Résumé financier</h2></div>
++        <div class="card-header">
++          <h2>Résumé financier</h2>
++        </div>
+         <div class="charges-recap">
+           <div class="recap-item">
+             <span class="recap-label">Montant envoyé</span>
+@@ -465,28 +268,29 @@
+     ═══════════════════════════════════════ -->
+     <div *ngIf="activeTab==='historique'" class="tab-content">
+       <div class="page-title">Historique des paiements</div>
++
+       <div class="search-section">
+         <div class="search-wrapper">
+           <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+           </svg>
+-          <input class="search-input" type="text" placeholder="Rechercher par référence, BIC..." [(ngModel)]="searchUetr" />
++          <input class="search-input" type="text" placeholder="Rechercher par référence..." [(ngModel)]="searchUetr" />
+         </div>
+       </div>
++
+       <div class="content-card">
+         <div class="table-wrapper">
+           <table class="data-table">
+             <thead>
+               <tr>
+-                <th>Date</th><th>Référence (UETR)</th><th>BIC Expéditeur</th>
+-                <th>BIC Destinataire</th><th>Montant</th><th>Devise</th><th>Statut</th><th>Détail</th>
++                <th>Date</th><th>Référence</th><th>Banque destinataire</th>
++                <th>Montant</th><th>Devise</th><th>Statut</th><th>Détail</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr *ngFor="let t of filteredTransactions">
+                 <td>{{ t.date }}</td>
+                 <td class="uetr-cell" [title]="t.uetr">{{ t.uetr }}</td>
+-                <td><strong>{{ t.bicEmetteur }}</strong></td>
+                 <td><strong>{{ t.bicRecepteur }}</strong></td>
+                 <td class="montant-cell">{{ formatMontant(t.montant) }}</td>
+                 <td>{{ t.devise }}</td>
+@@ -500,7 +304,7 @@
+                 </td>
+               </tr>
+               <tr *ngIf="filteredTransactions.length === 0">
+-                <td colspan="8" class="empty-state">Aucun paiement trouvé</td>
++                <td colspan="7" class="empty-state">Aucun paiement trouvé</td>
+               </tr>
+             </tbody>
+           </table>
+@@ -509,98 +313,4 @@
+     </div>
+ 
+   </main>
+-</div>
+-
+-<!-- ═══════════════════════════════════════════════════════════
+-     MODAL TIMELINE
+-═══════════════════════════════════════════════════════════ -->
+-<div *ngIf="showTimelineModal" class="modal-overlay" (click)="fermerTimeline()">
+-  <div class="modal-box modal-timeline-client" (click)="$event.stopPropagation()">
+-
+-    <!-- Header -->
+-    <div class="modal-header">
+-      <div class="modal-header-left">
+-        <div class="modal-icon">
+-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-            <line x1="12" y1="20" x2="12" y2="10"/>
+-            <line x1="18" y1="20" x2="18" y2="4"/>
+-            <line x1="6" y1="20" x2="6" y2="16"/>
+-          </svg>
+-        </div>
+-        <div>
+-          <h3>Timeline du paiement</h3>
+-          <p class="modal-sub">{{ timelinePaiement?.uetr || timelinePaiement?.messageId }}</p>
+-        </div>
+-      </div>
+-      <button class="modal-close" (click)="fermerTimeline()">
+-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+-        </svg>
+-      </button>
+-    </div>
+-
+-    <!-- Summary strip -->
+-    <div class="tl-summary">
+-      <div class="tl-summary-item">
+-        <span class="tl-summary-label">Expéditeur</span>
+-        <span class="tl-summary-value">{{ timelinePaiement?.senderBic || '—' }}</span>
+-      </div>
+-      <div class="tl-divider"></div>
+-      <div class="tl-summary-item">
+-        <span class="tl-summary-label">Destinataire</span>
+-        <span class="tl-summary-value">{{ timelinePaiement?.receiverBic || '—' }}</span>
+-      </div>
+-      <div class="tl-divider"></div>
+-      <div class="tl-summary-item">
+-        <span class="tl-summary-label">Montant</span>
+-        <span class="tl-summary-value tl-montant">
+-          {{ formatMontant(timelinePaiement?.montant ?? 0) }} {{ timelinePaiement?.devise }}
+-        </span>
+-      </div>
+-      <div class="tl-divider"></div>
+-      <div class="tl-summary-item">
+-        <span class="tl-summary-label">Statut</span>
+-        <span class="badge" [ngClass]="getStatutClass(timelinePaiement?.statut || 'PDNG')">
+-          {{ timelinePaiement?.statut || 'PDNG' }}
+-        </span>
+-      </div>
+-    </div>
+-
+-    <!-- Steps -->
+-    <div class="tl-steps">
+-      <div
+-        *ngFor="let step of timelineSteps; let last = last"
+-        class="tl-step"
+-        [class.tl-step--done]="step.done"
+-        [class.tl-step--pending]="!step.done">
+-
+-        <div class="tl-step-left">
+-          <div class="tl-step-dot" [ngClass]="step.done ? getStatutClass(step.statut) : 'tl-dot-pending'">
+-            <svg *ngIf="step.done && step.statut === 'ACSC'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+-            <svg *ngIf="step.done && step.statut === 'RJCT'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+-            <svg *ngIf="step.done && step.statut === 'CANC'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="9"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+-            <svg *ngIf="step.done && step.statut !== 'ACSC' && step.statut !== 'RJCT' && step.statut !== 'CANC'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+-            <svg *ngIf="!step.done" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+-          </div>
+-          <div class="tl-step-line" *ngIf="!last"></div>
+-        </div>
+-
+-        <div class="tl-step-body">
+-          <div class="tl-step-head">
+-            <span class="tl-step-label">{{ step.label }}</span>
+-            <span class="badge badge-sm" [ngClass]="step.done ? getStatutClass(step.statut) : 'badge-pdng'">
+-              {{ step.done ? step.statut : 'En attente' }}
+-            </span>
+-            <span class="tl-step-date" *ngIf="step.date !== '—'">{{ step.date }}</span>
+-          </div>
+-          <p class="tl-step-detail">{{ step.detail }}</p>
+-          <p class="tl-step-ref">
+-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+-            {{ step.ref }}
+-          </p>
+-        </div>
+-      </div>
+-    </div>
+-
+-  </div>
+ </div>
+\ No newline at end of file
+diff --git a/gpi front/src/app/pages/client/client.scss b/gpi front/src/app/pages/client/client.scss
+index 8c0560c..63be7cb 100644
+--- a/gpi front/src/app/pages/client/client.scss	
++++ b/gpi front/src/app/pages/client/client.scss	
+@@ -1,5 +1,22 @@
++
+ *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
++// ─── Toast ─────────────────────────────────────────────────
++.toast {
++  position: fixed; top: 1.5rem; right: 1.5rem; z-index: 9999;
++  display: flex; align-items: center; gap: 0.6rem;
++  padding: 0.85rem 1.25rem; border-radius: var(--gti-radius-md);
++  font-size: 0.875rem; font-weight: 600; color: #fff;
++  box-shadow: var(--gti-shadow-md);
++  transform: translateY(-12px); opacity: 0; pointer-events: none;
++  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
++
++  &.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
++  &--success { background: var(--gti-success); }
++  &--error   { background: var(--gti-danger); }
++  &--info    { background: var(--gti-navy); }
++}
++
+ // ─── Layout ────────────────────────────────────────────────
+ .backoffice-wrapper {
+   background: var(--gti-bg-page);
+@@ -8,28 +25,82 @@
+   color: var(--gti-text-primary);
+ }
+ 
++// ─── Body ──────────────────────────────────────────────────
++.body-layout { display: flex; flex: 1; overflow: hidden; }
++
++// ─── Sidebar ───────────────────────────────────────────────
++.sidebar {
++  width: 256px; min-width: 256px;
++  background: var(--gti-bg-card);
++  border-right: 1px solid var(--gti-border);
++  display: flex; flex-direction: column;
++  padding: 1.25rem 0.875rem;
++  overflow-y: auto;
++}
++.user-profile {
++  display: flex; align-items: center; gap: 0.75rem;
++  padding: 0.875rem 1rem;
++  background: var(--gti-bg-page);
++  border-radius: var(--gti-radius-lg);
++  margin-bottom: 1.75rem;
++  border: 1px solid var(--gti-border);
++}
++.user-avatar {
++  width: 42px; height: 42px;
++  background: var(--gti-orange); border-radius: 50%;
++  display: flex; align-items: center; justify-content: center;
++  color: #fff; font-size: 0.85rem; font-weight: 800; flex-shrink: 0;
++}
++.user-name { font-size: 0.875rem; font-weight: 700; color: var(--gti-text-primary); margin: 0; }
++.user-role { font-size: 0.75rem; color: var(--gti-orange); font-weight: 500; margin: 0.1rem 0 0; }
++
++.menu-section { margin-bottom: 1.5rem; }
++.menu-section-title {
++  font-size: 0.65rem; font-weight: 800;
++  color: var(--gti-text-hint);
++  text-transform: uppercase; letter-spacing: 1.5px;
++  margin-bottom: 0.4rem; padding: 0 0.625rem;
++}
++.menu-item {
++  display: flex; align-items: center; gap: 0.75rem; width: 100%;
++  padding: 0.6rem 0.875rem;
++  background: transparent; border: none;
++  border-radius: var(--gti-radius-sm);
++  cursor: pointer; font-size: 0.85rem;
++  color: var(--gti-text-secondary); font-weight: 500;
++  margin-bottom: 0.2rem; transition: all 0.18s;
++  text-align: left; position: relative;
++
++  &:hover  { background: var(--gti-orange-light); color: var(--gti-orange); }
++  &.active { background: var(--gti-orange-light); color: var(--gti-orange); font-weight: 700; }
++  &--danger {
++    color: var(--gti-danger) !important;
++    &:hover { background: var(--gti-danger-bg) !important; }
++  }
++}
++.menu-badge {
++  margin-left: auto;
++  background: var(--gti-danger); color: #fff;
++  font-size: 0.65rem; font-weight: 800;
++  padding: 0.15rem 0.45rem; border-radius: 10px;
++  min-width: 20px; text-align: center;
++}
++
++// ─── Main ──────────────────────────────────────────────────
+ .main-content { flex: 1; padding: 2rem; overflow-y: auto; min-width: 0; }
+ .tab-content  { animation: fadeIn 0.22s ease; }
+-
+ @keyframes fadeIn {
+   from { opacity: 0; transform: translateY(5px); }
+   to   { opacity: 1; transform: translateY(0); }
+ }
+-@keyframes spin {
+-  from { transform: rotate(0deg); }
+-  to   { transform: rotate(360deg); }
+-}
+-
+-.main-content .page-title { margin-bottom: 1.75rem !important; }
+ 
+-// ─── Loading ───────────────────────────────────────────────
+-.loading-state {
+-  display: flex; flex-direction: column; align-items: center;
+-  gap: 0.5rem; padding: 3rem; color: var(--gti-text-hint);
+-  font-size: 0.85rem;
++// .page-title est défini globalement dans styles.scss avec ::after pour le trait
++// On override uniquement la marge inférieure pour laisser de l'espace
++.main-content .page-title {
++  margin-bottom: 1.75rem !important;
+ }
+ 
+-// ─── Stats ────────────────────────────────────────────────
++// ─── Stat Cards ────────────────────────────────────────────
+ .stats-grid {
+   display: grid;
+   grid-template-columns: repeat(4, 1fr);
+@@ -44,29 +115,41 @@
+   border: 1px solid var(--gti-border);
+   box-shadow: var(--gti-shadow-sm);
+   transition: all 0.3s ease;
+-  &:hover { box-shadow: var(--gti-shadow-md); transform: translateY(-2px); border-color: rgba(232,66,26,0.3); }
++
++  &:hover {
++    box-shadow: var(--gti-shadow-md);
++    transform: translateY(-2px);
++    border-color: rgba(232, 66, 26, 0.3);
++  }
+   &--orange {
+     background: var(--gti-orange); border-color: var(--gti-orange);
++    box-shadow: 0 4px 16px rgba(232, 66, 26, 0.25);
+     .stat-number, .stat-label { color: #fff; }
+-    .stat-icon { background: rgba(255,255,255,0.2); svg { stroke: #fff; } }
++    .stat-icon { background: rgba(255,255,255,0.2); color: #fff;
++      svg { stroke: #fff; }
++    }
+   }
+   &--navy {
+     background: var(--gti-navy); border-color: var(--gti-navy);
++    box-shadow: 0 4px 16px rgba(27, 42, 74, 0.25);
+     .stat-number, .stat-label { color: #fff; }
+-    .stat-icon { background: rgba(255,255,255,0.15); svg { stroke: #fff; } }
++    .stat-icon { background: rgba(255,255,255,0.15); color: #fff;
++      svg { stroke: #fff; }
++    }
+   }
+ }
+ .stat-info   { display: flex; flex-direction: column; }
+ .stat-number { font-size: 2rem; font-weight: 800; color: var(--gti-text-primary); }
+ .stat-label  { font-size: 0.82rem; color: var(--gti-text-secondary); margin-top: 0.2rem; }
+ .stat-icon {
+-  width: 48px; height: 48px; border-radius: var(--gti-radius-md);
++  width: 48px; height: 48px;
++  border-radius: var(--gti-radius-md);
+   background: var(--gti-orange-light);
+   display: flex; align-items: center; justify-content: center;
+   svg { stroke: var(--gti-orange); }
+ }
+ 
+-// ─── Content card ──────────────────────────────────────────
++// ─── Content Card ──────────────────────────────────────────
+ .content-card {
+   background: var(--gti-bg-card);
+   border-radius: var(--gti-radius-lg);
+@@ -79,11 +162,38 @@
+   display: flex; justify-content: space-between; align-items: center;
+   margin-bottom: 1.25rem; padding-bottom: 1rem;
+   border-bottom: 2px solid var(--gti-bg-page);
+-  h2 { font-size: 1rem; font-weight: 700; color: var(--gti-text-primary); display: flex; align-items: center; gap: 0.5rem; }
++
++  h2 {
++    font-size: 1rem; font-weight: 700; color: var(--gti-text-primary);
++    display: flex; align-items: center; gap: 0.5rem;
++  }
+ }
+ .content-sub { font-size: 0.82rem; color: var(--gti-text-secondary); margin: 0.2rem 0 0; }
+ 
+-// ─── Buttons ───────────────────────────────────────────────
++// ─── Boutons ───────────────────────────────────────────────
++.btn-initier {
++  display: flex; align-items: center; gap: 0.5rem;
++  background: var(--gti-orange); color: #fff; border: none;
++  padding: 0.55rem 1.2rem; border-radius: var(--gti-radius-sm);
++  cursor: pointer; font-size: 0.85rem; font-weight: 700; white-space: nowrap;
++  transition: all 0.2s; flex-shrink: 0;
++  &:hover { background: var(--gti-orange-hover); box-shadow: var(--gti-shadow-md); transform: translateY(-1px); }
++}
++.btn-primary {
++  display: flex; align-items: center; gap: 0.5rem;
++  background: var(--gti-orange); color: #fff; border: none;
++  padding: 0.6rem 1.4rem; border-radius: var(--gti-radius-sm);
++  cursor: pointer; font-size: 0.875rem; font-weight: 700; transition: all 0.2s;
++  &:hover { background: var(--gti-orange-hover); transform: translateY(-1px); box-shadow: var(--gti-shadow-md); }
++}
++.btn-secondary {
++  display: flex; align-items: center; gap: 0.5rem;
++  background: var(--gti-bg-card); color: var(--gti-text-secondary);
++  border: 1.5px solid var(--gti-border);
++  padding: 0.6rem 1.2rem; border-radius: var(--gti-radius-sm);
++  cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: all 0.2s;
++  &:hover { border-color: var(--gti-navy); color: var(--gti-navy); }
++}
+ .btn-navy {
+   display: flex; align-items: center; gap: 0.5rem;
+   background: var(--gti-navy); color: #fff; border: none;
+@@ -91,45 +201,97 @@
+   font-size: 0.8rem; cursor: pointer; font-weight: 600; transition: all 0.2s;
+   &:hover { background: var(--gti-navy-light); }
+ }
+-.btn-refresh {
+-  display: flex; align-items: center; gap: 0.4rem;
+-  background: var(--gti-bg-page); color: var(--gti-text-secondary);
+-  border: 1.5px solid var(--gti-border);
+-  padding: 0.4rem 0.9rem; border-radius: var(--gti-radius-sm);
+-  cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s;
+-  &:hover { border-color: var(--gti-orange); color: var(--gti-orange); }
++.btn-danger {
++  display: flex; align-items: center; gap: 0.5rem;
++  background: var(--gti-danger); color: #fff; border: none;
++  padding: 0.6rem 1.4rem; border-radius: var(--gti-radius-sm);
++  cursor: pointer; font-size: 0.875rem; font-weight: 700; transition: all 0.2s;
++  &:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: var(--gti-shadow-md); }
++}
++.btn-search {
++  display: flex; align-items: center; gap: 0.5rem;
++  background: var(--gti-navy); color: #fff; border: none;
++  padding: 0.6rem 1.2rem; border-radius: var(--gti-radius-sm);
++  cursor: pointer; font-size: 0.875rem; font-weight: 600; white-space: nowrap; transition: all 0.2s;
++  &:hover { background: var(--gti-navy-light); }
+ }
+ .btn-retour {
+   display: inline-flex; align-items: center; gap: 0.5rem;
+-  background: none; border: 1.5px solid var(--gti-border); color: var(--gti-text-secondary);
++  background: none; border: 1.5px solid var(--gti-border);
++  color: var(--gti-text-secondary);
+   padding: 0.5rem 1rem; border-radius: var(--gti-radius-sm);
+-  cursor: pointer; font-size: 0.85rem; font-weight: 600; margin-bottom: 1.5rem; transition: all 0.2s;
++  cursor: pointer; font-size: 0.85rem; font-weight: 600;
++  margin-bottom: 1.5rem; transition: all 0.2s;
+   &:hover { border-color: var(--gti-orange); color: var(--gti-orange); }
+ }
+-.btn-action {
+-  width: 32px; height: 32px;
+-  display: flex; align-items: center; justify-content: center;
+-  background: var(--gti-orange-light); color: var(--gti-orange);
+-  border: 1.5px solid var(--gti-orange); border-radius: var(--gti-radius-sm);
+-  cursor: pointer; transition: all 0.2s;
+-  &:hover { background: var(--gti-orange); color: #fff; transform: translateX(2px); }
++.btn-close-form {
++  background: none; border: none; cursor: pointer;
++  color: var(--gti-text-hint); font-size: 1.1rem;
++  padding: 0.2rem 0.5rem; border-radius: var(--gti-radius-sm); transition: all 0.2s;
++  &:hover { background: var(--gti-danger-bg); color: var(--gti-danger); }
+ }
+-.btn-reset {
+-  display: flex; align-items: center; gap: 0.35rem;
+-  background: none; border: 1.5px solid var(--gti-border); color: var(--gti-text-hint);
+-  padding: 0.4rem 0.875rem; border-radius: var(--gti-radius-sm);
+-  cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s; white-space: nowrap;
+-  &:hover { border-color: var(--gti-danger); color: var(--gti-danger); background: var(--gti-danger-bg); }
++
++// ─── Formulaire initiation ─────────────────────────────────
++.initiation-form {
++  background: var(--gti-bg-card);
++  border: 1.5px solid var(--gti-orange);
++  border-radius: var(--gti-radius-lg);
++  padding: 1.5rem; margin-bottom: 1.5rem;
++  box-shadow: 0 4px 20px rgba(232, 66, 26, 0.08);
++}
++.initiation-form-header {
++  display: flex; align-items: center; justify-content: space-between;
++  margin-bottom: 1.25rem;
++  h3 { font-size: 1rem; font-weight: 700; color: var(--gti-text-primary); }
+ }
++.form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+ 
+-// Timeline button in table
+-.btn-timeline {
+-  display: inline-flex; align-items: center; gap: 0.35rem;
+-  background: var(--gti-bg-navy-soft); color: var(--gti-navy);
+-  border: 1.5px solid var(--gti-info-border);
+-  padding: 0.3rem 0.75rem; border-radius: 20px;
+-  cursor: pointer; font-size: 0.75rem; font-weight: 700; transition: all 0.2s;
+-  &:hover { background: var(--gti-navy); color: #fff; border-color: var(--gti-navy); }
++// ─── Formulaire commun ─────────────────────────────────────
++.form-group {
++  margin-bottom: 1.25rem;
++  label {
++    display: block; font-size: 0.82rem; font-weight: 700;
++    color: var(--gti-text-primary); margin-bottom: 0.4rem;
++    text-transform: uppercase; letter-spacing: 0.4px;
++  }
++  input[type="text"], input[type="number"], select, textarea {
++    width: 100%; padding: 0.65rem 0.9rem;
++    border: 1.5px solid var(--gti-border);
++    border-radius: var(--gti-radius-sm);
++    font-size: 0.875rem; color: var(--gti-text-primary);
++    background: var(--gti-bg-card); transition: all 0.18s; font-family: inherit;
++    &:focus {
++      outline: none;
++      border-color: var(--gti-border-focus);
++      box-shadow: var(--p-focus-ring-shadow, 0 0 0 3px rgba(232, 66, 26, 0.2));
++    }
++    &::placeholder { color: var(--gti-text-hint); }
++    &:disabled { background: var(--gti-bg-page); cursor: not-allowed; color: var(--gti-text-hint); }
++  }
++  textarea { resize: vertical; min-height: 90px; }
++}
++.required { color: var(--gti-danger); }
++.input-row { display: flex; gap: 0.75rem; align-items: stretch; }
++.select-uetr { flex: 1; font-family: 'Consolas', monospace; font-size: 0.8rem; }
++.form-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem; }
++
++// ─── Filtres ───────────────────────────────────────────────
++.filter-section {
++  display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;
++  padding: 1rem 1.25rem;
++  background: var(--gti-bg-page); border: 1px solid var(--gti-border);
++  border-radius: var(--gti-radius-md); align-items: center;
++}
++.filter-group {
++  display: flex; gap: 0.5rem; align-items: center;
++  label { font-size: 0.8rem; font-weight: 700; color: var(--gti-text-primary); white-space: nowrap; }
++  select, input[type="date"] {
++    padding: 0.45rem 0.75rem;
++    border: 1.5px solid var(--gti-border); border-radius: var(--gti-radius-sm);
++    font-size: 0.825rem; background: var(--gti-bg-card);
++    color: var(--gti-text-primary); cursor: pointer; transition: border-color 0.2s;
++    &:focus { outline: none; border-color: var(--gti-border-focus); }
++  }
+ }
+ 
+ // ─── Search ────────────────────────────────────────────────
+@@ -144,92 +306,264 @@
+   border: 1.5px solid var(--gti-border); border-radius: var(--gti-radius-sm);
+   font-size: 0.875rem; color: var(--gti-text-primary);
+   background: var(--gti-bg-card); transition: all 0.2s;
+-  &:focus { outline: none; border-color: var(--gti-border-focus); box-shadow: 0 0 0 3px rgba(232,66,26,0.2); }
+-  &::placeholder { color: var(--gti-text-hint); }
+-}
+-
+-// ─── Filtres bar ───────────────────────────────────────────
+-.filtres-bar {
+-  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+-  padding: 0.875rem 1rem;
+-  background: var(--gti-bg-page); border: 1px solid var(--gti-border);
+-  border-radius: var(--gti-radius-md); margin-bottom: 0.75rem;
+-}
+-.filtre-item {
+-  display: flex; align-items: center; gap: 0.4rem;
+-  input[type="text"] {
+-    padding: 0.45rem 0.75rem;
+-    border: 1.5px solid var(--gti-border); border-radius: var(--gti-radius-sm);
+-    font-size: 0.825rem; background: var(--gti-bg-card); color: var(--gti-text-primary);
+-    transition: border-color 0.2s; font-family: inherit;
+-    &:focus { outline: none; border-color: var(--gti-border-focus); }
+-    &::placeholder { color: var(--gti-text-hint); }
++  &:focus {
++    outline: none;
++    border-color: var(--gti-border-focus);
++    box-shadow: var(--p-focus-ring-shadow, 0 0 0 3px rgba(232, 66, 26, 0.2));
+   }
++  &::placeholder { color: var(--gti-text-hint); }
+ }
+-.filtre-search {
+-  position: relative; flex: 1; min-width: 220px; max-width: 380px;
+-  svg { position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--gti-text-hint); pointer-events: none; z-index: 1; }
+-  input { width: 100%; padding-left: 2.25rem !important; }
+-}
+-.filtres-count { font-size: 0.8rem; color: var(--gti-text-hint); margin-bottom: 0.875rem; padding: 0 0.25rem; }
+ 
+-// ─── Table ────────────────────────────────────────────────
++// ─── Table ─────────────────────────────────────────────────
+ .table-wrapper {
+-  background: var(--gti-bg-card); border: 1px solid var(--gti-border);
+-  border-radius: var(--gti-radius-lg); overflow-x: auto; margin-bottom: 1.25rem;
++  background: var(--gti-bg-card);
++  border: 1px solid var(--gti-border);
++  border-radius: var(--gti-radius-lg);
++  overflow-x: auto; margin-bottom: 1.25rem;
+ }
+ .data-table {
+   width: 100%; border-collapse: collapse;
++
+   th {
+-    text-align: left; font-size: 0.75rem; color: var(--gti-text-hint); font-weight: 700;
+-    padding: 0.7rem 0.875rem; border-bottom: 1px solid var(--gti-border);
++    text-align: left; font-size: 0.75rem;
++    color: var(--gti-text-hint); font-weight: 700;
++    padding: 0.7rem 0.875rem;
++    border-bottom: 1px solid var(--gti-border);
+     text-transform: uppercase; letter-spacing: 0.5px;
+     background: var(--gti-bg-page); white-space: nowrap;
+   }
+   td {
+-    padding: 0.85rem 0.875rem; border-bottom: 1px solid var(--gti-bg-page);
+-    font-size: 0.875rem; color: var(--gti-text-primary); vertical-align: middle;
++    padding: 0.85rem 0.875rem;
++    border-bottom: 1px solid var(--gti-bg-page);
++    font-size: 0.875rem; color: var(--gti-text-primary);
++    vertical-align: middle;
+   }
+   tr:last-child td { border-bottom: none; }
+   tr:hover td { background: var(--gti-bg-page); }
+ }
+-.empty-state { text-align: center; color: var(--gti-text-hint); font-style: italic; padding: 2.5rem !important; font-size: 0.9rem; }
+-.uetr-cell { font-family: 'Consolas', monospace; font-size: 0.78rem; color: var(--gti-text-secondary); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+-.montant-cell { text-align: right; font-weight: 700; color: var(--gti-text-primary); }
++.empty-state {
++  text-align: center; color: var(--gti-text-hint);
++  font-style: italic; padding: 2.5rem !important; font-size: 0.9rem;
++}
+ 
+-// ─── Badges ───────────────────────────────────────────────
+-.badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
++// ─── User cell (réutilisé depuis admin) ────────────────────
++.user-cell { display: flex; align-items: center; gap: 0.75rem; }
++.user-avatar-sm {
++  width: 36px; height: 36px; border-radius: 50%;
++  background: var(--gti-bg-navy-soft); color: var(--gti-navy);
++  font-size: 0.75rem; font-weight: 700;
++  display: flex; align-items: center; justify-content: center;
++  border: 1.5px solid var(--gti-info-border); flex-shrink: 0;
++}
++.user-name  { font-weight: 600; color: var(--gti-text-primary); font-size: 0.85rem; }
++.user-email { font-size: 0.75rem; color: var(--gti-text-hint); }
++
++// ─── Badges ISO — style pill cohérent avec l'app ──────────
++// Même convention que role-badge / status-badge
++.badge {
++  display: inline-block; padding: 0.25rem 0.75rem;
++  border-radius: 20px; font-size: 0.75rem; font-weight: 600;
++  white-space: nowrap;
++}
++// PDNG → navy soft (info = navy-light dans ce design system)
+ .badge-pdng { background: var(--gti-info-bg);     color: var(--gti-info); }
++// ACCP → orange light
+ .badge-accp { background: var(--gti-orange-light); color: var(--gti-orange); }
++// ACSP → orange light
+ .badge-acsp { background: var(--gti-orange-light); color: var(--gti-orange); }
++// ACSC → vert
+ .badge-acsc { background: var(--gti-success-bg);   color: var(--gti-success); }
++// RJCT → rouge
+ .badge-rjct { background: var(--gti-danger-bg);    color: var(--gti-danger); }
+-.badge-canc { background: var(--gti-bg-page); color: var(--gti-text-hint); border: 1px solid var(--gti-border); }
+-.badge-sm   { font-size: 0.65rem; padding: 0.15rem 0.5rem; }
++// CANC → neutre
++.badge-canc {
++  background: var(--gti-bg-page); color: var(--gti-text-hint);
++  border: 1px solid var(--gti-border);
++}
++.badge-sm { font-size: 0.65rem; padding: 0.15rem 0.5rem; }
++
++// Badge type message
++.badge-msg-pacs    { background: var(--gti-orange-light); color: var(--gti-orange); }
++.badge-msg-camt056 { background: var(--gti-danger-bg);    color: var(--gti-danger); }
++.badge-msg-camt029 { background: var(--gti-success-bg);   color: var(--gti-success); }
++
++.statut-cell { display: flex; flex-direction: column; gap: 0.2rem; }
++.statut-desc { font-size: 0.72rem; color: var(--gti-text-hint); }
++
++// ─── Délai GPI ─────────────────────────────────────────────
++.delai-badge {
++  display: inline-flex; align-items: center; gap: 0.3rem;
++  padding: 0.25rem 0.75rem; border-radius: 20px;
++  font-size: 0.75rem; font-weight: 600;
++}
++.delai-ok     { background: var(--gti-success-bg); color: var(--gti-success); }
++.delai-retard { background: var(--gti-danger-bg);  color: var(--gti-danger); }
++
++// ─── Motif / misc ─────────────────────────────────────────
++.motif-rejet { font-size: 0.78rem; font-weight: 600; color: var(--gti-danger); white-space: nowrap; }
++.text-light  { color: var(--gti-text-hint); }
++.motif-cell  { font-size: 0.82rem; color: var(--gti-text-secondary); max-width: 200px; }
++.pays-label  { font-size: 0.72rem; color: var(--gti-text-hint); font-weight: 400; }
++.uetr-cell {
++  font-family: 'Consolas', monospace; font-size: 0.78rem;
++  color: var(--gti-text-secondary);
++  max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
++}
++.mono { font-family: 'Consolas', monospace; font-size: 0.82rem; }
++
++// ─── Bouton flèche ─────────────────────────────────────────
++.btn-action {
++  width: 32px; height: 32px;
++  display: flex; align-items: center; justify-content: center;
++  background: var(--gti-orange-light); color: var(--gti-orange);
++  border: 1.5px solid var(--gti-orange);
++  border-radius: var(--gti-radius-sm); cursor: pointer; transition: all 0.2s;
++  &:hover { background: var(--gti-orange); color: #fff; transform: translateX(2px); }
++}
+ 
+-// ─── Detail header cards ───────────────────────────────────
++// ─── Pagination ────────────────────────────────────────────
++.pagination {
++  display: flex; align-items: center; justify-content: space-between;
++  padding: 0.75rem 0; gap: 1rem;
++}
++.pagination-info { font-size: 0.82rem; color: var(--gti-text-hint); }
++.pagination-controls { display: flex; align-items: center; gap: 0.3rem; }
++.pagination-controls button {
++  width: 30px; height: 30px;
++  display: flex; align-items: center; justify-content: center;
++  background: var(--gti-bg-card); border: 1px solid var(--gti-border);
++  border-radius: var(--gti-radius-sm);
++  cursor: pointer; font-size: 0.82rem; color: var(--gti-text-secondary); transition: all 0.18s;
++  &:hover:not(:disabled) { border-color: var(--gti-orange); color: var(--gti-orange); }
++  &.active { background: var(--gti-orange); color: #fff; border-color: var(--gti-orange); font-weight: 700; }
++  &:disabled { cursor: not-allowed; opacity: 0.4; }
++}
++
++// ─── Boutons action paiements entrants ────────────────────
++.action-btns { display: flex; gap: 0.5rem; }
++.btn-accepter {
++  display: flex; align-items: center; gap: 0.35rem;
++  background: var(--gti-success-bg); color: var(--gti-success);
++  border: 1.5px solid var(--gti-success-border);
++  padding: 0.3rem 0.75rem; border-radius: 20px;
++  cursor: pointer; font-size: 0.75rem; font-weight: 700; transition: all 0.2s;
++  &:hover { background: var(--gti-success); color: #fff; border-color: var(--gti-success); }
++}
++.btn-rejeter {
++  display: flex; align-items: center; gap: 0.35rem;
++  background: var(--gti-danger-bg); color: var(--gti-danger);
++  border: 1.5px solid var(--gti-danger-border);
++  padding: 0.3rem 0.75rem; border-radius: 20px;
++  cursor: pointer; font-size: 0.75rem; font-weight: 700; transition: all 0.2s;
++  &:hover { background: var(--gti-danger); color: #fff; border-color: var(--gti-danger); }
++}
++
++// ─── Info / alerte boxes ───────────────────────────────────
++.info-box {
++  display: flex; align-items: flex-start; gap: 0.6rem;
++  background: var(--gti-info-bg);
++  border-left: 4px solid var(--gti-info);
++  padding: 0.875rem 1rem; border-radius: var(--gti-radius-sm);
++  margin-bottom: 1.5rem; font-size: 0.875rem;
++  color: var(--gti-info); line-height: 1.5;
++}
++.alert-rejet {
++  display: flex; align-items: flex-start; gap: 0.75rem;
++  background: var(--gti-danger-bg); border-left: 4px solid var(--gti-danger);
++  border-radius: var(--gti-radius-sm);
++  padding: 1rem 1.25rem; margin-bottom: 1.5rem; color: var(--gti-danger);
++  strong { display: block; font-size: 0.9rem; margin-bottom: 0.25rem; }
++  p { font-size: 0.82rem; opacity: 0.85; margin: 0; }
++}
++
++// ─── Transaction detail card ───────────────────────────────
++.transaction-detail-card {
++  background: var(--gti-bg-page); border: 1px solid var(--gti-border);
++  border-radius: var(--gti-radius-lg); padding: 1.25rem; margin-bottom: 1.5rem;
++  h4 {
++    font-size: 0.75rem; font-weight: 800; color: var(--gti-text-hint);
++    margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.8px;
++  }
++}
++.detail-grid  { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
++.detail-label { font-size: 0.72rem; color: var(--gti-text-hint); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.3rem; }
++.detail-value { font-size: 0.9rem; font-weight: 600; color: var(--gti-text-primary); }
++
++// ─── Rejet section ─────────────────────────────────────────
++.rejet-section {
++  background: var(--gti-danger-bg); border: 1.5px solid var(--gti-danger-border);
++  border-radius: var(--gti-radius-lg); padding: 1.25rem; margin-bottom: 1.25rem;
++}
++
++// ─── Ligne Metro header ────────────────────────────────────
+ .lm-header-cards { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.75rem; }
+ .lm-card {
+   background: var(--gti-bg-card); border: 1px solid var(--gti-border);
+-  border-radius: var(--gti-radius-lg); padding: 0.875rem 1.25rem; flex: 1; min-width: 120px;
++  border-radius: var(--gti-radius-lg);
++  padding: 0.875rem 1.25rem; flex: 1; min-width: 120px;
+   box-shadow: var(--gti-shadow-sm);
+   &--wide { flex: 2; min-width: 280px; }
+ }
+ .lm-card-label { font-size: 0.68rem; font-weight: 700; color: var(--gti-text-hint); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.4rem; }
+ .lm-card-value { font-size: 1.05rem; font-weight: 800; color: var(--gti-text-primary); margin: 0; }
+-.lm-card-uetr  { font-family: 'Consolas', monospace; font-size: 0.82rem; color: var(--gti-text-primary); font-weight: 600; margin: 0; word-break: break-all; }
++.lm-card-sub   { font-size: 0.72rem; color: var(--gti-text-hint); margin: 0.25rem 0 0; }
++.lm-card-uetr  {
++  font-family: 'Consolas', monospace; font-size: 0.82rem;
++  color: var(--gti-text-primary); font-weight: 600; margin: 0; word-break: break-all;
++}
+ 
+-.alert-rejet {
+-  display: flex; align-items: flex-start; gap: 0.75rem;
+-  background: var(--gti-danger-bg); border-left: 4px solid var(--gti-danger);
+-  border-radius: var(--gti-radius-sm); padding: 1rem 1.25rem; margin-bottom: 1.5rem; color: var(--gti-danger);
+-  strong { display: block; font-size: 0.9rem; margin-bottom: 0.25rem; }
+-  p { font-size: 0.82rem; opacity: 0.85; margin: 0; }
++// ─── Timeline visuelle ─────────────────────────────────────
++.lm-timeline {
++  display: flex; align-items: center; justify-content: center;
++  margin: 1.75rem 0;
++}
++.lm-dot {
++  width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
++  &--active  { background: var(--gti-success); box-shadow: 0 0 0 4px var(--gti-success-bg); }
++  &--pending { background: var(--gti-orange);  box-shadow: 0 0 0 4px var(--gti-orange-light); }
++  &--empty   { background: var(--gti-text-hint); border: 2px solid var(--gti-border); }
++}
++.lm-line {
++  height: 3px; width: 140px;
++  &--done    { background: var(--gti-success); }
++  &--pending {
++    background: repeating-linear-gradient(
++      90deg,
++      var(--gti-border) 0, var(--gti-border) 6px,
++      transparent 6px, transparent 12px
++    );
++  }
++}
++
++// ─── Banques ───────────────────────────────────────────────
++.lm-banques    { display: flex; gap: 1.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
++.lm-banque-card {
++  background: var(--gti-bg-card); border: 1px solid var(--gti-border);
++  border-radius: var(--gti-radius-lg);
++  padding: 1.25rem 1.5rem; flex: 1; min-width: 240px;
++  box-shadow: var(--gti-shadow-sm);
++}
++.lm-banque-title {
++  font-size: 0.68rem; font-weight: 800; color: var(--gti-text-hint);
++  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.75rem;
+ }
++.lm-banque-row  { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
++.lm-bl { font-size: 0.72rem; color: var(--gti-text-hint); min-width: 40px; }
++.lm-bv {
++  font-size: 0.875rem; font-weight: 700; color: var(--gti-text-primary);
++  &--sent    { color: var(--gti-success); }
++  &--pending { color: var(--gti-text-hint); font-style: italic; }
++  &--ref     { font-family: 'Consolas', monospace; font-size: 0.8rem; color: var(--gti-navy-light); }
++}
++.lm-banque-date { font-size: 0.72rem; color: var(--gti-text-hint); margin: 0.5rem 0; }
+ 
+-// ─── Msg timeline (detail page) ────────────────────────────
++// ─── Messages MX timeline ──────────────────────────────────
+ .msg-timeline   { display: flex; flex-direction: column; padding: 0.5rem 0; }
+-.msg-step { display: flex; align-items: flex-start; gap: 1rem; position: relative; padding-bottom: 1.5rem; &:last-child { padding-bottom: 0; } }
++.msg-step {
++  display: flex; align-items: flex-start; gap: 1rem; position: relative;
++  padding-bottom: 1.5rem;
++  &:last-child { padding-bottom: 0; }
++}
+ .msg-step-icon {
+   width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+   display: flex; align-items: center; justify-content: center;
+@@ -241,180 +575,202 @@
+   &.badge-rjct { background: var(--gti-danger-bg);    border-color: var(--gti-danger); }
+   &.badge-canc { background: var(--gti-bg-page);      border-color: var(--gti-border); }
+ }
+-.msg-step-line { position: absolute; left: 17px; top: 40px; bottom: 0; width: 2px; background: var(--gti-border); }
+-.msg-step-body { flex: 1; background: var(--gti-bg-card); border: 1px solid var(--gti-border); border-radius: var(--gti-radius-md); padding: 0.75rem 1rem; box-shadow: var(--gti-shadow-sm); }
++.msg-step-line {
++  position: absolute; left: 17px; top: 40px; bottom: 0;
++  width: 2px; background: var(--gti-border);
++}
++.msg-step-body {
++  flex: 1; background: var(--gti-bg-card); border: 1px solid var(--gti-border);
++  border-radius: var(--gti-radius-md); padding: 0.75rem 1rem;
++  box-shadow: var(--gti-shadow-sm);
++}
+ .msg-step-top  { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+-.msg-type-tag  { font-size: 0.75rem; font-weight: 700; color: var(--gti-text-primary); font-family: 'Consolas', monospace; background: var(--gti-bg-navy-soft); padding: 0.15rem 0.5rem; border-radius: var(--gti-radius-sm); border: 1px solid var(--gti-info-border); }
++.msg-type-tag  {
++  font-size: 0.75rem; font-weight: 700; color: var(--gti-text-primary);
++  font-family: 'Consolas', monospace;
++  background: var(--gti-bg-navy-soft); padding: 0.15rem 0.5rem;
++  border-radius: var(--gti-radius-sm); border: 1px solid var(--gti-info-border);
++}
+ .msg-date   { font-size: 0.72rem; color: var(--gti-text-hint); margin-left: auto; }
+ .msg-ref    { font-family: 'Consolas', monospace; font-size: 0.75rem; color: var(--gti-navy-light); margin-bottom: 0.25rem; }
+ .msg-detail { font-size: 0.8rem; color: var(--gti-text-secondary); }
+ 
+-.charges-recap { display: flex; gap: 1rem; flex-wrap: wrap; background: var(--gti-bg-card); border: 1px solid var(--gti-border); border-radius: var(--gti-radius-lg); padding: 1.25rem 1.5rem; margin-top: 1rem; box-shadow: var(--gti-shadow-sm); }
+-.recap-item { display: flex; flex-direction: column; gap: 0.3rem; flex: 1; min-width: 160px; padding-right: 1.5rem; border-right: 1px solid var(--gti-border); &:last-child { border-right: none; padding-right: 0; } &--net { background: var(--gti-orange-light); border-radius: var(--gti-radius-md); padding: 0.75rem 1rem; border-right: none; } }
+-.recap-label { font-size: 0.72rem; color: var(--gti-text-hint); text-transform: uppercase; letter-spacing: 0.4px; }
+-.recap-value { font-size: 1rem; font-weight: 700; color: var(--gti-text-primary); &--orange { color: var(--gti-orange); font-size: 1.1rem; } }
+-
+-// ─── Dashboard grid ────────────────────────────────────────
+-.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+-.dash-card { margin-bottom: 0; }
+-.dash-empty { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 2rem 1rem; text-align: center; color: var(--gti-text-hint); svg { opacity: 0.4; } p { font-size: 0.85rem; margin: 0; } }
+-
+-// ═══════════════════════════════════════════════════════════
+-// TIMELINE MODAL
+-// ═══════════════════════════════════════════════════════════
+-.modal-overlay {
+-  position: fixed; inset: 0; z-index: 1000;
+-  background: rgba(15, 20, 35, 0.55);
+-  backdrop-filter: blur(3px);
+-  display: flex; align-items: center; justify-content: center;
+-  padding: 1.5rem;
+-  animation: fadeIn 0.18s ease;
++// ─── Charges ───────────────────────────────────────────────
++.rang-cell      { font-weight: 800; color: var(--gti-text-hint); text-align: center; width: 44px; }
++.charge-bic     { font-family: 'Consolas', monospace; font-size: 0.82rem; font-weight: 700; }
++.charge-montant { text-align: right; font-weight: 600; }
++.montant-charge { color: var(--gti-danger); font-weight: 700; }
++.montant-zero   { color: var(--gti-success); font-style: italic; font-size: 0.78rem; }
++.empty-charges  { color: var(--gti-text-hint); font-style: italic; text-align: center; }
++.total-row td   { background: var(--gti-bg-page) !important; border-top: 2px solid var(--gti-border); font-size: 0.82rem; }
++
++.badge-type {
++  display: inline-block; padding: 0.2rem 0.55rem;
++  border-radius: var(--gti-radius-sm);
++  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.3px;
++  background: var(--gti-bg-navy-soft); color: var(--gti-navy);
++  border: 1px solid var(--gti-info-border);
++}
++.chain-role-badge {
++  display: inline-block; padding: 0.2rem 0.6rem;
++  background: var(--gti-bg-navy-soft); color: var(--gti-navy);
++  border-radius: 20px; font-size: 0.7rem; font-weight: 700;
++  text-transform: uppercase; letter-spacing: 0.3px;
+ }
++.chain-statut-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
++.agent-confirme { background: var(--gti-success-bg); color: var(--gti-success); }
++.agent-transit  { background: var(--gti-warning-bg); color: var(--gti-warning); }
++.agent-attente  { background: var(--gti-bg-page);    color: var(--gti-text-hint); border: 1px solid var(--gti-border); }
+ 
+-.modal-box {
+-  background: var(--gti-bg-card);
++.charges-recap {
++  display: flex; gap: 1rem; flex-wrap: wrap;
++  background: var(--gti-bg-card); border: 1px solid var(--gti-border);
+   border-radius: var(--gti-radius-lg);
+-  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+-  width: 100%; max-height: 90vh;
+-  overflow-y: auto;
+-  animation: slideUp 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
++  padding: 1.25rem 1.5rem; margin-top: 1rem; box-shadow: var(--gti-shadow-sm);
++}
++.recap-item {
++  display: flex; flex-direction: column; gap: 0.3rem; flex: 1; min-width: 160px;
++  padding-right: 1.5rem; border-right: 1px solid var(--gti-border);
++  &:last-child { border-right: none; padding-right: 0; }
++  &--net {
++    background: var(--gti-orange-light); border-radius: var(--gti-radius-md);
++    padding: 0.75rem 1rem; border-right: none;
++  }
+ }
+-@keyframes slideUp {
+-  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+-  to   { opacity: 1; transform: translateY(0) scale(1); }
++.recap-label { font-size: 0.72rem; color: var(--gti-text-hint); text-transform: uppercase; letter-spacing: 0.4px; }
++.recap-value {
++  font-size: 1rem; font-weight: 700; color: var(--gti-text-primary);
++  &--orange { color: var(--gti-orange); font-size: 1.1rem; }
+ }
+ 
+-.modal-timeline-client { max-width: 580px; }
+-
+-// Modal header
+-.modal-header {
+-  display: flex; align-items: center; justify-content: space-between;
+-  padding: 1.25rem 1.5rem;
+-  border-bottom: 2px solid var(--gti-bg-page);
+-}
+-.modal-header-left { display: flex; align-items: center; gap: 0.875rem; }
+-.modal-icon {
+-  width: 40px; height: 40px; border-radius: var(--gti-radius-md);
+-  background: var(--gti-bg-navy-soft); border: 1.5px solid var(--gti-info-border);
+-  display: flex; align-items: center; justify-content: center;
+-  svg { stroke: var(--gti-navy); }
+-}
+-.modal-header h3 { font-size: 1rem; font-weight: 700; color: var(--gti-text-primary); margin: 0; }
+-.modal-sub { font-size: 0.72rem; color: var(--gti-text-hint); font-family: 'Consolas', monospace; margin: 0.2rem 0 0; }
+-.modal-close {
+-  width: 34px; height: 34px; border-radius: 50%;
+-  background: none; border: 1.5px solid var(--gti-border);
+-  display: flex; align-items: center; justify-content: center;
+-  cursor: pointer; color: var(--gti-text-hint); transition: all 0.2s; flex-shrink: 0;
+-  &:hover { background: var(--gti-danger-bg); border-color: var(--gti-danger); color: var(--gti-danger); }
++// ─── Annulations ───────────────────────────────────────────
++.charges-cell        { white-space: nowrap; }
++.charges-badge {
++  display: inline-flex; align-items: center; gap: 0.3rem;
++  background: var(--gti-danger-bg); color: var(--gti-danger);
++  font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.6rem;
++  border-radius: 20px; white-space: nowrap;
+ }
++.charges-badge-zero  { color: var(--gti-text-hint); font-size: 0.85rem; }
++.montant-net         { font-weight: 700; color: var(--gti-success); }
++.montant-cell        { text-align: right; font-weight: 700; color: var(--gti-text-primary); }
+ 
+-// Summary strip
+-.tl-summary {
+-  display: flex; align-items: center; gap: 0;
+-  padding: 1rem 1.5rem;
+-  background: var(--gti-bg-page);
+-  border-bottom: 1px solid var(--gti-border);
+-  flex-wrap: wrap; gap: 0.5rem;
++// ─── Responsive ────────────────────────────────────────────
++@media (max-width: 1200px) {
++  .stats-grid  { grid-template-columns: repeat(2, 1fr); }
++  .form-grid   { grid-template-columns: repeat(2, 1fr); }
++  .detail-grid { grid-template-columns: repeat(2, 1fr); }
+ }
+-.tl-summary-item { display: flex; flex-direction: column; gap: 0.2rem; padding: 0 1rem; }
+-.tl-summary-item:first-child { padding-left: 0; }
+-.tl-summary-label { font-size: 0.65rem; font-weight: 700; color: var(--gti-text-hint); text-transform: uppercase; letter-spacing: 0.8px; }
+-.tl-summary-value { font-size: 0.88rem; font-weight: 700; color: var(--gti-text-primary); }
+-.tl-montant { color: var(--gti-orange); font-size: 1rem; }
+-.tl-divider { width: 1px; height: 36px; background: var(--gti-border); flex-shrink: 0; }
+-
+-// Steps
+-.tl-steps { padding: 1.5rem; display: flex; flex-direction: column; gap: 0; }
+-
+-.tl-step {
+-  display: flex; gap: 1rem; align-items: flex-start;
+-  &--done  .tl-step-body { opacity: 1; }
+-  &--pending .tl-step-body { opacity: 0.5; }
++@media (max-width: 768px) {
++  .sidebar        { display: none; }
++  .main-content   { padding: 1rem; }
++  .stats-grid     { grid-template-columns: 1fr; gap: 1rem; }
++  .lm-header-cards { flex-direction: column; }
++  .lm-banques     { flex-direction: column; }
++  .charges-recap  { flex-direction: column; }
+ }
++// ═══════════════════════════════════════════════════════════
++// DASHBOARD — styles à ajouter à la fin de backoffice.scss
++// ═══════════════════════════════════════════════════════════
+ 
+-.tl-step-left {
+-  display: flex; flex-direction: column; align-items: center;
+-  flex-shrink: 0;
++// ─── Welcome ───────────────────────────────────────────────
++.dash-welcome {
++  font-size: 0.9rem; color: var(--gti-text-secondary);
++  margin-bottom: 1.75rem; margin-top: -0.75rem;
++  strong { color: var(--gti-text-primary); }
+ }
+ 
+-.tl-step-dot {
+-  width: 38px; height: 38px; border-radius: 50%;
+-  display: flex; align-items: center; justify-content: center;
+-  border: 2.5px solid transparent; flex-shrink: 0;
+-  transition: all 0.2s;
+-
+-  // reuse badge classes for color
+-  &.badge-pdng { background: var(--gti-info-bg);     border-color: var(--gti-info);    svg { stroke: var(--gti-info); } }
+-  &.badge-accp { background: var(--gti-orange-light); border-color: var(--gti-orange);  svg { stroke: var(--gti-orange); } }
+-  &.badge-acsp { background: var(--gti-orange-light); border-color: var(--gti-orange);  svg { stroke: var(--gti-orange); } }
+-  &.badge-acsc { background: var(--gti-success-bg);   border-color: var(--gti-success); svg { stroke: var(--gti-success); } }
+-  &.badge-rjct { background: var(--gti-danger-bg);    border-color: var(--gti-danger);  svg { stroke: var(--gti-danger); } }
+-  &.badge-canc { background: var(--gti-bg-page);      border-color: var(--gti-border);  svg { stroke: var(--gti-text-hint); } }
+-
+-  // pending state
+-  &.tl-dot-pending {
+-    background: var(--gti-bg-page);
+-    border-color: var(--gti-border);
+-    border-style: dashed;
+-    svg { stroke: var(--gti-text-hint); }
+-  }
++// ─── Grid 2 colonnes égales ────────────────────────────────
++.dash-grid {
++  display: grid;
++  grid-template-columns: 1fr 1fr;
++  gap: 1.25rem;
++  margin-bottom: 1.25rem;
+ }
+ 
+-.tl-step-line {
+-  width: 2px; flex: 1; min-height: 32px;
+-  background: var(--gti-border);
+-  margin: 4px 0;
++// ─── Carte dashboard ───────────────────────────────────────
++.dash-card {
++  margin-bottom: 0; // annule le margin-bottom de .content-card dans ce contexte
+ }
+ 
+-.tl-step-body {
+-  flex: 1;
+-  background: var(--gti-bg-card);
+-  border: 1px solid var(--gti-border);
+-  border-radius: var(--gti-radius-md);
+-  padding: 0.875rem 1rem;
+-  margin-bottom: 1.25rem;
+-  box-shadow: var(--gti-shadow-sm);
+-  transition: opacity 0.2s;
++// ─── Empty state dashboard ─────────────────────────────────
++.dash-empty {
++  display: flex; flex-direction: column; align-items: center;
++  gap: 0.75rem; padding: 2rem 1rem; text-align: center;
++  color: var(--gti-text-hint);
++  svg { opacity: 0.4; }
++  p { font-size: 0.85rem; margin: 0; line-height: 1.5; }
++  strong { color: var(--gti-orange); }
+ }
+ 
+-.tl-step-head {
+-  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+-  margin-bottom: 0.4rem;
++// ─── Barres répartition statuts ────────────────────────────
++.statut-bars { display: flex; flex-direction: column; gap: 0.875rem; }
++
++.statut-bar-row {
++  display: flex; align-items: center; gap: 0.75rem;
+ }
+-.tl-step-label {
+-  font-size: 0.9rem; font-weight: 700; color: var(--gti-text-primary);
++.statut-bar-label { min-width: 70px; }
++.statut-bar-track {
++  flex: 1; height: 8px;
++  background: var(--gti-bg-page);
++  border-radius: 4px; overflow: hidden;
++}
++.statut-bar-fill {
++  height: 100%; border-radius: 4px;
++  transition: width 0.6s ease;
++  min-width: 4px;
++}
++.bar-fill--pdng { background: var(--gti-info); }
++.bar-fill--accp { background: var(--gti-orange); }
++.bar-fill--acsp { background: var(--gti-orange); opacity: 0.7; }
++.bar-fill--acsc { background: var(--gti-success); }
++.bar-fill--rjct { background: var(--gti-danger); }
++.bar-fill--canc { background: var(--gti-text-hint); }
++.statut-bar-count {
++  min-width: 20px; text-align: right;
++  font-size: 0.82rem; font-weight: 700; color: var(--gti-text-primary);
++}
++
++// ─── Actions rapides ───────────────────────────────────────
++.quick-actions {
++  display: grid;
++  grid-template-columns: repeat(4, 1fr);
++  gap: 1rem;
++}
++.quick-action-btn {
++  display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem;
++  padding: 1.25rem; border-radius: var(--gti-radius-lg);
++  background: var(--gti-bg-page); border: 1.5px solid var(--gti-border);
++  cursor: pointer; text-align: left; transition: all 0.2s;
++  &:hover {
++    border-color: var(--gti-orange);
++    box-shadow: var(--gti-shadow-md);
++    transform: translateY(-2px);
++    background: var(--gti-bg-card);
++  }
+ }
+-.tl-step-date {
+-  font-size: 0.72rem; color: var(--gti-text-hint); margin-left: auto;
++.qa-icon {
++  width: 40px; height: 40px; border-radius: var(--gti-radius-md);
++  display: flex; align-items: center; justify-content: center;
++  svg { width: 20px; height: 20px; }
+ }
+-.tl-step-detail {
+-  font-size: 0.82rem; color: var(--gti-text-secondary);
+-  margin: 0.25rem 0 0.4rem; line-height: 1.5;
++.qa-icon--orange  { background: var(--gti-orange-light); svg { stroke: var(--gti-orange); } }
++.qa-icon--navy    { background: var(--gti-bg-navy-soft); svg { stroke: var(--gti-navy); } }
++.qa-icon--danger  { background: var(--gti-danger-bg);    svg { stroke: var(--gti-danger); } }
++.qa-icon--success { background: var(--gti-success-bg);   svg { stroke: var(--gti-success); } }
++
++.qa-label {
++  font-size: 0.875rem; font-weight: 700; color: var(--gti-text-primary); margin: 0;
+ }
+-.tl-step-ref {
+-  display: inline-flex; align-items: center; gap: 0.3rem;
+-  font-family: 'Consolas', monospace; font-size: 0.72rem;
+-  color: var(--gti-text-hint);
+-  background: var(--gti-bg-page);
+-  padding: 0.2rem 0.5rem; border-radius: var(--gti-radius-sm);
+-  border: 1px solid var(--gti-border);
+-  svg { stroke: var(--gti-text-hint); flex-shrink: 0; }
++.qa-sub {
++  font-size: 0.75rem; color: var(--gti-text-hint); margin: 0;
+ }
+ 
+ // ─── Responsive ────────────────────────────────────────────
+ @media (max-width: 1200px) {
+-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+-  .dash-grid  { grid-template-columns: 1fr; }
++  .quick-actions { grid-template-columns: repeat(2, 1fr); }
+ }
+ @media (max-width: 768px) {
+-  .main-content  { padding: 1rem; }
+-  .stats-grid    { grid-template-columns: 1fr; gap: 1rem; }
+-  .lm-header-cards { flex-direction: column; }
+-  .charges-recap   { flex-direction: column; }
+-  .filtres-bar     { flex-direction: column; align-items: stretch; }
+-  .filtre-search   { max-width: 100%; }
+-  .tl-summary      { flex-direction: column; }
+-  .tl-divider      { display: none; }
+-  .modal-timeline-client { max-width: 100%; }
++  .dash-grid     { grid-template-columns: 1fr; }
++  .quick-actions { grid-template-columns: repeat(2, 1fr); }
+ }
+\ No newline at end of file
+diff --git a/gpi front/src/app/pages/client/client.ts b/gpi front/src/app/pages/client/client.ts
+index 9845dac..9b60a45 100644
+--- a/gpi front/src/app/pages/client/client.ts	
++++ b/gpi front/src/app/pages/client/client.ts	
+@@ -1,27 +1,11 @@
+ import { CommonModule } from '@angular/common';
+-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
++import { Component, OnInit, OnDestroy } from '@angular/core';
+ import { FormsModule } from '@angular/forms';
+ import { Router, ActivatedRoute } from '@angular/router';
+-import { Subject, takeUntil, forkJoin } from 'rxjs';
+-import { RecapMgService, RecapMg } from '../../services/recap-mg.service';
++import { Subject, takeUntil } from 'rxjs';
+ 
+ export type StatutISO = 'PDNG' | 'ACCP' | 'ACSP' | 'ACSC' | 'RJCT' | 'CANC';
+ 
+-export interface MessageTrace {
+-  type: 'pacs.008' | 'pacs.002' | 'camt.056' | 'camt.029';
+-  dateHeure: string;
+-  statut: StatutISO;
+-  ref: string;
+-  detail?: string;
+-}
+-
+-export interface Agent {
+-  bic: string;
+-  pays: string;
+-  role: 'emetteur' | 'intermediaire' | 'recepteur';
+-  statut: 'confirme' | 'en-transit' | 'en-attente';
+-}
+-
+ export interface Transaction {
+   statutISO: StatutISO;
+   uetr: string;
+@@ -31,17 +15,26 @@ export interface Transaction {
+   devise: string;
+   date: string;
+   motifRejet?: string;
++  delaiGPI?: number;
+   messages: MessageTrace[];
+   agents: Agent[];
+ }
+ 
+-export interface TimelineStep {
+-  label: string;
+-  statut: string;
+-  date: string;
++export interface MessageTrace {
++  type: 'pacs.008' | 'pacs.002' | 'camt.056' | 'camt.029';
++  dateHeure: string;
++  statut: StatutISO;
+   ref: string;
+-  detail: string;
+-  done: boolean;
++  detail?: string;
++}
++
++export interface Agent {
++  bic: string;
++  pays: string;
++  role: 'emetteur' | 'intermediaire' | 'recepteur';
++  statut: 'confirme' | 'en-transit' | 'en-attente';
++  dateHeure?: string;
++  ref?: string;
+ }
+ 
+ @Component({
+@@ -52,6 +45,7 @@ export interface TimelineStep {
+   styleUrl: './client.scss'
+ })
+ export class Client implements OnInit, OnDestroy {
++
+   private destroy$ = new Subject<void>();
+ 
+   activeTab = 'dashboard';
+@@ -61,39 +55,42 @@ export class Client implements OnInit, OnDestroy {
+   userRole = 'Client';
+ 
+   searchUetr = '';
+-  searchUetrRecus = '';
+-  searchUetrEmis = '';
+-
+   selectedTransaction: Transaction | null = null;
+-  isLoading = false;
+-
+-  paiementsEmis: RecapMg[] = [];
+-  paiementsRecus: RecapMg[] = [];
+-  transactions: Transaction[] = [];
+ 
+-  showTimelineModal = false;
+-  timelinePaiement: RecapMg | null = null;
+-  timelineSteps: TimelineStep[] = [];
++  transactions: Transaction[] = [
++    {
++      statutISO: 'ACSC',
++      uetr: 'biat-1a2b3c4d-5e6f-7890',
++      bicEmetteur: 'BIATTNTTXXX',
++      bicRecepteur: 'BNPAFRPPXXX',
++      montant: 15000,
++      devise: 'TND',
++      date: '22/03/2026',
++      delaiGPI: 2,
++      messages: [
++        { type: 'pacs.008', dateHeure: '22/03/2026 09:00', statut: 'PDNG', ref: 'BIAT-2026-00123', detail: 'Initiation paiement international' },
++        { type: 'pacs.002', dateHeure: '22/03/2026 09:45', statut: 'ACCP', ref: 'BNPA-2026-00456', detail: 'Paiement accepté par la banque réceptrice' },
++        { type: 'pacs.002', dateHeure: '22/03/2026 10:30', statut: 'ACSC', ref: 'BNPA-2026-00789', detail: 'Crédit confirmé au bénéficiaire' }
++      ],
++      agents: [
++        { bic: 'BIATTNTTXXX', pays: 'Tunisie', role: 'emetteur', statut: 'confirme' },
++        { bic: 'BNPAFRPPXXX', pays: 'France', role: 'recepteur', statut: 'confirme' }
++      ]
++    }
++  ];
+ 
+-  constructor(
+-    private router: Router,
+-    private route: ActivatedRoute,
+-    private recapMgService: RecapMgService,
+-    private cdr: ChangeDetectorRef
+-  ) {}
++  constructor(private router: Router, private route: ActivatedRoute) {}
+ 
+-  ngOnInit(): void {
++  ngOnInit() {
+     this.loadUserFromToken();
+-    this.loadData();
+ 
+     this.route.queryParams
+       .pipe(takeUntil(this.destroy$))
+       .subscribe(params => {
+-        this.activeTab = params['tab'] || 'dashboard';
+-        if (this.activeTab !== 'detail') {
++        if (params['tab']) {
++          this.activeTab = params['tab'];
+           this.selectedTransaction = null;
+         }
+-        this.cdr.detectChanges();
+       });
+   }
+ 
+@@ -102,295 +99,48 @@ export class Client implements OnInit, OnDestroy {
+     this.destroy$.complete();
+   }
+ 
+-  private normalize(value: string | undefined | null): string {
+-    return (value || '')
+-      .toString()
+-      .replace(/\s+/g, '')
+-      .trim()
+-      .toLowerCase();
+-  }
+-
+-  private loadUserFromToken(): void {
+-    const token = sessionStorage.getItem('token');
+-
+-    if (!token) {
+-      this.userName = 'Client';
+-      this.userEmail = '';
+-      this.userInitials = 'CL';
+-      this.userRole = sessionStorage.getItem('role') || 'Client';
+-      return;
+-    }
+-
+-    try {
+-      const parts = token.split('.');
+-      if (parts.length < 2) {
+-        throw new Error('Token invalide');
++  private loadUserFromToken() {
++    const token = localStorage.getItem('token');
++    if (token) {
++      try {
++        const payload = JSON.parse(atob(token.split('.')[1]));
++        this.userName = payload.name || payload.preferred_username || 'Client';
++        this.userEmail = payload.email || '';
++        const parts = this.userName.trim().split(' ');
++        this.userInitials = parts.length >= 2
++          ? (parts[0][0] + parts[1][0]).toUpperCase()
++          : this.userName.substring(0, 2).toUpperCase();
++      } catch (e) {
++        this.userName = 'Client';
+       }
+-
+-      const payload = JSON.parse(atob(parts[1]));
+-
+-      this.userName =
+-        payload?.name ||
+-        payload?.fullName ||
+-        payload?.preferred_username ||
+-        payload?.username ||
+-        payload?.sub ||
+-        'Client';
+-
+-      this.userEmail = payload?.email || '';
+-      this.userRole = payload?.role || sessionStorage.getItem('role') || 'Client';
+-
+-      this.userInitials =
+-        this.userName
+-          .split(' ')
+-          .filter(Boolean)
+-          .slice(0, 2)
+-          .map((part: string) => part.charAt(0).toUpperCase())
+-          .join('') || 'CL';
+-    } catch (error) {
+-      console.error('Erreur lors du décodage du token', error);
+-      this.userName = 'Client';
+-      this.userEmail = '';
+-      this.userInitials = 'CL';
+-      this.userRole = sessionStorage.getItem('role') || 'Client';
+     }
+   }
+ 
+-  loadData(): void {
+-    this.isLoading = true;
+-
+-    forkJoin({
+-      emis: this.recapMgService.getPaiementsEmis(),
+-      recus: this.recapMgService.getPaiementsRecus()
+-    }).subscribe({
+-      next: ({ emis, recus }) => {
+-        this.paiementsEmis = emis || [];
+-        this.paiementsRecus = recus || [];
+-        this.mapTransactions();
+-        this.isLoading = false;
+-        this.cdr.detectChanges();
+-      },
+-      error: (err) => {
+-        console.error('Erreur chargement données client:', err);
+-        this.paiementsEmis = [];
+-        this.paiementsRecus = [];
+-        this.transactions = [];
+-        this.isLoading = false;
+-        this.cdr.detectChanges();
+-      }
+-    });
+-  }
+-
+-  private mapTransactions(): void {
+-    const all = [...this.paiementsEmis, ...this.paiementsRecus];
+-
+-    this.transactions = all.map((p) => {
+-      const statut = (p.statut || 'PDNG') as StatutISO;
+-
+-      const baseDateTime = p.receivedAt
+-        ? new Date(p.receivedAt).toLocaleString('fr-FR')
+-        : p.dateValeur
+-        ? new Date(p.dateValeur).toLocaleString('fr-FR')
+-        : '—';
+-
+-      const displayDate = p.dateValeur
+-        ? new Date(p.dateValeur).toLocaleDateString('fr-FR')
+-        : p.receivedAt
+-        ? new Date(p.receivedAt).toLocaleDateString('fr-FR')
+-        : '—';
+-
+-      const messages: MessageTrace[] = [
+-        {
+-          type: 'pacs.008',
+-          dateHeure: baseDateTime,
+-          statut: 'PDNG',
+-          ref: p.messageId,
+-          detail: 'Initiation du paiement'
+-        }
+-      ];
+-
+-      if (statut !== 'PDNG') {
+-        messages.push({
+-          type: 'pacs.002',
+-          dateHeure: baseDateTime,
+-          statut,
+-          ref: `ACK-${p.messageId}`,
+-          detail: this.getStatutDetail(statut, p.motifRejet)
+-        });
+-      }
+-
+-      return {
+-        statutISO: statut,
+-        uetr: p.uetr || p.messageId,
+-        bicEmetteur: p.senderBic || '—',
+-        bicRecepteur: p.receiverBic || '—',
+-        montant: p.montant || 0,
+-        devise: p.devise || 'TND',
+-        date: displayDate,
+-        motifRejet: p.motifRejet,
+-        messages,
+-        agents: [
+-          {
+-            bic: p.senderBic || '—',
+-            pays: '—',
+-            role: 'emetteur',
+-            statut: 'confirme'
+-          },
+-          {
+-            bic: p.receiverBic || '—',
+-            pays: '—',
+-            role: 'recepteur',
+-            statut: statut === 'ACSC' ? 'confirme' : 'en-attente'
+-          }
+-        ]
+-      } as Transaction;
+-    });
+-  }
+-
+-  private getStatutDetail(statut: StatutISO, motif?: string): string {
+-    switch (statut) {
+-      case 'ACSC':
+-        return 'Crédit confirmé au bénéficiaire';
+-      case 'ACCP':
+-        return 'Paiement accepté par la banque';
+-      case 'ACSP':
+-        return 'Règlement interbancaire en cours';
+-      case 'RJCT':
+-        return motif ? `Paiement rejeté — motif : ${motif}` : 'Paiement rejeté';
+-      case 'CANC':
+-        return 'Paiement annulé';
+-      default:
+-        return 'En attente de traitement';
+-    }
+-  }
+-
+-  ouvrirTimeline(p: RecapMg): void {
+-    this.timelinePaiement = p;
+-    this.timelineSteps = this.buildTimelineSteps(p);
+-    this.showTimelineModal = true;
+-    this.cdr.detectChanges();
+-  }
+-
+-  fermerTimeline(): void {
+-    this.showTimelineModal = false;
+-    this.timelinePaiement = null;
+-    this.timelineSteps = [];
+-    this.cdr.detectChanges();
+-  }
+-
+-  private buildTimelineSteps(p: RecapMg): TimelineStep[] {
+-    const statut = (p.statut || 'PDNG') as StatutISO;
+-    const dateBase = p.receivedAt
+-      ? new Date(p.receivedAt).toLocaleString('fr-FR')
+-      : p.dateValeur
+-      ? new Date(p.dateValeur).toLocaleString('fr-FR')
+-      : '—';
+-
+-    const reached = (s: string) => {
+-      const order = ['PDNG', 'ACCP', 'ACSP', 'ACSC'];
+-      const terminal = ['RJCT', 'CANC'];
+-
+-      if (terminal.includes(statut)) {
+-        if (s === 'PDNG') return true;
+-        if (s === 'ACCP') return true;
+-        if (s === 'ACSP') return false;
+-        return false;
+-      }
+-
+-      return order.indexOf(statut) >= order.indexOf(s);
+-    };
+-
+-    return [
+-      {
+-        label: 'Initiation',
+-        statut: 'PDNG',
+-        date: dateBase,
+-        ref: p.messageId,
+-        detail: `pacs.008 — ${p.senderBic || '—'} → ${p.receiverBic || '—'}`,
+-        done: true
+-      },
+-      {
+-        label: 'Acceptation',
+-        statut: 'ACCP',
+-        date: reached('ACCP') ? dateBase : '—',
+-        ref: `pacs.002 / ${p.messageId}`,
+-        detail: 'Vérification technique par la banque destinataire',
+-        done: reached('ACCP')
+-      },
+-      {
+-        label: 'Règlement',
+-        statut: 'ACSP',
+-        date: reached('ACSP') ? dateBase : '—',
+-        ref: `ACSP / ${p.messageId}`,
+-        detail: 'Règlement interbancaire en cours',
+-        done: reached('ACSP')
+-      },
+-      {
+-        label: statut === 'RJCT' ? 'Rejeté' : statut === 'CANC' ? 'Annulé' : 'Crédit confirmé',
+-        statut: statut === 'RJCT' ? 'RJCT' : statut === 'CANC' ? 'CANC' : 'ACSC',
+-        date: ['ACSC', 'RJCT', 'CANC'].includes(statut) ? dateBase : '—',
+-        ref: `FINAL / ${p.messageId}`,
+-        detail: this.getStatutDetail(statut, p.motifRejet),
+-        done: ['ACSC', 'RJCT', 'CANC'].includes(statut)
+-      }
+-    ];
+-  }
+-
+   setActiveTab(tab: string): void {
+     this.activeTab = tab;
+     this.selectedTransaction = null;
+     this.router.navigate(['/client'], { queryParams: { tab } });
+   }
+ 
+-  ouvrirDetail(t: Transaction): void {
++  ouvrirDetail(t: Transaction) {
+     this.selectedTransaction = t;
+     this.activeTab = 'detail';
+   }
+ 
+-  retourListe(): void {
++  retourListe() {
+     this.selectedTransaction = null;
+     this.setActiveTab('paiements');
+   }
+ 
+   get filteredTransactions(): Transaction[] {
+-    const q = this.normalize(this.searchUetr);
+-    if (!q) return this.transactions;
+-
++    if (!this.searchUetr.trim()) return this.transactions;
+     return this.transactions.filter(t =>
+-      this.normalize(t.uetr).includes(q) ||
+-      this.normalize(t.bicEmetteur).includes(q) ||
+-      this.normalize(t.bicRecepteur).includes(q)
+-    );
+-  }
+-
+-  get filteredPaiementsRecus(): RecapMg[] {
+-    const q = this.normalize(this.searchUetrRecus);
+-    if (!q) return this.paiementsRecus;
+-
+-    return this.paiementsRecus.filter(p =>
+-      this.normalize(p.uetr).includes(q) ||
+-      this.normalize(p.messageId).includes(q) ||
+-      this.normalize(p.senderBic).includes(q) ||
+-      this.normalize(p.receiverBic).includes(q)
+-    );
+-  }
+-
+-  get filteredPaiementsEmis(): RecapMg[] {
+-    const q = this.normalize(this.searchUetrEmis);
+-    if (!q) return this.paiementsEmis;
+-
+-    return this.paiementsEmis.filter(p =>
+-      this.normalize(p.uetr).includes(q) ||
+-      this.normalize(p.messageId).includes(q) ||
+-      this.normalize(p.senderBic).includes(q) ||
+-      this.normalize(p.receiverBic).includes(q)
++      t.uetr.toLowerCase().includes(this.searchUetr.toLowerCase())
+     );
+   }
+ 
+   get nbEnAttente(): number {
+-    return this.transactions.filter(t =>
+-      ['PDNG', 'ACCP', 'ACSP'].includes(t.statutISO)
+-    ).length;
++    return this.transactions.filter(t => t.statutISO === 'PDNG' || t.statutISO === 'ACCP').length;
+   }
+ 
+   get nbConfirmes(): number {
+@@ -398,48 +148,34 @@ export class Client implements OnInit, OnDestroy {
+   }
+ 
+   get nbRejetes(): number {
+-    return this.transactions.filter(t =>
+-      ['RJCT', 'CANC'].includes(t.statutISO)
+-    ).length;
++    return this.transactions.filter(t => t.statutISO === 'RJCT').length;
+   }
+ 
+   getStatutClass(s: string): string {
+-    return ({
+-      PDNG: 'badge-pdng',
+-      ACCP: 'badge-accp',
+-      ACSP: 'badge-acsp',
+-      ACSC: 'badge-acsc',
+-      RJCT: 'badge-rjct',
+-      CANC: 'badge-canc'
+-    } as Record<string, string>)[s] || '';
++    return ({ PDNG: 'badge-pdng', ACCP: 'badge-accp', ACSP: 'badge-acsp', ACSC: 'badge-acsc', RJCT: 'badge-rjct', CANC: 'badge-canc' } as any)[s] || '';
+   }
+ 
+   getStatutLabel(s: string): string {
+-    return ({
+-      PDNG: 'En cours de traitement',
+-      ACCP: 'Accepté par la banque',
+-      ACSP: 'En cours de règlement',
+-      ACSC: 'Paiement effectué',
+-      RJCT: 'Paiement refusé',
+-      CANC: 'Paiement annulé'
+-    } as Record<string, string>)[s] || s;
++    return ({ PDNG: 'En cours de traitement', ACCP: 'Accepté par la banque', ACSP: 'En cours de règlement', ACSC: 'Paiement effectué', RJCT: 'Paiement refusé', CANC: 'Paiement annulé' } as any)[s] || s;
+   }
+ 
+-  formatMontant(n: number): string {
+-    return (n || 0).toLocaleString('fr-FR', {
+-      minimumFractionDigits: 2,
+-      maximumFractionDigits: 2
+-    });
++  getDelaiClass(h: number | undefined): string {
++    if (!h) return '';
++    return h <= 24 ? 'delai-ok' : 'delai-retard';
+   }
+ 
+-  formatDate(val: string | undefined): string {
+-    if (!val) return '—';
+-    return new Date(val).toLocaleDateString('fr-FR');
++  getDelaiLabel(h: number | undefined): string {
++    if (!h) return '—';
++    return h < 1 ? '< 1h' : `${h}h`;
++  }
++
++  formatMontant(n: number): string {
++    return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+   }
+ 
+-  logout(): void {
+-    sessionStorage.removeItem('token');
+-    sessionStorage.removeItem('role');
++  logout() {
++    localStorage.removeItem('token');
++    localStorage.removeItem('role');
+     this.router.navigateByUrl('/auth/login');
+   }
+ }
+\ No newline at end of file
+diff --git a/gpi front/src/app/pages/redirect/redirect.component.ts b/gpi front/src/app/pages/redirect/redirect.component.ts
+index 36cab77..55bcd71 100644
+--- a/gpi front/src/app/pages/redirect/redirect.component.ts	
++++ b/gpi front/src/app/pages/redirect/redirect.component.ts	
+@@ -1,7 +1,7 @@
+ import { Component, OnInit } from '@angular/core';
+ import { Router } from '@angular/router';
+ import { KeycloakService } from 'keycloak-angular';
+-import { HttpClient } from '@angular/common/http';
++import { AuthService } from '../../services/auth.service';
+ 
+ @Component({
+   selector: 'app-redirect',
+@@ -13,12 +13,12 @@ export class RedirectComponent implements OnInit {
+   constructor(
+     private keycloak: KeycloakService,
+     private router: Router,
+-    private http: HttpClient
++    private authService: AuthService
+   ) {}
+ 
+   async ngOnInit() {
+     // ✅ Vérifier firstLogin via Spring Boot
+-    this.http.get<any>('http://localhost:8080/api/auth/me').subscribe({
++    this.authService.getMe().subscribe({
+       next: (me) => {
+         if (me.firstLogin) {
+           // ✅ Première connexion → changer le mot de passe
