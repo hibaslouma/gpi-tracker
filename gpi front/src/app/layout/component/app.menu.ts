@@ -54,62 +54,79 @@ export class AppMenu implements OnInit, OnChanges {
 
             case 'Backoffice':
   this.model = [
-    {
-      label: 'Vue générale',
-      items: [
-        { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/backoffice/dashboard'] }
-      ]
-    },
-    {
-      label: 'Paiements Reçus',
-      items: [
-        { label: 'pacs.008', icon: 'pi pi-fw pi-download', routerLink: ['/backoffice/entrants'] }
-      ]
-    },
-    {
-      label: 'Paiements Émis',
-      items: [
-        { label: 'pacs.002', icon: 'pi pi-fw pi-send', routerLink: ['/backoffice/vue-transactionnelle'] }
-      ]
-    },
-    {
-      label: 'Annulations',
-      items: [
-        { label: 'Envoyer camt.056', icon: 'pi pi-fw pi-times-circle', routerLink: ['/backoffice/annulation'] },
-        { label: 'Suivi camt.029', icon: 'pi pi-fw pi-file', routerLink: ['/backoffice/annulations'] }
-      ]
-    },
-    {
-      label: 'Consultation',
-      items: [
-        { label: 'Historique Messages', icon: 'pi pi-fw pi-history', routerLink: ['/backoffice/historique'] }
-      ]
-    }
-  ];
-  break;
-
-            case 'Client':
-                this.model = [
                     {
-                        label: 'Vue générale',
+                        label: 'Vue Générale',
                         items: [
-                            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/client'], queryParams: { tab: 'dashboard' } }
+                            { label: 'Dashboard', icon: 'pi pi-fw pi-home',
+                              routerLink: ['/backoffice'], queryParams: { tab: 'dashboard' } }
                         ]
                     },
                     {
-                        label: 'Mes transactions',
+                        label: 'Paiements Reçus',
                         items: [
-                            { label: 'Mes paiements', icon: 'pi pi-fw pi-send', routerLink: ['/client'], queryParams: { tab: 'paiements' } },
-                            { label: 'Historique', icon: 'pi pi-fw pi-history', routerLink: ['/client'], queryParams: { tab: 'historique' } }
+                            { label: 'Paiements Reçus', icon: 'pi pi-fw pi-download',
+                              routerLink: ['/backoffice'], queryParams: { tab: 'entrants' } }
+                        ]
+                    },
+                    {
+                        label: 'Paiements Émis',
+                        items: [
+                            { label: 'Paiements Émis', icon: 'pi pi-fw pi-send',
+                              routerLink: ['/backoffice'], queryParams: { tab: 'vue-transactionnelle' } }
+                        ]
+                    },
+                    {
+                        label: 'Annulations',
+                        items: [
+                            { label: 'Demande Annulation', icon: 'pi pi-fw pi-times-circle',
+                              routerLink: ['/backoffice'], queryParams: { tab: 'annulation' } },
+                            { label: 'Réponse Annulation', icon: 'pi pi-fw pi-file',
+                              routerLink: ['/backoffice'], queryParams: { tab: 'annulations' } }
+                        ]
+                    },
+                    {
+                        // ✅ New — full pacs message history (pacs.008 + pacs.009, no pacs.002)
+                        label: 'Historique',
+                        items: [
+                            { label: 'Historique pacs', icon: 'pi pi-fw pi-history',
+                              routerLink: ['/backoffice'], queryParams: { tab: 'historique-pacs' } }
                         ]
                     }
                 ];
                 break;
 
+            case 'Client':
+                    this.model = [
+        {
+            label: 'Client',
+            items: [
+                {
+                    label: 'Dashboard',
+                    icon: 'pi pi-fw pi-home',
+                    routerLink: ['/client'],
+                    queryParams: { tab: 'dashboard' }
+                },
+                {
+                    label: 'Paiements Émis',
+                    icon: 'pi pi-fw pi-send',
+                    routerLink: ['/client'],
+                    queryParams: { tab: 'emis' }
+                },
+                {
+                    label: 'Paiements Reçus',
+                    icon: 'pi pi-fw pi-download',
+                    routerLink: ['/client'],
+                    queryParams: { tab: 'recus' }
+                }
+            ]
+        }
+    ];
+break;
+            
+
             default:
-                // ✅ Menu vide si rôle inconnu — aucune page exposée par erreur
                 this.model = [];
                 break;
         }
     }
-}AppMenu
+}

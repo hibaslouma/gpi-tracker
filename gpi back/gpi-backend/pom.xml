@@ -89,6 +89,18 @@
             <artifactId>ojdbc11</artifactId>
             <version>23.6.0.24.10</version>
         </dependency>
+        <!-- Swift Core -->
+        <dependency>
+            <groupId>com.prowidesoftware</groupId>
+            <artifactId>pw-swift-core</artifactId>
+            <version>SRU2024-10.2.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.prowidesoftware</groupId>
+            <artifactId>pw-iso20022</artifactId>
+            <version>SRU2024-10.2.4</version>
+        </dependency>
 
         <!-- Keycloak -->
         <dependency>

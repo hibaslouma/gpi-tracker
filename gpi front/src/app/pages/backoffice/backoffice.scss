@@ -866,3 +866,188 @@
   .quick-actions { grid-template-columns: repeat(2, 1fr); }
 }
 .bar-fill--canc { background: var(--gti-text-hint); }
+// ═══════════════════════════════════════════════════════════
+// ADD THESE STYLES AT THE END OF YOUR backoffice.scss
+// ═══════════════════════════════════════════════════════════
+
+// ─── Boutons XML / Timeline ────────────────────────────────
+.btn-xml {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.28rem 0.65rem; border-radius: 6px; font-size: 0.73rem;
+  font-weight: 700; cursor: pointer;
+  border: 1.5px solid #3b82f6; color: #3b82f6; background: #eff6ff;
+  transition: all 0.18s;
+  &:hover { background: #3b82f6; color: #fff; }
+}
+.btn-timeline {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.28rem 0.65rem; border-radius: 6px; font-size: 0.73rem;
+  font-weight: 700; cursor: pointer;
+  border: 1.5px solid #8b5cf6; color: #8b5cf6; background: #f5f3ff;
+  transition: all 0.18s;
+  &:hover { background: #8b5cf6; color: #fff; }
+}
+
+// ─── Modals ────────────────────────────────────────────────
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  z-index: 2000; display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.18s ease;
+}
+.modal-box {
+  background: #fff; border-radius: 14px;
+  width: 90%; max-height: 82vh;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: slideUp 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.modal-xml      { max-width: 820px; }
+.modal-timeline { max-width: 560px; }
+
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0;
+  h3 {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.95rem; font-weight: 700; color: #1B2A4A; margin: 0;
+  }
+}
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  color: #94a3b8; padding: 0.25rem; border-radius: 6px;
+  transition: all 0.18s;
+  &:hover { background: #f1f5f9; color: #ef4444; }
+}
+.modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
+
+.xml-content {
+  background: #1e1e2e; color: #cdd6f4;
+  padding: 1.25rem; border-radius: 10px;
+  font-family: 'Consolas', monospace;
+  font-size: 0.78rem; line-height: 1.65;
+  white-space: pre-wrap; word-break: break-all;
+  overflow-x: auto; margin: 0;
+}
+
+.timeline-modal-info {
+  display: flex; gap: 2rem; margin-bottom: 1.5rem;
+  padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0;
+  font-size: 0.85rem; color: #475569;
+  strong { color: #1B2A4A; }
+}
+// ═══════════════════════════════════════════════════════════
+// ADD THESE STYLES AT THE END OF YOUR backoffice.scss
+// ═══════════════════════════════════════════════════════════
+
+// ─── Boutons XML / Timeline ────────────────────────────────
+.btn-xml {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.28rem 0.65rem; border-radius: 6px; font-size: 0.73rem;
+  font-weight: 700; cursor: pointer;
+  border: 1.5px solid #3b82f6; color: #3b82f6; background: #eff6ff;
+  transition: all 0.18s;
+  &:hover { background: #3b82f6; color: #fff; }
+}
+.btn-timeline {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.28rem 0.65rem; border-radius: 6px; font-size: 0.73rem;
+  font-weight: 700; cursor: pointer;
+  border: 1.5px solid #8b5cf6; color: #8b5cf6; background: #f5f3ff;
+  transition: all 0.18s;
+  &:hover { background: #8b5cf6; color: #fff; }
+}
+
+// ─── Modals ────────────────────────────────────────────────
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  z-index: 2000; display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.18s ease;
+}
+.modal-box {
+  background: #fff; border-radius: 14px;
+  width: 90%; max-height: 82vh;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: slideUp 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.modal-xml      { max-width: 820px; }
+.modal-timeline { max-width: 560px; }
+
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0;
+  h3 {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.95rem; font-weight: 700; color: #1B2A4A; margin: 0;
+  }
+}
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  color: #94a3b8; padding: 0.25rem; border-radius: 6px;
+  transition: all 0.18s;
+  &:hover { background: #f1f5f9; color: #ef4444; }
+}
+.modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
+
+.xml-content {
+  background: #1e1e2e; color: #cdd6f4;
+  padding: 1.25rem; border-radius: 10px;
+  font-family: 'Consolas', monospace;
+  font-size: 0.78rem; line-height: 1.65;
+  white-space: pre-wrap; word-break: break-all;
+  overflow-x: auto; margin: 0;
+}
+
+.timeline-modal-info {
+  display: flex; gap: 2rem; margin-bottom: 1.5rem;
+  padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0;
+  font-size: 0.85rem; color: #475569;
+  strong { color: #1B2A4A; }
+}
+
+// ─── Modal Traitement ──────────────────────────────────────
+.modal-traitement { max-width: 520px; }
+
+.traitement-info-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0.75rem; margin-bottom: 0.5rem;
+  background: var(--gti-bg-page); border-radius: 10px; padding: 1rem;
+  border: 1px solid var(--gti-border);
+}
+.traitement-info-item { display: flex; flex-direction: column; gap: 0.2rem; }
+.traitement-label { font-size: 0.68rem; font-weight: 700; color: var(--gti-text-hint); text-transform: uppercase; letter-spacing: 0.5px; }
+.traitement-value { font-size: 0.88rem; font-weight: 600; color: var(--gti-text-primary); }
+// ─── Fix badge truncation in table cells ──────────────────
+.data-table td {
+  overflow: visible !important;
+  white-space: normal;
+}
+
+// Type MSG cell — never truncate badge text
+.data-table td:nth-child(2) {
+  white-space: nowrap;
+  min-width: 130px;
+}
+
+// pacs.009 COV badge fix
+.badge-type-cov {
+  display: inline-block;
+  background: #fdf4ff;
+  color: #a855f7;
+  border: 1.5px solid #a855f7;
+  border-radius: 6px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: visible;
+  min-width: max-content;
+}

@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
-import { Subject, takeUntil, filter } from 'rxjs';
-import { RecapMgService, RecapMg, BackofficeStats, HistoriqueItem } from '../../services/recap-mg.service';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
+import { RecapMgService, RecapMg, BackofficeStats, HistoriqueItem, Pacs002Recu, Camt056 } from '../../services/recap-mg.service';
 
 export type StatutISO = 'PDNG' | 'ACCP' | 'ACSP' | 'ACSC' | 'RJCT' | 'CANC';
 export type MotifRejet = 'AC01' | 'AC04' | 'AG01' | 'FF01' | 'MS03' | 'NARR';
@@ -40,36 +40,10 @@ export interface Annulation {
   statutReponse: 'PDNG' | 'ACCP' | 'RJCT';
   motifRefus?: MotifRefusCamt; reponse: string;
 }
-export interface Historique {
-  type: 'pacs.008' | 'pacs.002' | 'camt.056' | 'camt.029';
-  reference: string; uetr: string; bicEmetteur: string; bicRecepteur: string;
-  montant: number; devise: string; date: string; totalCharges: number; statutISO: StatutISO;
-}
 export interface NouveauPaiement {
   bicDestinataire: string; iban: string; montant: number;
   devise: 'TND' | 'EUR' | 'USD' | 'GBP'; typeCharges: 'SHA' | 'OUR' | 'BEN'; motif: string;
 }
-
-// ── Mapping URL ↔ Tab ──────────────────────────────────────
-const URL_TO_TAB: { [key: string]: string } = {
-  '/backoffice':                      'dashboard',
-  '/backoffice/dashboard':            'dashboard',
-  '/backoffice/entrants':             'entrants',
-  '/backoffice/vue-transactionnelle': 'vue-transactionnelle',
-  '/backoffice/annulation':           'annulation',
-  '/backoffice/annulations':          'annulations',
-  '/backoffice/historique':           'historique',
-};
-
-const TAB_TO_URL: { [key: string]: string } = {
-  'dashboard':            '/backoffice/dashboard',
-  'entrants':             '/backoffice/entrants',
-  'vue-transactionnelle': '/backoffice/vue-transactionnelle',
-  'annulation':           '/backoffice/annulation',
-  'annulations':          '/backoffice/annulations',
-  'historique':           '/backoffice/historique',
-  'confirmation':         '/backoffice/entrants',
-};
 
 @Component({
   selector: 'app-backoffice',
@@ -85,7 +59,8 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private recapMgService: RecapMgService
+    private recapMgService: RecapMgService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   activeTab = 'dashboard';
@@ -105,11 +80,6 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   confirmationMotifRejetDetail = '';
   confirmationTransaction: Transaction | null = null;
 
-  annulationUetr = '';
-  annulationMotif = 'Erreur Beneficiaire';
-  annulationRaison = '';
-  annulationMessageId = '';
-
   searchAnnulations = '';
   searchHistorique = '';
   searchEntrants = '';
@@ -119,15 +89,61 @@ export class BackofficeComponent implements OnInit, OnDestroy {
 
   showFormInitiation = false;
   nouveauPaiement: NouveauPaiement = {
-    bicDestinataire: '', iban: '', montant: 0,
-    devise: 'TND', typeCharges: 'SHA', motif: ''
+    bicDestinataire: '',
+    iban: '',
+    montant: 0,
+    devise: 'TND',
+    typeCharges: 'SHA',
+    motif: ''
   };
+
+  showXmlModal = false;
+  xmlContent = '';
+  xmlFileName = '';
+
+  showTimelineModal = false;
+  timelinePaiement: RecapMg | null = null;
+
+  showTraitementModal = false;
+  paiementATraiter: RecapMg | null = null;
+  modalNouveauStatut: StatutISO = 'ACSC';
+  modalMotifRejet: MotifRejet = 'AC01';
+  modalEnvoi = false;
 
   transactions: Transaction[] = [];
   paiementsEntrants: PaiementEntrant[] = [];
   paiementsRecus: RecapMg[] = [];
-  stats: BackofficeStats = { totalRecus: 0, enAttente: 0, acceptes: 0, rejetes: 0 };
+  paiementsEmis: RecapMg[] = [];
+  pacs002Recus: Pacs002Recu[] = [];
+
+  camt056List: Camt056[] = [];
+  annulations: Annulation[] = [];
+  camt056EnvoisEnCours = false;
+  camt029EnvoisEnCours = false;
+
+  annulationMessageId = '';
+  annulationMotif = 'DUPL';
+  annulationRaison = '';
+
+  historiquePacs: RecapMg[] = [];
+  filtreHistPacsSearch = '';
+  filtreHistPacsDirection = '';
+  filtreHistPacsType = '';
+  filtreHistPacsStatut = '';
+
+  stats: BackofficeStats = {
+    totalRecus: 0,
+    enAttente: 0,
+    acceptes: 0,
+    rejetes: 0,
+    totalEmis: 0,
+    emisEnAttente: 0,
+    emisAcceptes: 0,
+    emisRejetes: 0
+  };
+
   historiqueReel: HistoriqueItem[] = [];
+  historique: any[] = [];
   selectedMessageId = '';
   selectedRecapId: number | null = null;
   filtreSearch = '';
@@ -137,52 +153,88 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   filtreDateDu = '';
   filtreDateAu = '';
   filtreHistoriqueSearch = '';
-filtreHistoriqueType = '';
-filtreHistoriqueStatut = '';
-  annulations: Annulation[] = [];
-  historique: Historique[] = [];
+  filtreHistoriqueType = '';
+  filtreHistoriqueStatut = '';
   userName = '';
   userInitials = '';
 
-  // ── Data Loading ───────────────────────────────────────────
   loadPaiementsRecus(): void {
     this.recapMgService.getPaiementsRecus().subscribe({
-      next: (data) => { this.paiementsRecus = [...data]; },
-      error: (err) => console.error('Erreur chargement paiements:', err)
+      next: (data) => {
+        this.paiementsRecus = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Erreur paiements reçus:', err)
+    });
+  }
+
+  loadPaiementsEmis(): void {
+    this.recapMgService.getPaiementsEmis().subscribe({
+      next: (data) => {
+        this.paiementsEmis = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Erreur paiements émis:', err)
     });
   }
 
   loadStats(): void {
     this.recapMgService.getStats().subscribe({
-      next: (data) => this.stats = data,
+      next: (data) => {
+        this.stats = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur stats:', err)
     });
   }
 
   loadHistorique(): void {
     this.recapMgService.getHistorique().subscribe({
-      next: (data) => this.historiqueReel = data,
+      next: (data) => {
+        this.historiqueReel = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Erreur historique:', err)
+    });
+  }
+
+  loadCamt056(): void {
+    this.recapMgService.getCamt056().subscribe({
+      next: (data) => {
+        this.camt056List = data;
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Erreur camt.056:', err)
+    });
+  }
+
+  loadHistoriquePacs(): void {
+    this.recapMgService.getHistoriquePacs().subscribe({
+      next: (data) => {
+        this.historiquePacs = data;
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Erreur historique pacs:', err)
     });
   }
 
   ngOnInit(): void {
     this.loadUserFromToken();
+    this.activeTab = this.route.snapshot.queryParams['tab'] || 'dashboard';
+
     this.loadPaiementsRecus();
+    this.loadPaiementsEmis();
     this.loadStats();
     this.loadHistorique();
+    this.loadCamt056();
+    this.loadHistoriquePacs();
 
-    // ✅ Lire le tab depuis l'URL au démarrage
-    this.syncTabFromUrl();
-
-    // ✅ Mettre à jour le tab à chaque navigation
-    this.router.events
-      .pipe(
-        filter(event => event instanceof NavigationEnd),
-        takeUntil(this.destroy$)
-      )
-      .subscribe(() => {
-        this.syncTabFromUrl();
+    this.route.queryParams
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        this.activeTab = params['tab'] || 'dashboard';
+        this.selectedTransaction = null;
+        this.cdr.detectChanges();
       });
   }
 
@@ -191,19 +243,10 @@ filtreHistoriqueStatut = '';
     this.destroy$.complete();
   }
 
-  // ✅ Lit l'URL et met à jour activeTab
-  private syncTabFromUrl(): void {
-    const url = this.router.url.split('?')[0];
-    this.activeTab = URL_TO_TAB[url] ?? 'dashboard';
-  }
-
-  // ── Navigation ─────────────────────────────────────────────
-  // ✅ Navigue vers la bonne route selon le tab
   setActiveTab(tab: string): void {
     this.activeTab = tab;
     this.selectedTransaction = null;
-    const url = TAB_TO_URL[tab] ?? '/backoffice/dashboard';
-    this.router.navigate([url]);
+    this.router.navigate(['/backoffice'], { queryParams: { tab } });
   }
 
   logout(): void {
@@ -212,8 +255,14 @@ filtreHistoriqueStatut = '';
     this.router.navigateByUrl('/auth/login');
   }
 
-  ouvrirDetailLigne(t: Transaction): void { this.selectedTransaction = t; }
-  ouvrirDetailDashboard(t: Transaction): void { this.activeTab = 'vue-transactionnelle'; this.selectedTransaction = t; }
+  ouvrirDetailLigne(t: Transaction): void {
+    this.selectedTransaction = t;
+  }
+
+  ouvrirDetailDashboard(t: Transaction): void {
+    this.activeTab = 'vue-transactionnelle';
+    this.selectedTransaction = t;
+  }
 
   private loadUserFromToken(): void {
     const token = sessionStorage.getItem('token');
@@ -225,43 +274,194 @@ filtreHistoriqueStatut = '';
         this.userInitials = parts.length >= 2
           ? (parts[0][0] + parts[1][0]).toUpperCase()
           : this.userName.substring(0, 2).toUpperCase();
-      } catch (e) {
+      } catch {
         this.userName = 'Utilisateur';
         this.userInitials = 'U';
       }
     }
   }
 
-  // ── Getters Dashboard ──────────────────────────────────────
+  voirXmlEmis(p: RecapMg): void {
+    this.recapMgService.getXmlEmis(p.id).subscribe({
+      next: (res) => {
+        this.xmlFileName = res.fileName;
+        this.xmlContent = res.content;
+        this.showXmlModal = true;
+        this.cdr.detectChanges();
+      },
+      error: () => this.displayToast('Erreur chargement XML', 'error')
+    });
+  }
+
+  voirXmlRecu(p: RecapMg): void {
+    this.recapMgService.getXmlRecu(p.id).subscribe({
+      next: (res) => {
+        this.xmlFileName = res.fileName;
+        this.xmlContent = res.content;
+        this.showXmlModal = true;
+        this.cdr.detectChanges();
+      },
+      error: () => this.displayToast('Erreur chargement XML', 'error')
+    });
+  }
+
+  fermerXmlModal(): void {
+    this.showXmlModal = false;
+  }
+
+  voirTimelineEmis(p: RecapMg): void {
+    this.timelinePaiement = p;
+    this.showTimelineModal = true;
+  }
+
+  fermerTimelineModal(): void {
+    this.showTimelineModal = false;
+  }
+
+  ouvrirModalTraitement(p: RecapMg): void {
+    this.paiementATraiter = p;
+    this.modalNouveauStatut = 'ACSC';
+    this.modalMotifRejet = 'AC01';
+    this.modalEnvoi = false;
+    this.showTraitementModal = true;
+  }
+
+  fermerTraitementModal(): void {
+    this.showTraitementModal = false;
+    this.paiementATraiter = null;
+  }
+
+  confirmerTraitement(): void {
+    if (!this.paiementATraiter) return;
+
+    this.modalEnvoi = true;
+    const statutEnvoi = this.modalNouveauStatut;
+    const messageId = this.paiementATraiter.messageId;
+
+    this.recapMgService.updateStatut(
+      this.paiementATraiter.id,
+      this.modalNouveauStatut,
+      this.modalNouveauStatut === 'RJCT' ? this.modalMotifRejet : undefined
+    ).subscribe({
+      next: (blob: Blob) => {
+        this.modalEnvoi = false;
+        this.fermerTraitementModal();
+
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `pacs002_${messageId}_${statutEnvoi}.xml`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+
+        this.displayToast(`✅ pacs.002 généré — ${statutEnvoi}`, 'success');
+        this.loadPaiementsRecus();
+        this.loadStats();
+        this.loadHistorique();
+        this.loadHistoriquePacs();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.modalEnvoi = false;
+        this.displayToast('Erreur lors du traitement', 'error');
+      }
+    });
+  }
+
+  envoyerAnnulation(): void {
+    if (!this.annulationMessageId.trim()) {
+      this.displayToast('Veuillez sélectionner un paiement', 'error');
+      return;
+    }
+
+    this.camt056EnvoisEnCours = true;
+    this.cdr.detectChanges();
+
+    this.recapMgService.envoyerCamt056(
+      this.annulationMessageId,
+      this.annulationMotif,
+      this.annulationRaison
+    ).subscribe({
+      next: (result) => {
+        this.camt056EnvoisEnCours = false;
+        this.annulationMessageId = '';
+        this.annulationRaison = '';
+
+        this.loadCamt056();
+        this.loadPaiementsEmis();
+        this.loadHistoriquePacs();
+
+        this.displayToast(`✅ camt.056 envoyé — ${result.messageId}`, 'success');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.camt056EnvoisEnCours = false;
+        this.displayToast(err?.error?.error || 'Erreur envoi camt.056', 'error');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  genererCamt029(a: Camt056): void {
+    if (!a?.uetr) {
+      this.displayToast('UETR introuvable pour cette annulation', 'error');
+      return;
+    }
+
+    this.camt029EnvoisEnCours = true;
+    this.cdr.detectChanges();
+
+    this.recapMgService.genererCamt029(a.uetr).subscribe({
+      next: (res: any) => {
+        this.camt029EnvoisEnCours = false;
+        this.displayToast(`✅ camt.029 généré — ${res.fileName}`, 'success');
+
+        this.loadPaiementsRecus();
+        this.loadHistoriquePacs();
+        this.loadCamt056();
+        this.loadStats();
+
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.camt029EnvoisEnCours = false;
+        this.displayToast(err?.error?.error || 'Erreur génération camt.029', 'error');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   get paiementsEnAttente(): RecapMg[] {
     return this.paiementsRecus.filter(p => p.statut === 'PDNG' || !p.statut);
   }
 
- get repartitionStatuts(): { statut: string; count: number; pct: number }[] {
-  const total = this.paiementsRecus.length;
-  if (total === 0) return [];
-  const statuts = ['PDNG', 'ACCP', 'ACSP', 'ACSC', 'RJCT', 'CANC'];
-  return statuts
-    .map(s => ({
-      statut: s,
-      count: this.paiementsRecus.filter(p => p.statut === s || (!p.statut && s === 'PDNG')).length,
-      pct: 0
-    }))
-    .filter(item => item.count > 0)
-    .map(item => ({ ...item, pct: Math.round((item.count / total) * 100) }));
-}
+  get repartitionStatuts(): { statut: string; count: number; pct: number }[] {
+    const total = this.paiementsRecus.length;
+    if (total === 0) return [];
 
-  // ── Getters Filtres pacs.008 ───────────────────────────────
+    const statuts = ['PDNG', 'ACCP', 'ACSP', 'ACSC', 'RJCT', 'CANC'];
+
+    return statuts
+      .map(s => ({
+        statut: s,
+        count: this.paiementsRecus.filter(p => p.statut === s || (!p.statut && s === 'PDNG')).length,
+        pct: 0
+      }))
+      .filter(item => item.count > 0)
+      .map(item => ({ ...item, pct: Math.round((item.count / total) * 100) }));
+  }
+
   get paiementsRecusFiltres(): RecapMg[] {
     return this.paiementsRecus.filter(p => {
       const matchSearch = !this.filtreSearch ||
         p.messageId?.toLowerCase().includes(this.filtreSearch.toLowerCase()) ||
         p.senderName?.toLowerCase().includes(this.filtreSearch.toLowerCase());
+
       const matchStatut = !this.filtreStatut || p.statut === this.filtreStatut;
       const matchDevise = !this.filtreDevise || p.devise === this.filtreDevise;
       const matchBic = !this.filtreBicExp || p.senderBic === this.filtreBicExp;
-      const matchDateDu = !this.filtreDateDu ||
-        new Date(p.dateValeur) >= new Date(this.filtreDateDu);
+      const matchDateDu = !this.filtreDateDu || new Date(p.dateValeur) >= new Date(this.filtreDateDu);
+
       return matchSearch && matchStatut && matchDevise && matchBic && matchDateDu;
     });
   }
@@ -281,43 +481,72 @@ filtreHistoriqueStatut = '';
     this.filtreBicExp = '';
     this.filtreDateDu = '';
     this.filtreDateAu = '';
-    
   }
-  get historiqueFiltres(): HistoriqueItem[] {
-  return this.historiqueReel.filter(h => {
-    const matchSearch = !this.filtreHistoriqueSearch ||
-      h.messageId?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
-      h.senderBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
-      h.receiverBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase());
 
-    const matchType = !this.filtreHistoriqueType || h.type === this.filtreHistoriqueType;
-    const matchStatut = !this.filtreHistoriqueStatut || h.statut === this.filtreHistoriqueStatut;
-
-    return matchSearch && matchType && matchStatut;
-  });
-}
-
-resetFiltresHistorique(): void {
-  this.filtreHistoriqueSearch = '';
-  this.filtreHistoriqueType = '';
-  this.filtreHistoriqueStatut = '';
-}
-
-  // ── Getters pacs.002 ───────────────────────────────────────
   get pacs002Emis(): HistoriqueItem[] {
     return this.historiqueReel.filter(h => h.type === 'pacs.002');
   }
 
-  // ── Getters camt.056 ───────────────────────────────────────
-  get paiementsAnnulables(): RecapMg[] {
-    return this.paiementsRecus.filter(p => p.statut === 'PDNG' || !p.statut);
+  get historiqueFiltres(): HistoriqueItem[] {
+    return this.historiqueReel.filter(h => {
+      const matchSearch = !this.filtreHistoriqueSearch ||
+        h.messageId?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
+        h.senderBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
+        h.receiverBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase());
+
+      const matchType = !this.filtreHistoriqueType || h.type === this.filtreHistoriqueType;
+      const matchStatut = !this.filtreHistoriqueStatut || h.statut === this.filtreHistoriqueStatut;
+
+      return matchSearch && matchType && matchStatut;
+    });
   }
 
-  // ── Traitement pacs.008 ────────────────────────────────────
+  resetFiltresHistorique(): void {
+    this.filtreHistoriqueSearch = '';
+    this.filtreHistoriqueType = '';
+    this.filtreHistoriqueStatut = '';
+  }
+
+  get paiementsAnnulables(): RecapMg[] {
+    return this.paiementsEmis.filter(p => p.statut === 'PDNG' || !p.statut);
+  }
+
+  get filteredAnnulations(): Camt056[] {
+    if (!this.searchAnnulations) return this.camt056List;
+    const q = this.searchAnnulations.toLowerCase();
+
+    return this.camt056List.filter(c =>
+      c.messageId?.toLowerCase().includes(q) ||
+      c.uetr?.toLowerCase().includes(q) ||
+      c.originalMsgId?.toLowerCase().includes(q)
+    );
+  }
+
+  get historiquePacsFiltres(): RecapMg[] {
+    return this.historiquePacs.filter(p => {
+      const matchSearch = !this.filtreHistPacsSearch ||
+        p.messageId?.toLowerCase().includes(this.filtreHistPacsSearch.toLowerCase()) ||
+        p.senderBic?.toLowerCase().includes(this.filtreHistPacsSearch.toLowerCase()) ||
+        p.receiverBic?.toLowerCase().includes(this.filtreHistPacsSearch.toLowerCase());
+
+      const matchDir = !this.filtreHistPacsDirection || p.typeMsg === this.filtreHistPacsDirection;
+      const effectiveMsgType = p.msgType || 'pacs.008';
+      const matchType = !this.filtreHistPacsType || effectiveMsgType === this.filtreHistPacsType;
+      const matchStatut = !this.filtreHistPacsStatut || p.statut === this.filtreHistPacsStatut;
+
+      return matchSearch && matchDir && matchType && matchStatut;
+    });
+  }
+
+  resetFiltresHistPacs(): void {
+    this.filtreHistPacsSearch = '';
+    this.filtreHistPacsDirection = '';
+    this.filtreHistPacsType = '';
+    this.filtreHistPacsStatut = '';
+  }
+
   traiterPaiement(p: RecapMg): void {
-    this.selectedMessageId = p.messageId;
-    this.selectedRecapId = p.id;
-    this.setActiveTab('confirmation');
+    this.ouvrirModalTraitement(p);
   }
 
   rejeterPaiementRecu(p: RecapMg, motif: string): void {
@@ -326,18 +555,18 @@ resetFiltresHistorique(): void {
         p.statut = 'RJCT';
         p.motifRejet = motif;
         this.loadStats();
-        this.displayToast('Paiement rejeté — pacs.002 RJCT généré', 'error');
+        this.displayToast('Paiement rejeté', 'error');
       },
       error: () => this.displayToast('Erreur rejet', 'error')
     });
   }
 
-  // ── Génération pacs.002 ────────────────────────────────────
   genererEtEnvoyer(): void {
     if (!this.selectedMessageId || !this.selectedRecapId) {
-      this.displayToast('Veuillez sélectionner un paiement depuis Paiements Entrants', 'error');
+      this.displayToast('Veuillez sélectionner un paiement', 'error');
       return;
     }
+
     this.recapMgService.updateStatut(
       this.selectedRecapId!,
       this.confirmationNouveauStatut,
@@ -347,15 +576,12 @@ resetFiltresHistorique(): void {
         this.loadStats();
         this.loadPaiementsRecus();
         this.loadHistorique();
+        this.loadHistoriquePacs();
         this.selectedMessageId = '';
         this.selectedRecapId = null;
-        this.displayToast(`pacs.002 généré — statut ${this.confirmationNouveauStatut}`, 'success');
-        setTimeout(() => {
-          this.loadPaiementsRecus();
-          this.setActiveTab('entrants');
-        }, 1000);
+        this.displayToast(`pacs.002 généré — ${this.confirmationNouveauStatut}`, 'success');
       },
-      error: () => this.displayToast('Erreur lors de la mise à jour du statut', 'error')
+      error: () => this.displayToast('Erreur mise à jour statut', 'error')
     });
   }
 
@@ -365,101 +591,183 @@ resetFiltresHistorique(): void {
   }
 
   rechercherTransactionConfirmation(): void {
-    if (!this.confirmationUetr.trim()) { this.displayToast('Veuillez selectionner un UETR', 'error'); return; }
-    const found = this.transactions.find(t => t.uetr === this.confirmationUetr.trim());
-    if (found) { this.confirmationTransaction = found; this.displayToast('Transaction chargee', 'success'); }
-    else { this.confirmationTransaction = null; this.displayToast('Aucune transaction trouvee', 'error'); }
-  }
-
-  // ── camt.056 ───────────────────────────────────────────────
-  envoyerAnnulation(): void {
-    if (!this.annulationMessageId.trim()) {
-      this.displayToast('Veuillez sélectionner un paiement', 'error');
+    if (!this.confirmationUetr.trim()) {
+      this.displayToast('Veuillez saisir un UETR', 'error');
       return;
     }
-    const p = this.paiementsRecus.find(x => x.messageId === this.annulationMessageId);
-    const ref = `ANN-${new Date().getFullYear()}-${Date.now().toString().slice(-3)}`;
-    this.annulations.unshift({
-      reference: ref,
-      uetr: this.annulationMessageId,
-      bicEmetteur: p?.senderBic || 'BIATTNTT',
-      motif: this.annulationMotif,
-      motifDetail: this.annulationRaison,
-      date: new Date().toLocaleDateString('fr-FR'),
-      statutReponse: 'PDNG',
-      reponse: 'En attente de reponse'
-    });
-    this.annulationMessageId = '';
-    this.annulationRaison = '';
-    this.displayToast(`camt.056 envoyé — ref ${ref}`, 'success');
+
+    const found = this.transactions.find(t => t.uetr === this.confirmationUetr.trim());
+
+    if (found) {
+      this.confirmationTransaction = found;
+      this.displayToast('Transaction chargée', 'success');
+    } else {
+      this.confirmationTransaction = null;
+      this.displayToast('Aucune transaction trouvée', 'error');
+    }
   }
 
-  // ── Actions statiques (ancien code) ───────────────────────
+  toggleFormInitiation(): void {
+    this.showFormInitiation = !this.showFormInitiation;
+  }
+
+  initierPaiement(): void {
+    const { bicDestinataire, iban, montant, motif } = this.nouveauPaiement;
+
+    if (!bicDestinataire || !iban || !montant || !motif) {
+      this.displayToast('Veuillez remplir tous les champs obligatoires', 'error');
+      return;
+    }
+
+    this.showFormInitiation = false;
+    this.nouveauPaiement = {
+      bicDestinataire: '',
+      iban: '',
+      montant: 0,
+      devise: 'TND',
+      typeCharges: 'SHA',
+      motif: ''
+    };
+
+    this.displayToast('pacs.008 initié', 'success');
+  }
+
   accepterPaiement(p: PaiementEntrant): void {
     p.statutISO = 'ACSC';
-    this.displayToast(`Paiement accepte — pacs.002 ACSC envoye`, 'success');
+    this.displayToast('Paiement accepté', 'success');
   }
 
   rejeterPaiement(p: PaiementEntrant, motif: MotifRejet): void {
     p.statutISO = 'RJCT';
     p.motifRejet = motif;
-    this.displayToast(`Paiement rejete — pacs.002 RJCT envoye (${motif})`, 'error');
+    this.displayToast(`Rejeté (${motif})`, 'error');
   }
 
-  toggleFormInitiation(): void { this.showFormInitiation = !this.showFormInitiation; }
-
-  initierPaiement(): void {
-    const { bicDestinataire, iban, montant, devise, motif } = this.nouveauPaiement;
-    if (!bicDestinataire || !iban || !montant || !motif) {
-      this.displayToast('Veuillez remplir tous les champs obligatoires', 'error');
-      return;
-    }
-    this.showFormInitiation = false;
-    this.nouveauPaiement = { bicDestinataire: '', iban: '', montant: 0, devise: 'TND', typeCharges: 'SHA', motif: '' };
-    this.displayToast(`pacs.008 initié`, 'success');
-  }
-
-  // ── Statuts ISO ────────────────────────────────────────────
   getStatutLabel(s: StatutISO): string {
-    return ({ PDNG: 'PDNG — En attente', ACCP: 'ACCP — Accepte', ACSP: 'ACSP — En cours', ACSC: 'ACSC — Credit OK', RJCT: 'RJCT — Rejete', CANC: 'CANC — Annule' } as any)[s] || s;
-  }
-  getStatutLabelCourt(s: StatutISO): string {
-    return ({ PDNG: 'PDNG', ACCP: 'ACCP', ACSP: 'ACSP', ACSC: 'ACSC', RJCT: 'RJCT', CANC: 'CANC' } as any)[s] || s;
-  }
-  getStatutClass(s: string): string {
-    return ({ PDNG: 'badge-pdng', ACCP: 'badge-accp', ACSP: 'badge-acsp', ACSC: 'badge-acsc', RJCT: 'badge-rjct', CANC: 'badge-canc' } as any)[s] || '';
-  }
-  getStatutDesc(s: StatutISO): string {
-    return ({ PDNG: 'En attente de traitement', ACCP: 'Accepte par la banque', ACSP: 'Reglement en cours', ACSC: 'Credit confirme', RJCT: 'Rejete', CANC: 'Annule' } as any)[s] || '';
+    return ({
+      PDNG: 'PDNG — En attente',
+      ACCP: 'ACCP — Accepté',
+      ACSP: 'ACSP — En cours',
+      ACSC: 'ACSC — Crédit OK',
+      RJCT: 'RJCT — Rejeté',
+      CANC: 'CANC — Annulé'
+    } as any)[s] || s;
   }
 
-  // ── Motifs ─────────────────────────────────────────────────
+  getStatutLabelCourt(s: StatutISO): string {
+    return ({
+      PDNG: 'PDNG',
+      ACCP: 'ACCP',
+      ACSP: 'ACSP',
+      ACSC: 'ACSC',
+      RJCT: 'RJCT',
+      CANC: 'CANC'
+    } as any)[s] || s;
+  }
+
+  getStatutClass(s: string): string {
+    return ({
+      PDNG: 'badge-pdng',
+      ACCP: 'badge-accp',
+      ACSP: 'badge-acsp',
+      ACSC: 'badge-acsc',
+      RJCT: 'badge-rjct',
+      CANC: 'badge-canc'
+    } as any)[s] || '';
+  }
+
+  getStatutDesc(s: StatutISO): string {
+    return ({
+      PDNG: 'En attente',
+      ACCP: 'Accepté',
+      ACSP: 'Règlement en cours',
+      ACSC: 'Crédit confirmé',
+      RJCT: 'Rejeté',
+      CANC: 'Annulé'
+    } as any)[s] || '';
+  }
+
   getMotifRejetLabel(m: MotifRejet | undefined): string {
     if (!m) return '';
-    return ({ AC01: 'AC01 — IBAN incorrect', AC04: 'AC04 — Compte cloture', AG01: 'AG01 — Banque ne traite pas', FF01: 'FF01 — Code operation invalide', MS03: 'MS03 — Motif non specifie', NARR: 'NARR — Voir detail' } as any)[m] || m;
+    return ({
+      AC01: 'AC01 — IBAN incorrect',
+      AC04: 'AC04 — Compte clôturé',
+      AG01: 'AG01 — Banque ne traite pas',
+      FF01: 'FF01 — Code invalide',
+      MS03: 'MS03 — Non spécifié',
+      NARR: 'NARR — Voir détail'
+    } as any)[m] || m;
   }
+
   getMotifRefusCamtLabel(m: MotifRefusCamt | undefined): string {
     if (!m) return '';
-    return ({ LEGL: 'LEGL — Raison legale', CUST: 'CUST — Decision client', AGET: 'AGET — Decision agent', NARR: 'NARR — Voir detail' } as any)[m] || m;
+    return ({
+      LEGL: 'LEGL — Raison légale',
+      CUST: 'CUST — Décision client',
+      AGET: 'AGET — Décision agent',
+      NARR: 'NARR — Voir détail'
+    } as any)[m] || m;
   }
 
-  // ── Helpers ────────────────────────────────────────────────
+  getAnnulStatutClass(s: string): string {
+    return ({
+      ACCP: 'badge-acsc',
+      PDNG: 'badge-pdng',
+      RJCT: 'badge-rjct'
+    } as any)[s] || '';
+  }
+
+  getAnnulStatutLabel(s: string): string {
+    return ({
+      ACCP: 'ACCP — Acceptée',
+      PDNG: 'PDNG — En attente',
+      RJCT: 'RJCT — Refusée'
+    } as any)[s] || s;
+  }
+
   getDelaiClass(h: number | undefined): string {
-    if (!h) return ''; return h <= 24 ? 'delai-ok' : 'delai-retard';
+    if (!h) return '';
+    return h <= 24 ? 'delai-ok' : 'delai-retard';
   }
-  getDelaiLabel(h: number | undefined): string {
-    if (!h) return '—'; if (h < 1) return '< 1h'; return `${h}h`;
-  }
-  getRoleLabel(role: string): string {
-    return ({ emetteur: 'Emetteur', intermediaire: 'Intermediaire', recepteur: 'Recepteur' } as any)[role] || role;
-  }
-  getAgentStatutClass(s: string): string {
-    return ({ confirme: 'agent-confirme', 'en-transit': 'agent-transit', 'en-attente': 'agent-attente' } as any)[s] || '';
-  }
-  get allCharges(): Charge[] { return this.selectedTransaction?.agents.flatMap(a => a.charges) ?? []; }
-  totalChargesAll(): number { return this.allCharges.reduce((s, c) => s + c.montant, 0); }
 
-  // ── Filtres anciens (statiques) ───────────────────────────
+  getDelaiLabel(h: number | undefined): string {
+    if (!h) return '—';
+    if (h < 1) return '< 1h';
+    return `${h}h`;
+  }
+
+  getRoleLabel(role: string): string {
+    return ({
+      emetteur: 'Emetteur',
+      intermediaire: 'Intermédiaire',
+      recepteur: 'Recepteur'
+    } as any)[role] || role;
+  }
+
+  getAgentStatutClass(s: string): string {
+    return ({
+      confirme: 'agent-confirme',
+      'en-transit': 'agent-transit',
+      'en-attente': 'agent-attente'
+    } as any)[s] || '';
+  }
+
+  get allCharges(): Charge[] {
+    return this.selectedTransaction?.agents.flatMap(a => a.charges) ?? [];
+  }
+
+  totalChargesAll(): number {
+    return this.allCharges.reduce((s, c) => s + c.montant, 0);
+  }
+
+  getMsgTypeClass(t: string): string {
+    return t.startsWith('pacs')
+      ? 'badge-msg-pacs'
+      : t === 'camt.056'
+      ? 'badge-msg-camt056'
+      : 'badge-msg-camt029';
+  }
+
   get filteredTransactions(): Transaction[] {
     return this.transactions.filter(t => {
       const matchStatut = !this.filterStatut || t.statutISO === this.filterStatut;
@@ -467,40 +775,34 @@ resetFiltresHistorique(): void {
       return matchStatut && matchDevise;
     });
   }
+
   get paginatedTransactions(): Transaction[] {
     const s = (this.currentPage - 1) * this.pageSize;
     return this.filteredTransactions.slice(s, s + this.pageSize);
   }
-  get totalPages(): number { return Math.ceil(this.filteredTransactions.length / this.pageSize); }
-  get totalPagesArray(): number[] { return Array.from({ length: this.totalPages }, (_, i) => i + 1); }
-  goToPage(p: number): void { if (p >= 1 && p <= this.totalPages) this.currentPage = p; }
 
-  get filteredAnnulations(): Annulation[] {
-    if (!this.searchAnnulations) return this.annulations;
-    const q = this.searchAnnulations.toLowerCase();
-    return this.annulations.filter(a => a.reference.toLowerCase().includes(q) || a.uetr.toLowerCase().includes(q));
+  get totalPages(): number {
+    return Math.ceil(this.filteredTransactions.length / this.pageSize);
   }
 
-  // ── Helpers annulations ────────────────────────────────────
-  getAnnulStatutClass(s: string): string { return ({ ACCP: 'badge-acsc', PDNG: 'badge-pdng', RJCT: 'badge-rjct' } as any)[s] || ''; }
-  getAnnulStatutLabel(s: string): string { return ({ ACCP: 'ACCP — Acceptee', PDNG: 'PDNG — En attente', RJCT: 'RJCT — Refusee' } as any)[s] || s; }
-  getMsgTypeClass(t: string): string { return t.startsWith('pacs') ? 'badge-msg-pacs' : t === 'camt.056' ? 'badge-msg-camt056' : 'badge-msg-camt029'; }
-
-  // ── Getters stats anciens ──────────────────────────────────
-  get nbEntrantsEnAttente(): number { return this.paiementsEnAttente.length; }
-  get nbAnnulationsPdng(): number { return this.annulations.filter(a => a.statutReponse === 'PDNG').length; }
-
-  // ── Toast ──────────────────────────────────────────────────
-  displayToast(msg: string, type: 'success' | 'error' | 'info'): void {
-    this.toastMessage = msg; this.toastType = type; this.showToast = true;
-    setTimeout(() => { this.showToast = false; }, 4000);
+  get totalPagesArray(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
   }
 
-  formatMontant(n: number): string {
-    return n?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00';
+  goToPage(p: number): void {
+    if (p >= 1 && p <= this.totalPages) {
+      this.currentPage = p;
+    }
   }
 
-  // ── Répartition statuts (ancien — statique) ────────────────
+  get nbEntrantsEnAttente(): number {
+    return this.paiementsEnAttente.length;
+  }
+
+  get nbAnnulationsPdng(): number {
+    return this.camt056List.filter(c => c.statut === 'PDNG').length;
+  }
+
   get statutsRepartition(): { statut: StatutISO; count: number; pct: number }[] {
     return this.repartitionStatuts.map(r => ({
       statut: r.statut as StatutISO,
@@ -508,4 +810,57 @@ resetFiltresHistorique(): void {
       pct: r.pct
     }));
   }
+
+  displayToast(msg: string, type: 'success' | 'error' | 'info'): void {
+    this.toastMessage = msg;
+    this.toastType = type;
+    this.showToast = true;
+
+    setTimeout(() => {
+      this.showToast = false;
+    }, 4000);
+  }
+
+  formatMontant(n: number | undefined): string {
+    return n?.toLocaleString('fr-FR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }) || '0,00';
+  }
+  get bicExpediteursEmisDistincts(): string[] {
+  return [...new Set(this.paiementsEmis.map(p => p.senderBic).filter(b => !!b))];
+}
+
+get devisesEmisDistinctes(): string[] {
+  return [...new Set(this.paiementsEmis.map(p => p.devise).filter(d => !!d))];
+}
+
+get paiementsEmisFiltres(): RecapMg[] {
+  return this.paiementsEmis.filter(p => {
+    const matchSearch = !this.filtreEmisSearch ||
+      p.messageId?.toLowerCase().includes(this.filtreEmisSearch.toLowerCase()) ||
+      p.senderName?.toLowerCase().includes(this.filtreEmisSearch.toLowerCase()) ||
+      p.senderBic?.toLowerCase().includes(this.filtreEmisSearch.toLowerCase());
+
+    const matchStatut = !this.filtreEmisStatut || p.statut === this.filtreEmisStatut;
+    const matchDevise = !this.filtreEmisDevise || p.devise === this.filtreEmisDevise;
+    const matchBic = !this.filtreEmisBicExp || p.senderBic === this.filtreEmisBicExp;
+    const matchDateDu = !this.filtreEmisDateDu || new Date(p.dateValeur) >= new Date(this.filtreEmisDateDu);
+
+    return matchSearch && matchStatut && matchDevise && matchBic && matchDateDu;
+  });
+}
+
+resetFiltresEmis(): void {
+  this.filtreEmisSearch = '';
+  this.filtreEmisStatut = '';
+  this.filtreEmisDevise = '';
+  this.filtreEmisBicExp = '';
+  this.filtreEmisDateDu = '';
+}
+filtreEmisSearch = '';
+filtreEmisStatut = '';
+filtreEmisDevise = '';
+filtreEmisBicExp = '';
+filtreEmisDateDu = '';
 }

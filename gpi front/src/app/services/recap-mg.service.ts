@@ -5,12 +5,17 @@ import { Observable } from 'rxjs';
 export interface RecapMg {
   id: number;
   messageId: string;
+  uetr: string;
+  typeMsg: string;
+  msgType: string;
   senderName: string;
   senderAddress: string;
   senderBic: string;
+  senderIban: string;
   receiverName: string;
   receiverAddress: string;
   receiverBic: string;
+  receiverIban: string;
   montant: number;
   devise: string;
   dateValeur: string;
@@ -25,7 +30,12 @@ export interface BackofficeStats {
   enAttente: number;
   acceptes: number;
   rejetes: number;
+  totalEmis: number;
+  emisEnAttente: number;
+  emisAcceptes: number;
+  emisRejetes: number;
 }
+
 export interface HistoriqueItem {
   type: string;
   messageId: string;
@@ -39,6 +49,40 @@ export interface HistoriqueItem {
   motifRejet?: string;
 }
 
+export interface Pacs002Recu {
+  messageId: string;
+  orgnlMessageId: string;
+  uetr: string;
+  senderBic: string;
+  receiverBic: string;
+  montant: number;
+  devise: string;
+  statut: string;
+  motifRejet: string;
+  date: string;
+}
+
+export interface XmlResponse {
+  fileName: string;
+  content: string;
+}
+
+export interface Camt056 {
+  id: number;
+  messageId: string;
+  originalMsgId: string;
+  uetr: string;
+  bicEmetteur: string;
+  bicRecepteur: string;
+  motif: string;
+  motifDetail: string;
+  statut: string;
+  motifRefus: string;
+  fileName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RecapMgService {
   private api = 'http://localhost:8080/api/backoffice';
@@ -49,17 +93,53 @@ export class RecapMgService {
     return this.http.get<RecapMg[]>(`${this.api}/paiements-recus`);
   }
 
+  getPaiementsEmis(): Observable<RecapMg[]> {
+    return this.http.get<RecapMg[]>(`${this.api}/paiements-emis`);
+  }
+
   getStats(): Observable<BackofficeStats> {
     return this.http.get<BackofficeStats>(`${this.api}/stats`);
   }
 
-  updateStatut(id: number, statut: string, motifRejet?: string): Observable<RecapMg> {
-    return this.http.patch<RecapMg>(`${this.api}/paiements-recus/${id}/statut`, {
-      statut,
-      motifRejet
+  updateStatut(id: number, statut: string, motifRejet?: string): Observable<Blob> {
+    return this.http.patch(
+      `${this.api}/paiements-recus/${id}/statut`,
+      { statut, motifRejet },
+      { responseType: 'blob' }
+    );
+  }
+
+  getHistorique(): Observable<HistoriqueItem[]> {
+    return this.http.get<HistoriqueItem[]>(`${this.api}/historique`);
+  }
+
+  // ✅ Historique pacs only (pacs.008 + pacs.009, no pacs.002)
+  getHistoriquePacs(): Observable<RecapMg[]> {
+    return this.http.get<RecapMg[]>(`${this.api}/historique-pacs`);
+  }
+
+  getPacs002Recus(): Observable<Pacs002Recu[]> {
+    return this.http.get<Pacs002Recu[]>(`${this.api}/pacs002-recus`);
+  }
+
+  getXmlEmis(id: number): Observable<XmlResponse> {
+    return this.http.get<XmlResponse>(`${this.api}/paiements-emis/${id}/xml`);
+  }
+
+  getXmlRecu(id: number): Observable<XmlResponse> {
+    return this.http.get<XmlResponse>(`${this.api}/paiements-recus/${id}/xml`);
+  }
+
+  getCamt056(): Observable<Camt056[]> {
+    return this.http.get<Camt056[]>(`${this.api}/camt056`);
+  }
+
+  envoyerCamt056(originalMsgId: string, motif: string, motifDetail?: string): Observable<Camt056> {
+    return this.http.post<Camt056>(`${this.api}/camt056`, {
+      originalMsgId, motif, motifDetail
     });
   }
-  getHistorique(): Observable<HistoriqueItem[]> {
-  return this.http.get<HistoriqueItem[]>(`${this.api}/historique`);
+  genererCamt029(uetr: string) {
+  return this.http.post<any>('http://localhost:8080/api/backoffice/camt029', { uetr });
 }
 }
