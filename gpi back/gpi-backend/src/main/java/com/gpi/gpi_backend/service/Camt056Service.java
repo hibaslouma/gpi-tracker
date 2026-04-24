@@ -8,19 +8,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.xml.XMLConstants;
-import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-import javax.xml.validation.Validator;
 import java.io.IOException;
-import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,7 +36,7 @@ public class Camt056Service {
         return camt056Repository.findAllByOrderByCreatedAtDesc();
     }
 
-    // ── SEND camt.056 ──────────────────────────────────────────
+    // ── SEND camt.056 (demande annulation for EMIS pacs) ──────
     public Camt056 envoyerCamt056(String originalMsgId, String motif,
                                   String motifDetail) {
         Optional<RecapMg> recapOpt = recapMgRepository.findByMessageId(originalMsgId);
@@ -60,9 +53,7 @@ public class Camt056Service {
 
         String timestamp = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String messageId  = "CAMT056-" + recap.getMessageId() + "-" + timestamp;
-        // ✅ Unique Case ID for the whole lifecycle (UUID per spec)
-        String caseId     = UUID.randomUUID().toString();
+        String messageId = "CAMT056-" + recap.getMessageId() + "-" + timestamp;
 
         Camt056 camt056 = Camt056.builder()
                 .messageId(messageId)
@@ -77,7 +68,7 @@ public class Camt056Service {
                 .build();
 
         camt056Repository.save(camt056);
-        genererXml(camt056, recap, caseId);
+        genererXml(camt056, recap);
 
         recap.setStatut("CANC");
         recapMgRepository.save(recap);
@@ -86,7 +77,7 @@ public class Camt056Service {
         return camt056;
     }
 
-    // ── UPDATE statut from camt.029 ────────────────────────────
+    // ✅ Update statut from incoming camt.029 (response to our camt.056)
     public void updateStatut(String uetr, String statut, String motifRefus) {
         camt056Repository.findByUetr(uetr).ifPresent(c -> {
             c.setStatut(statut);
@@ -96,21 +87,29 @@ public class Camt056Service {
         });
     }
 
-    // ── Generate XML (ISO 20022 compliant per BNY spec doc) ───
-    private void genererXml(Camt056 camt056, RecapMg recap, String caseId) {
+    // ✅ Cancel the RECU pacs.008 when we accept an incoming camt.056
+    public void annulerPaiementRecu(String originalMsgId) {
+        recapMgRepository.findByMessageId(originalMsgId).ifPresent(recap -> {
+            recap.setStatut("CANC");
+            recapMgRepository.save(recap);
+            System.out.println("[Camt056Service] ✅ pacs.008 RECU annulé: " + originalMsgId);
+        });
+    }
+
+    // ── Generate XML ───────────────────────────────────────────
+    private void genererXml(Camt056 camt056, RecapMg recap) {
         try {
             Path outputPath = Paths.get(camt056FolderPath);
             if (!Files.exists(outputPath)) Files.createDirectories(outputPath);
 
-            String bicFrom = nvl(camt056.getBicEmetteur(),  "BIATTNTT");
+            String bicFrom = nvl(camt056.getBicEmetteur(), "BIATTNTT");
             String bicTo   = nvl(camt056.getBicRecepteur(), "UNKNOWN");
             String creDtTm = LocalDateTime.now()
                     .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
+            String caseId  = UUID.randomUUID().toString();
 
-            // ── AppHdr (ISO 20022 head.001.001.02) ────────────
             StringBuilder sb = new StringBuilder();
-            sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-            sb.append("<data>\n");
+            sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<data>\n");
 
             // AppHdr
             sb.append("<AppHdr xmlns=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.02\">\n");
@@ -125,134 +124,42 @@ public class Camt056Service {
             sb.append("<Document xmlns=\"").append(CAMT056_NAMESPACE).append("\">\n");
             sb.append("  <FIToFIPmtCxlReq>\n");
 
-            // ── Assignment block (mandatory per spec) ─────────
-            // Contains: Id (case ID), Assgnr, Assgne, CreDtTm
+            // Assignment
             sb.append("    <Assgnmt>\n");
             sb.append("      <Id>").append(caseId).append("</Id>\n");
-            sb.append("      <Assgnr>\n");
-            sb.append("        <Agt><FinInstnId><BICFI>").append(bicFrom).append("</BICFI></FinInstnId></Agt>\n");
-            sb.append("      </Assgnr>\n");
-            sb.append("      <Assgne>\n");
-            sb.append("        <Agt><FinInstnId><BICFI>").append(bicTo).append("</BICFI></FinInstnId></Agt>\n");
-            sb.append("      </Assgne>\n");
+            sb.append("      <Assgnr><Agt><FinInstnId><BICFI>").append(bicFrom).append("</BICFI></FinInstnId></Agt></Assgnr>\n");
+            sb.append("      <Assgne><Agt><FinInstnId><BICFI>").append(bicTo).append("</BICFI></FinInstnId></Agt></Assgne>\n");
             sb.append("      <CreDtTm>").append(creDtTm).append("</CreDtTm>\n");
             sb.append("    </Assgnmt>\n");
 
-            // ── Underlying block (mandatory per spec) ─────────
-            // Contains: TxInf → OrgnlGrpInf, OrgnlUETR, CxlRsnInf
+            // Underlying
             sb.append("    <Undrlyg>\n");
             sb.append("      <TxInf>\n");
-
-            // Original Group Info
             sb.append("        <OrgnlGrpInf>\n");
             sb.append("          <OrgnlMsgId>").append(camt056.getOriginalMsgId()).append("</OrgnlMsgId>\n");
             sb.append("          <OrgnlMsgNmId>pacs.008.001.08</OrgnlMsgNmId>\n");
             sb.append("        </OrgnlGrpInf>\n");
-
-            // ✅ Original UETR — mandatory per BNY spec
             if (recap.getUetr() != null && !recap.getUetr().isBlank()) {
                 sb.append("        <OrgnlUETR>").append(recap.getUetr()).append("</OrgnlUETR>\n");
             }
-
-            // ✅ Cancellation Reason Info — mandatory per spec
-            // Reason codes from spec: DUPL, FRAD, UPAY, CUST, TECH, CUTA, COVR, CURR, AGNT, AM09, NARR
+            // Cancellation reason
             sb.append("        <CxlRsnInf>\n");
             sb.append("          <Rsn><Cd>").append(nvl(camt056.getMotif(), "NARR")).append("</Cd></Rsn>\n");
             if (camt056.getMotifDetail() != null && !camt056.getMotifDetail().isBlank()) {
                 sb.append("          <AddtlInf>").append(escapeXml(camt056.getMotifDetail())).append("</AddtlInf>\n");
             }
             sb.append("        </CxlRsnInf>\n");
-
             sb.append("      </TxInf>\n");
             sb.append("    </Undrlyg>\n");
             sb.append("  </FIToFIPmtCxlReq>\n");
-            sb.append("</Document>\n");
-            sb.append("</data>");
+            sb.append("</Document>\n</data>");
 
-            String fullXml = sb.toString();
-
-            // ── XSD Validation ─────────────────────────────────
-            ValidationResult result = validerXsd(fullXml);
-            if (!result.isValid()) {
-                result.getErrors().forEach(e ->
-                        System.err.println("[Camt056Service] ⚠️ XSD: " + e));
-            } else {
-                System.out.println("[Camt056Service] ✅ XSD OK");
-            }
-
-            // ── Write file ─────────────────────────────────────
-            Files.writeString(outputPath.resolve(camt056.getFileName()), fullXml);
-
-            System.out.println("[Camt056Service] ✅ Fichier généré: " + camt056.getFileName());
-            System.out.println("[Camt056Service]    CaseId     : " + caseId);
-            System.out.println("[Camt056Service]    Assgnr     : " + bicFrom);
-            System.out.println("[Camt056Service]    Assgne     : " + bicTo);
-            System.out.println("[Camt056Service]    OrgnlMsgId : " + camt056.getOriginalMsgId());
-            System.out.println("[Camt056Service]    OrgnlUETR  : " + recap.getUetr());
-            System.out.println("[Camt056Service]    Motif      : " + camt056.getMotif());
+            Files.writeString(outputPath.resolve(camt056.getFileName()), sb.toString());
+            System.out.println("[Camt056Service] ✅ Fichier: " + camt056.getFileName());
 
         } catch (IOException e) {
             throw new RuntimeException("Erreur écriture camt.056", e);
         }
-    }
-
-    // ── XSD Validation ─────────────────────────────────────────
-    public ValidationResult validerXsd(String xmlContent) {
-        List<String> errors = new ArrayList<>();
-        try {
-            // Try to find XSD in classpath
-            var xsdUrl = getClass().getResource("/schema/camt.056.001.08.xsd");
-            if (xsdUrl != null) {
-                SchemaFactory factory = SchemaFactory
-                        .newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-                factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-                Schema schema = factory.newSchema(xsdUrl);
-                Validator validator = schema.newValidator();
-                String docOnly = extraireDocument(xmlContent);
-                if (docOnly == null) {
-                    errors.add("Impossible d'extraire Document");
-                    return new ValidationResult(false, errors);
-                }
-                validator.validate(new StreamSource(new StringReader(docOnly)));
-                System.out.println("[Camt056Service] ✅ XSD complet réussi");
-            } else {
-                // Fallback: structural check
-                System.out.println("[Camt056Service] ℹ️ XSD non trouvé — validation structurelle");
-                return validerStructureBasique(xmlContent);
-            }
-        } catch (Exception e) {
-            errors.add("Erreur XSD: " + e.getMessage());
-        }
-        return new ValidationResult(errors.isEmpty(), errors);
-    }
-
-    private String extraireDocument(String xml) {
-        try {
-            int start = xml.indexOf("<Document");
-            int end   = xml.lastIndexOf("</Document>") + "</Document>".length();
-            if (start < 0 || end < 11) return null;
-            return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + xml.substring(start, end);
-        } catch (Exception e) { return null; }
-    }
-
-    private ValidationResult validerStructureBasique(String xml) {
-        List<String> errors = new ArrayList<>();
-        // Mandatory elements per BNY spec doc
-        for (String el : new String[]{
-                "FIToFIPmtCxlReq", "Assgnmt", "Id", "Assgnr", "Assgne", "CreDtTm",
-                "Undrlyg", "TxInf", "OrgnlGrpInf", "OrgnlMsgId", "OrgnlMsgNmId", "CxlRsnInf"
-        }) {
-            if (!xml.contains("<" + el + ">") && !xml.contains("<" + el + " ")) {
-                errors.add("Élément requis manquant: <" + el + ">");
-            }
-        }
-        if (!xml.contains(CAMT056_NAMESPACE)) {
-            errors.add("Namespace camt.056.001.08 manquant");
-        }
-        if (errors.isEmpty()) {
-            System.out.println("[Camt056Service] ✅ Validation structurelle OK");
-        }
-        return new ValidationResult(errors.isEmpty(), errors);
     }
 
     private String nvl(String s, String def) {
@@ -263,13 +170,5 @@ public class Camt056Service {
         if (s == null) return "";
         return s.replace("&", "&amp;").replace("<", "&lt;")
                 .replace(">", "&gt;").replace("\"", "&quot;");
-    }
-
-    public static class ValidationResult {
-        private final boolean valid;
-        private final List<String> errors;
-        public ValidationResult(boolean v, List<String> e) { valid = v; errors = e; }
-        public boolean isValid() { return valid; }
-        public List<String> getErrors() { return errors; }
     }
 }

@@ -39,7 +39,6 @@ public class Pacs002ParserService {
             String orgnlUetr = extractFirst(xpath, doc,
                     "//*[local-name()='OrgnlUETR']");
 
-
             String txSts = extractFirst(xpath, doc,
                     "//*[local-name()='TxSts']");
 
@@ -52,19 +51,17 @@ public class Pacs002ParserService {
             System.out.println("[Pacs002Parser] MotifRejet : " + motifRejet);
 
             // ── Trouver le pacs.008 correspondant via UETR ────────────────
-
-
             if (orgnlUetr == null) {
                 System.err.println("[Pacs002Parser]  UETR manquant dans le pacs.002");
                 return;
             }
+
             Optional<RecapMg> recapOpt = recapMgRepository.findByUetr(orgnlUetr);
             if (recapOpt.isEmpty()) {
-                System.err.println("[Pacs002Parser]  Paiement introuvable pour UETR: " + orgnlUetr);
+                System.err.println("[Pacs002Parser]  Paiement introuvable pour UETR: "
+                        + orgnlUetr);
                 return;
             }
-
-
 
             // ── Mettre à jour le statut ───────────────────────────────────
             RecapMg recap = recapOpt.get();

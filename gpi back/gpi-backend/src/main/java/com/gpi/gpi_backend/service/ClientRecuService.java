@@ -55,7 +55,7 @@ public class ClientRecuService {
                 System.out.println("[ClientRecu]  Type détecté: pacs.002");
                 pacs002ParserService.parsingPacs002(file);
 
-            } else if (content.contains("xsd:camt.029")) {
+            } else if (content.contains("camt.029")) {
                 // ✅ camt.029 — response to our camt.056 cancellation
                 System.out.println("[ClientRecu]  Type détecté: camt.029");
                 camt029ParserService.parsingCamt029(file);

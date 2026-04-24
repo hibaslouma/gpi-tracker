@@ -72,7 +72,6 @@ export class BackofficeComponent implements OnInit, OnDestroy {
 
   filterStatut = '';
   filterDevise = '';
-  filterDate = '';
 
   confirmationUetr = '';
   confirmationNouveauStatut: StatutISO = 'ACCP';
@@ -81,20 +80,13 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   confirmationTransaction: Transaction | null = null;
 
   searchAnnulations = '';
-  searchHistorique = '';
-  searchEntrants = '';
-
   currentPage = 1;
   pageSize = 10;
 
   showFormInitiation = false;
   nouveauPaiement: NouveauPaiement = {
-    bicDestinataire: '',
-    iban: '',
-    montant: 0,
-    devise: 'TND',
-    typeCharges: 'SHA',
-    motif: ''
+    bicDestinataire: '', iban: '', montant: 0,
+    devise: 'TND', typeCharges: 'SHA', motif: ''
   };
 
   showXmlModal = false;
@@ -119,11 +111,11 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   camt056List: Camt056[] = [];
   annulations: Annulation[] = [];
   camt056EnvoisEnCours = false;
-  camt029EnvoisEnCours = false;
-
   annulationMessageId = '';
   annulationMotif = 'DUPL';
   annulationRaison = '';
+
+  motifRefusCamt029 = 'AGNT';
 
   historiquePacs: RecapMg[] = [];
   filtreHistPacsSearch = '';
@@ -131,37 +123,38 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   filtreHistPacsType = '';
   filtreHistPacsStatut = '';
 
-  stats: BackofficeStats = {
-    totalRecus: 0,
-    enAttente: 0,
-    acceptes: 0,
-    rejetes: 0,
-    totalEmis: 0,
-    emisEnAttente: 0,
-    emisAcceptes: 0,
-    emisRejetes: 0
-  };
-
-  historiqueReel: HistoriqueItem[] = [];
-  historique: any[] = [];
-  selectedMessageId = '';
-  selectedRecapId: number | null = null;
   filtreSearch = '';
   filtreStatut = '';
   filtreDevise = '';
   filtreBicExp = '';
   filtreDateDu = '';
   filtreDateAu = '';
+
+  filtreEmisSearch = '';
+  filtreEmisStatut = '';
+  filtreEmisDevise = '';
+  filtreEmisBicExp = '';
+  filtreEmisDateDu = '';
+
   filtreHistoriqueSearch = '';
   filtreHistoriqueType = '';
   filtreHistoriqueStatut = '';
+
+  stats: BackofficeStats = {
+    totalRecus: 0, enAttente: 0, acceptes: 0, rejetes: 0,
+    totalEmis: 0, emisEnAttente: 0, emisAcceptes: 0, emisRejetes: 0
+  };
+
+  historiqueReel: HistoriqueItem[] = [];
+  selectedMessageId = '';
+  selectedRecapId: number | null = null;
   userName = '';
   userInitials = '';
 
   loadPaiementsRecus(): void {
     this.recapMgService.getPaiementsRecus().subscribe({
       next: (data) => {
-        this.paiementsRecus = [...data];
+        this.paiementsRecus = data || [];
         this.cdr.detectChanges();
       },
       error: (err) => console.error('Erreur paiements reçus:', err)
@@ -171,7 +164,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   loadPaiementsEmis(): void {
     this.recapMgService.getPaiementsEmis().subscribe({
       next: (data) => {
-        this.paiementsEmis = [...data];
+        this.paiementsEmis = data || [];
         this.cdr.detectChanges();
       },
       error: (err) => console.error('Erreur paiements émis:', err)
@@ -191,7 +184,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   loadHistorique(): void {
     this.recapMgService.getHistorique().subscribe({
       next: (data) => {
-        this.historiqueReel = data;
+        this.historiqueReel = data || [];
         this.cdr.detectChanges();
       },
       error: (err) => console.error('Erreur historique:', err)
@@ -201,7 +194,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   loadCamt056(): void {
     this.recapMgService.getCamt056().subscribe({
       next: (data) => {
-        this.camt056List = data;
+        this.camt056List = data || [];
         this.cdr.detectChanges();
       },
       error: (err) => console.error('Erreur camt.056:', err)
@@ -211,7 +204,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   loadHistoriquePacs(): void {
     this.recapMgService.getHistoriquePacs().subscribe({
       next: (data) => {
-        this.historiquePacs = data;
+        this.historiquePacs = data || [];
         this.cdr.detectChanges();
       },
       error: (err) => console.error('Erreur historique pacs:', err)
@@ -266,14 +259,17 @@ export class BackofficeComponent implements OnInit, OnDestroy {
 
   private loadUserFromToken(): void {
     const token = sessionStorage.getItem('token');
+
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         this.userName = payload.name || payload.preferred_username || 'Utilisateur';
+
         const parts = this.userName.trim().split(' ');
         this.userInitials = parts.length >= 2
           ? (parts[0][0] + parts[1][0]).toUpperCase()
           : this.userName.substring(0, 2).toUpperCase();
+
       } catch {
         this.userName = 'Utilisateur';
         this.userInitials = 'U';
@@ -312,10 +308,12 @@ export class BackofficeComponent implements OnInit, OnDestroy {
   voirTimelineEmis(p: RecapMg): void {
     this.timelinePaiement = p;
     this.showTimelineModal = true;
+    this.cdr.detectChanges();
   }
 
   fermerTimelineModal(): void {
     this.showTimelineModal = false;
+    this.timelinePaiement = null;
   }
 
   ouvrirModalTraitement(p: RecapMg): void {
@@ -355,6 +353,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
         window.URL.revokeObjectURL(url);
 
         this.displayToast(`✅ pacs.002 généré — ${statutEnvoi}`, 'success');
+
         this.loadPaiementsRecus();
         this.loadStats();
         this.loadHistorique();
@@ -402,33 +401,56 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     });
   }
 
-  genererCamt029(a: Camt056): void {
-    if (!a?.uetr) {
-      this.displayToast('UETR introuvable pour cette annulation', 'error');
-      return;
-    }
+  repondreAnnulation(a: Camt056, decision: 'ACCP' | 'RJCT'): void {
+    const motifRefus = decision === 'RJCT' ? this.motifRefusCamt029 : undefined;
 
-    this.camt029EnvoisEnCours = true;
-    this.cdr.detectChanges();
-
-    this.recapMgService.genererCamt029(a.uetr).subscribe({
-      next: (res: any) => {
-        this.camt029EnvoisEnCours = false;
-        this.displayToast(`✅ camt.029 généré — ${res.fileName}`, 'success');
-
-        this.loadPaiementsRecus();
-        this.loadHistoriquePacs();
+    this.recapMgService.repondreCamt056(a.id, decision, motifRefus).subscribe({
+      next: () => {
         this.loadCamt056();
+        this.loadPaiementsEmis();
+        this.loadHistoriquePacs();
         this.loadStats();
+
+        this.displayToast(
+          decision === 'ACCP'
+            ? '✅ camt.029 généré — annulation acceptée'
+            : '❌ camt.029 généré — annulation refusée',
+          decision === 'ACCP' ? 'success' : 'error'
+        );
 
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.camt029EnvoisEnCours = false;
-        this.displayToast(err?.error?.error || 'Erreur génération camt.029', 'error');
-        this.cdr.detectChanges();
+        this.displayToast(
+          err?.error?.error || 'Erreur génération camt.029',
+          'error'
+        );
       }
     });
+  }
+
+  getCamt056ForPaiement(p: RecapMg | null): Camt056 | null {
+    if (!p) return null;
+
+    return this.camt056List.find(c =>
+      c.originalMsgId === p.messageId ||
+      (!!c.uetr && !!p.uetr && c.uetr === p.uetr)
+    ) || null;
+  }
+
+  hasCancellationPending(p: RecapMg | null): boolean {
+    const c = this.getCamt056ForPaiement(p);
+    return c?.statut === 'PDNG';
+  }
+
+  hasCancellationAccepted(p: RecapMg | null): boolean {
+    const c = this.getCamt056ForPaiement(p);
+    return c?.statut === 'ACCP';
+  }
+
+  hasCancellationRejected(p: RecapMg | null): boolean {
+    const c = this.getCamt056ForPaiement(p);
+    return c?.statut === 'RJCT';
   }
 
   get paiementsEnAttente(): RecapMg[] {
@@ -453,25 +475,28 @@ export class BackofficeComponent implements OnInit, OnDestroy {
 
   get paiementsRecusFiltres(): RecapMg[] {
     return this.paiementsRecus.filter(p => {
+      const q = this.filtreSearch.toLowerCase();
+
       const matchSearch = !this.filtreSearch ||
-        p.messageId?.toLowerCase().includes(this.filtreSearch.toLowerCase()) ||
-        p.senderName?.toLowerCase().includes(this.filtreSearch.toLowerCase());
+        p.messageId?.toLowerCase().includes(q) ||
+        p.senderName?.toLowerCase().includes(q);
 
       const matchStatut = !this.filtreStatut || p.statut === this.filtreStatut;
       const matchDevise = !this.filtreDevise || p.devise === this.filtreDevise;
       const matchBic = !this.filtreBicExp || p.senderBic === this.filtreBicExp;
-      const matchDateDu = !this.filtreDateDu || new Date(p.dateValeur) >= new Date(this.filtreDateDu);
+      const matchDateDu = !this.filtreDateDu ||
+        (!!p.dateValeur && new Date(p.dateValeur) >= new Date(this.filtreDateDu));
 
       return matchSearch && matchStatut && matchDevise && matchBic && matchDateDu;
     });
   }
 
   get bicExpediteursDistincts(): string[] {
-    return [...new Set(this.paiementsRecus.map(p => p.senderBic).filter(b => !!b))];
+    return [...new Set(this.paiementsRecus.map(p => p.senderBic).filter(Boolean))];
   }
 
   get devisesDistinctes(): string[] {
-    return [...new Set(this.paiementsRecus.map(p => p.devise).filter(d => !!d))];
+    return [...new Set(this.paiementsRecus.map(p => p.devise).filter(Boolean))];
   }
 
   resetFiltres(): void {
@@ -483,16 +508,49 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     this.filtreDateAu = '';
   }
 
-  get pacs002Emis(): HistoriqueItem[] {
-    return this.historiqueReel.filter(h => h.type === 'pacs.002');
+  get paiementsEmisFiltres(): RecapMg[] {
+    return this.paiementsEmis.filter(p => {
+      const q = this.filtreEmisSearch.toLowerCase();
+
+      const matchSearch = !this.filtreEmisSearch ||
+        p.messageId?.toLowerCase().includes(q) ||
+        p.senderName?.toLowerCase().includes(q) ||
+        p.receiverName?.toLowerCase().includes(q);
+
+      const matchStatut = !this.filtreEmisStatut || p.statut === this.filtreEmisStatut;
+      const matchDevise = !this.filtreEmisDevise || p.devise === this.filtreEmisDevise;
+      const matchBic = !this.filtreEmisBicExp || p.senderBic === this.filtreEmisBicExp;
+      const matchDateDu = !this.filtreEmisDateDu ||
+        (!!p.dateValeur && new Date(p.dateValeur) >= new Date(this.filtreEmisDateDu));
+
+      return matchSearch && matchStatut && matchDevise && matchBic && matchDateDu;
+    });
+  }
+
+  get bicExpediteursEmisDistincts(): string[] {
+    return [...new Set(this.paiementsEmis.map(p => p.senderBic).filter(Boolean))];
+  }
+
+  get devisesEmisDistinctes(): string[] {
+    return [...new Set(this.paiementsEmis.map(p => p.devise).filter(Boolean))];
+  }
+
+  resetFiltresEmis(): void {
+    this.filtreEmisSearch = '';
+    this.filtreEmisStatut = '';
+    this.filtreEmisDevise = '';
+    this.filtreEmisBicExp = '';
+    this.filtreEmisDateDu = '';
   }
 
   get historiqueFiltres(): HistoriqueItem[] {
     return this.historiqueReel.filter(h => {
+      const q = this.filtreHistoriqueSearch.toLowerCase();
+
       const matchSearch = !this.filtreHistoriqueSearch ||
-        h.messageId?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
-        h.senderBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase()) ||
-        h.receiverBic?.toLowerCase().includes(this.filtreHistoriqueSearch.toLowerCase());
+        h.messageId?.toLowerCase().includes(q) ||
+        h.senderBic?.toLowerCase().includes(q) ||
+        h.receiverBic?.toLowerCase().includes(q);
 
       const matchType = !this.filtreHistoriqueType || h.type === this.filtreHistoriqueType;
       const matchStatut = !this.filtreHistoriqueStatut || h.statut === this.filtreHistoriqueStatut;
@@ -507,31 +565,18 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     this.filtreHistoriqueStatut = '';
   }
 
-  get paiementsAnnulables(): RecapMg[] {
-    return this.paiementsEmis.filter(p => p.statut === 'PDNG' || !p.statut);
-  }
-
-  get filteredAnnulations(): Camt056[] {
-    if (!this.searchAnnulations) return this.camt056List;
-    const q = this.searchAnnulations.toLowerCase();
-
-    return this.camt056List.filter(c =>
-      c.messageId?.toLowerCase().includes(q) ||
-      c.uetr?.toLowerCase().includes(q) ||
-      c.originalMsgId?.toLowerCase().includes(q)
-    );
-  }
-
   get historiquePacsFiltres(): RecapMg[] {
     return this.historiquePacs.filter(p => {
+      const q = this.filtreHistPacsSearch.toLowerCase();
+
       const matchSearch = !this.filtreHistPacsSearch ||
-        p.messageId?.toLowerCase().includes(this.filtreHistPacsSearch.toLowerCase()) ||
-        p.senderBic?.toLowerCase().includes(this.filtreHistPacsSearch.toLowerCase()) ||
-        p.receiverBic?.toLowerCase().includes(this.filtreHistPacsSearch.toLowerCase());
+        p.messageId?.toLowerCase().includes(q) ||
+        p.senderBic?.toLowerCase().includes(q) ||
+        p.receiverBic?.toLowerCase().includes(q);
 
       const matchDir = !this.filtreHistPacsDirection || p.typeMsg === this.filtreHistPacsDirection;
-      const effectiveMsgType = p.msgType || 'pacs.008';
-      const matchType = !this.filtreHistPacsType || effectiveMsgType === this.filtreHistPacsType;
+      const effectiveType = p.msgType || 'pacs.008';
+      const matchType = !this.filtreHistPacsType || effectiveType === this.filtreHistPacsType;
       const matchStatut = !this.filtreHistPacsStatut || p.statut === this.filtreHistPacsStatut;
 
       return matchSearch && matchDir && matchType && matchStatut;
@@ -545,102 +590,32 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     this.filtreHistPacsStatut = '';
   }
 
-  traiterPaiement(p: RecapMg): void {
-    this.ouvrirModalTraitement(p);
+  get paiementsAnnulables(): RecapMg[] {
+    return this.paiementsEmis.filter(p => p.statut === 'PDNG' || !p.statut);
   }
 
-  rejeterPaiementRecu(p: RecapMg, motif: string): void {
-    this.recapMgService.updateStatut(p.id, 'RJCT', motif).subscribe({
-      next: () => {
-        p.statut = 'RJCT';
-        p.motifRejet = motif;
-        this.loadStats();
-        this.displayToast('Paiement rejeté', 'error');
-      },
-      error: () => this.displayToast('Erreur rejet', 'error')
-    });
+  get filteredAnnulations(): Camt056[] {
+    if (!this.searchAnnulations) return this.camt056List;
+
+    const q = this.searchAnnulations.toLowerCase();
+
+    return this.camt056List.filter(c =>
+      c.messageId?.toLowerCase().includes(q) ||
+      c.uetr?.toLowerCase().includes(q) ||
+      c.originalMsgId?.toLowerCase().includes(q)
+    );
   }
 
-  genererEtEnvoyer(): void {
-    if (!this.selectedMessageId || !this.selectedRecapId) {
-      this.displayToast('Veuillez sélectionner un paiement', 'error');
-      return;
-    }
-
-    this.recapMgService.updateStatut(
-      this.selectedRecapId!,
-      this.confirmationNouveauStatut,
-      this.confirmationNouveauStatut === 'RJCT' ? this.confirmationMotifRejet : undefined
-    ).subscribe({
-      next: () => {
-        this.loadStats();
-        this.loadPaiementsRecus();
-        this.loadHistorique();
-        this.loadHistoriquePacs();
-        this.selectedMessageId = '';
-        this.selectedRecapId = null;
-        this.displayToast(`pacs.002 généré — ${this.confirmationNouveauStatut}`, 'success');
-      },
-      error: () => this.displayToast('Erreur mise à jour statut', 'error')
-    });
+  get nbEntrantsEnAttente(): number {
+    return this.paiementsEnAttente.length;
   }
 
-  annulerConfirmation(): void {
-    this.confirmationUetr = '';
-    this.confirmationTransaction = null;
+  get nbAnnulationsPdng(): number {
+    return this.camt056List.filter(c => c.statut === 'PDNG').length;
   }
 
-  rechercherTransactionConfirmation(): void {
-    if (!this.confirmationUetr.trim()) {
-      this.displayToast('Veuillez saisir un UETR', 'error');
-      return;
-    }
-
-    const found = this.transactions.find(t => t.uetr === this.confirmationUetr.trim());
-
-    if (found) {
-      this.confirmationTransaction = found;
-      this.displayToast('Transaction chargée', 'success');
-    } else {
-      this.confirmationTransaction = null;
-      this.displayToast('Aucune transaction trouvée', 'error');
-    }
-  }
-
-  toggleFormInitiation(): void {
-    this.showFormInitiation = !this.showFormInitiation;
-  }
-
-  initierPaiement(): void {
-    const { bicDestinataire, iban, montant, motif } = this.nouveauPaiement;
-
-    if (!bicDestinataire || !iban || !montant || !motif) {
-      this.displayToast('Veuillez remplir tous les champs obligatoires', 'error');
-      return;
-    }
-
-    this.showFormInitiation = false;
-    this.nouveauPaiement = {
-      bicDestinataire: '',
-      iban: '',
-      montant: 0,
-      devise: 'TND',
-      typeCharges: 'SHA',
-      motif: ''
-    };
-
-    this.displayToast('pacs.008 initié', 'success');
-  }
-
-  accepterPaiement(p: PaiementEntrant): void {
-    p.statutISO = 'ACSC';
-    this.displayToast('Paiement accepté', 'success');
-  }
-
-  rejeterPaiement(p: PaiementEntrant, motif: MotifRejet): void {
-    p.statutISO = 'RJCT';
-    p.motifRejet = motif;
-    this.displayToast(`Rejeté (${motif})`, 'error');
+  get pacs002Emis(): HistoriqueItem[] {
+    return this.historiqueReel.filter(h => h.type === 'pacs.002');
   }
 
   getStatutLabel(s: StatutISO): string {
@@ -654,17 +629,6 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     } as any)[s] || s;
   }
 
-  getStatutLabelCourt(s: StatutISO): string {
-    return ({
-      PDNG: 'PDNG',
-      ACCP: 'ACCP',
-      ACSP: 'ACSP',
-      ACSC: 'ACSC',
-      RJCT: 'RJCT',
-      CANC: 'CANC'
-    } as any)[s] || s;
-  }
-
   getStatutClass(s: string): string {
     return ({
       PDNG: 'badge-pdng',
@@ -674,39 +638,6 @@ export class BackofficeComponent implements OnInit, OnDestroy {
       RJCT: 'badge-rjct',
       CANC: 'badge-canc'
     } as any)[s] || '';
-  }
-
-  getStatutDesc(s: StatutISO): string {
-    return ({
-      PDNG: 'En attente',
-      ACCP: 'Accepté',
-      ACSP: 'Règlement en cours',
-      ACSC: 'Crédit confirmé',
-      RJCT: 'Rejeté',
-      CANC: 'Annulé'
-    } as any)[s] || '';
-  }
-
-  getMotifRejetLabel(m: MotifRejet | undefined): string {
-    if (!m) return '';
-    return ({
-      AC01: 'AC01 — IBAN incorrect',
-      AC04: 'AC04 — Compte clôturé',
-      AG01: 'AG01 — Banque ne traite pas',
-      FF01: 'FF01 — Code invalide',
-      MS03: 'MS03 — Non spécifié',
-      NARR: 'NARR — Voir détail'
-    } as any)[m] || m;
-  }
-
-  getMotifRefusCamtLabel(m: MotifRefusCamt | undefined): string {
-    if (!m) return '';
-    return ({
-      LEGL: 'LEGL — Raison légale',
-      CUST: 'CUST — Décision client',
-      AGET: 'AGET — Décision agent',
-      NARR: 'NARR — Voir détail'
-    } as any)[m] || m;
   }
 
   getAnnulStatutClass(s: string): string {
@@ -725,6 +656,30 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     } as any)[s] || s;
   }
 
+  getMotifRejetLabel(m: MotifRejet | undefined): string {
+    if (!m) return '';
+
+    return ({
+      AC01: 'AC01 — IBAN incorrect',
+      AC04: 'AC04 — Compte clôturé',
+      AG01: 'AG01 — Banque ne traite pas',
+      FF01: 'FF01 — Code invalide',
+      MS03: 'MS03 — Non spécifié',
+      NARR: 'NARR — Voir détail'
+    } as any)[m] || m;
+  }
+
+  getMotifRefusCamtLabel(m: MotifRefusCamt | undefined): string {
+    if (!m) return '';
+
+    return ({
+      LEGL: 'LEGL — Raison légale',
+      CUST: 'CUST — Décision client',
+      AGET: 'AGET — Décision agent',
+      NARR: 'NARR — Voir détail'
+    } as any)[m] || m;
+  }
+
   getDelaiClass(h: number | undefined): string {
     if (!h) return '';
     return h <= 24 ? 'delai-ok' : 'delai-retard';
@@ -736,20 +691,33 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     return `${h}h`;
   }
 
-  getRoleLabel(role: string): string {
-    return ({
-      emetteur: 'Emetteur',
-      intermediaire: 'Intermédiaire',
-      recepteur: 'Recepteur'
-    } as any)[role] || role;
+  getMsgTypeClass(t: string): string {
+    return t.startsWith('pacs')
+      ? 'badge-msg-pacs'
+      : t === 'camt.056'
+      ? 'badge-msg-camt056'
+      : 'badge-msg-camt029';
   }
 
-  getAgentStatutClass(s: string): string {
-    return ({
-      confirme: 'agent-confirme',
-      'en-transit': 'agent-transit',
-      'en-attente': 'agent-attente'
-    } as any)[s] || '';
+  get filteredTransactions(): Transaction[] {
+    return this.transactions;
+  }
+
+  get paginatedTransactions(): Transaction[] {
+    const s = (this.currentPage - 1) * this.pageSize;
+    return this.filteredTransactions.slice(s, s + this.pageSize);
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredTransactions.length / this.pageSize));
+  }
+
+  get totalPagesArray(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
+  goToPage(p: number): void {
+    if (p >= 1 && p <= this.totalPages) this.currentPage = p;
   }
 
   get allCharges(): Charge[] {
@@ -760,55 +728,38 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     return this.allCharges.reduce((s, c) => s + c.montant, 0);
   }
 
-  getMsgTypeClass(t: string): string {
-    return t.startsWith('pacs')
-      ? 'badge-msg-pacs'
-      : t === 'camt.056'
-      ? 'badge-msg-camt056'
-      : 'badge-msg-camt029';
-  }
-
-  get filteredTransactions(): Transaction[] {
-    return this.transactions.filter(t => {
-      const matchStatut = !this.filterStatut || t.statutISO === this.filterStatut;
-      const matchDevise = !this.filterDevise || t.devise === this.filterDevise;
-      return matchStatut && matchDevise;
-    });
-  }
-
-  get paginatedTransactions(): Transaction[] {
-    const s = (this.currentPage - 1) * this.pageSize;
-    return this.filteredTransactions.slice(s, s + this.pageSize);
-  }
-
-  get totalPages(): number {
-    return Math.ceil(this.filteredTransactions.length / this.pageSize);
-  }
-
-  get totalPagesArray(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
-  }
-
-  goToPage(p: number): void {
-    if (p >= 1 && p <= this.totalPages) {
-      this.currentPage = p;
-    }
-  }
-
-  get nbEntrantsEnAttente(): number {
-    return this.paiementsEnAttente.length;
-  }
-
-  get nbAnnulationsPdng(): number {
-    return this.camt056List.filter(c => c.statut === 'PDNG').length;
-  }
-
   get statutsRepartition(): { statut: StatutISO; count: number; pct: number }[] {
     return this.repartitionStatuts.map(r => ({
       statut: r.statut as StatutISO,
       count: r.count,
       pct: r.pct
     }));
+  }
+
+  traiterPaiement(p: RecapMg): void {
+    this.ouvrirModalTraitement(p);
+  }
+
+  annulerConfirmation(): void {
+    this.confirmationUetr = '';
+    this.confirmationTransaction = null;
+  }
+
+  toggleFormInitiation(): void {
+    this.showFormInitiation = !this.showFormInitiation;
+  }
+
+  initierPaiement(): void {
+    this.showFormInitiation = false;
+    this.nouveauPaiement = {
+      bicDestinataire: '',
+      iban: '',
+      montant: 0,
+      devise: 'TND',
+      typeCharges: 'SHA',
+      motif: ''
+    };
+    this.displayToast('pacs.008 initié', 'success');
   }
 
   displayToast(msg: string, type: 'success' | 'error' | 'info'): void {
@@ -827,40 +778,4 @@ export class BackofficeComponent implements OnInit, OnDestroy {
       maximumFractionDigits: 2
     }) || '0,00';
   }
-  get bicExpediteursEmisDistincts(): string[] {
-  return [...new Set(this.paiementsEmis.map(p => p.senderBic).filter(b => !!b))];
-}
-
-get devisesEmisDistinctes(): string[] {
-  return [...new Set(this.paiementsEmis.map(p => p.devise).filter(d => !!d))];
-}
-
-get paiementsEmisFiltres(): RecapMg[] {
-  return this.paiementsEmis.filter(p => {
-    const matchSearch = !this.filtreEmisSearch ||
-      p.messageId?.toLowerCase().includes(this.filtreEmisSearch.toLowerCase()) ||
-      p.senderName?.toLowerCase().includes(this.filtreEmisSearch.toLowerCase()) ||
-      p.senderBic?.toLowerCase().includes(this.filtreEmisSearch.toLowerCase());
-
-    const matchStatut = !this.filtreEmisStatut || p.statut === this.filtreEmisStatut;
-    const matchDevise = !this.filtreEmisDevise || p.devise === this.filtreEmisDevise;
-    const matchBic = !this.filtreEmisBicExp || p.senderBic === this.filtreEmisBicExp;
-    const matchDateDu = !this.filtreEmisDateDu || new Date(p.dateValeur) >= new Date(this.filtreEmisDateDu);
-
-    return matchSearch && matchStatut && matchDevise && matchBic && matchDateDu;
-  });
-}
-
-resetFiltresEmis(): void {
-  this.filtreEmisSearch = '';
-  this.filtreEmisStatut = '';
-  this.filtreEmisDevise = '';
-  this.filtreEmisBicExp = '';
-  this.filtreEmisDateDu = '';
-}
-filtreEmisSearch = '';
-filtreEmisStatut = '';
-filtreEmisDevise = '';
-filtreEmisBicExp = '';
-filtreEmisDateDu = '';
 }
