@@ -594,18 +594,29 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     return this.paiementsEmis.filter(p => p.statut === 'PDNG' || !p.statut);
   }
 
-  get filteredAnnulations(): Camt056[] {
-    if (!this.searchAnnulations) return this.camt056List;
+ private readonly MY_BIC = 'BIATTNTT';
 
-    const q = this.searchAnnulations.toLowerCase();
+get camt056Recu(): Camt056[] {
+  return this.camt056List.filter(c =>
+    c.bicRecepteur?.toUpperCase() === this.MY_BIC
+  );
+}
 
-    return this.camt056List.filter(c =>
-      c.messageId?.toLowerCase().includes(q) ||
-      c.uetr?.toLowerCase().includes(q) ||
-      c.originalMsgId?.toLowerCase().includes(q)
-    );
-  }
+get filteredAnnulations(): Camt056[] {
+  const source = this.camt056Recu;
 
+  if (!this.searchAnnulations) return source;
+
+  const q = this.searchAnnulations.toLowerCase();
+
+  return source.filter(c =>
+    c.messageId?.toLowerCase().includes(q) ||
+    c.uetr?.toLowerCase().includes(q) ||
+    c.originalMsgId?.toLowerCase().includes(q) ||
+    c.bicEmetteur?.toLowerCase().includes(q) ||
+    c.bicRecepteur?.toLowerCase().includes(q)
+  );
+}
   get nbEntrantsEnAttente(): number {
     return this.paiementsEnAttente.length;
   }
