@@ -162,151 +162,135 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════
-         TAB 1 : PAIEMENTS SORTANTS
+         TAB 1 : PAIEMENTS SORTANTS (EMIS)
     ═══════════════════════════════════════════════════ -->
-    <div *ngIf="activeTab==='vue-transactionnelle' && !selectedTransaction" class="tab-content">
-  <div class="page-title">Paiements Sortants (pacs.008 Émis)</div>
-  <div class="content-card">
-    <div class="card-header">
-      <div>
-        <h2>pacs.008 émis</h2>
-        <p class="content-sub">Paiements envoyés par BIAT vers d'autres banques</p>
+    <div *ngIf="activeTab==='vue-transactionnelle'" class="tab-content">
+      <div class="page-title">Paiements Sortants (pacs.008 / pacs.009 Émis)</div>
+      <div class="content-card">
+        <div class="card-header">
+          <div>
+            <h2>Messages SWIFT émis</h2>
+            <p class="content-sub">Paiements envoyés par BIAT vers d'autres banques</p>
+          </div>
+          <button class="btn-refresh" (click)="loadPaiementsEmis()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Actualiser
+          </button>
+        </div>
+
+        <div class="filtres-bar">
+          <div class="filtre-item filtre-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" [(ngModel)]="filtreEmisSearch" placeholder="Rechercher messageId, expéditeur..." />
+          </div>
+          <div class="filtre-item">
+            <select [(ngModel)]="filtreEmisStatut">
+              <option value="">Tous les statuts</option>
+              <option value="PDNG">PDNG — En attente</option>
+              <option value="ACCP">ACCP — Accepté</option>
+              <option value="ACSC">ACSC — Crédit OK</option>
+              <option value="RJCT">RJCT — Rejeté</option>
+              <option value="CANC">CANC — Annulé</option>
+            </select>
+          </div>
+          <div class="filtre-item">
+            <select [(ngModel)]="filtreEmisDevise">
+              <option value="">Toutes devises</option>
+              <option *ngFor="let d of devisesEmisDistinctes" [value]="d">{{ d }}</option>
+            </select>
+          </div>
+          <div class="filtre-item">
+            <select [(ngModel)]="filtreEmisBicExp">
+              <option value="">Tous BIC exp.</option>
+              <option *ngFor="let b of bicExpediteursEmisDistincts" [value]="b">{{ b }}</option>
+            </select>
+          </div>
+          <div class="filtre-item">
+            <label style="font-size:0.75rem;color:#888">Date valeur</label>
+            <input type="date" [(ngModel)]="filtreEmisDateDu" />
+          </div>
+          <button class="btn-reset" (click)="resetFiltresEmis()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Réinitialiser
+          </button>
+        </div>
+
+        <div class="filtres-count">{{ paiementsEmisFiltres.length }} résultat(s) sur {{ paiementsEmis.length }} paiements</div>
+
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Message ID</th><th>Type MSG</th><th>UETR</th>
+                <th>Expéditeur</th><th>Destinataire</th>
+                <th>Montant</th><th>Devise</th><th>Date Valeur</th>
+                <th>Statut</th><th>Annulation</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of paiementsEmisFiltres">
+                <td><strong>{{ p.messageId }}</strong></td>
+                <td>
+                  <span *ngIf="p.msgType === 'pacs.008' || !p.msgType"
+                    style="background:#eff6ff;color:#3b82f6;border:1.5px solid #3b82f6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
+                    pacs.008
+                  </span>
+                  <span *ngIf="p.msgType === 'pacs.009'"
+                    style="background:#f5f3ff;color:#8b5cf6;border:1.5px solid #8b5cf6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
+                    pacs.009
+                  </span>
+                  <span *ngIf="p.msgType === 'pacs.009.COV'"
+                    style="background:#fdf4ff;color:#a855f7;border:1.5px solid #a855f7;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
+                    pacs.009 COV
+                  </span>
+                </td>
+                <td class="uetr-cell" [title]="p.uetr">{{ p.uetr || '—' }}</td>
+                <td>{{ p.senderName }}</td>
+                <td>{{ p.receiverName }}</td>
+                <td class="montant-cell">{{ formatMontant(p.montant) }}</td>
+                <td>{{ p.devise }}</td>
+                <td>{{ p.dateValeur }}</td>
+                <td><span class="badge" [ngClass]="getStatutClass(p.statut)">{{ p.statut || 'PDNG' }}</span></td>
+                <!-- ✅ Annulation status column -->
+                <td>
+                  <ng-container *ngIf="getCamt056ForPaiement(p) as camt">
+                    <span *ngIf="camt.statut === 'PDNG'"
+                      style="background:#fef9c3;color:#ca8a04;border:1.5px solid #ca8a04;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
+                      ⏳ camt.056 envoyé
+                    </span>
+                    <span *ngIf="camt.statut === 'ACCP'"
+                      style="background:#f0fdf4;color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
+                      ✅ Annulation acceptée
+                    </span>
+                    <span *ngIf="camt.statut === 'RJCT'"
+                      style="background:#fef2f2;color:#dc2626;border:1.5px solid #dc2626;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
+                      ❌ Annulation refusée
+                    </span>
+                  </ng-container>
+                  <span *ngIf="!getCamt056ForPaiement(p)" style="color:#aaa">—</span>
+                </td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn-xml" (click)="voirXmlEmis(p)" title="Voir XML">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                      XML
+                    </button>
+                    <button class="btn-timeline" (click)="voirTimelineEmis(p)" title="Timeline">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+                      Timeline
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="paiementsEmisFiltres.length === 0">
+                <td colspan="11" class="empty-state">Aucun résultat</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <button class="btn-refresh" (click)="loadPaiementsEmis()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="23 4 23 10 17 10"/>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-        </svg>
-        Actualiser
-      </button>
     </div>
 
-    <div class="filtres-bar">
-      <div class="filtre-item filtre-search">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input type="text" [(ngModel)]="filtreEmisSearch" placeholder="Rechercher messageId, expéditeur..." />
-      </div>
-
-      <div class="filtre-item">
-        <select [(ngModel)]="filtreEmisStatut">
-          <option value="">Tous les statuts</option>
-          <option value="PDNG">PDNG — En attente</option>
-          <option value="ACCP">ACCP — Accepté</option>
-          <option value="ACSC">ACSC — Crédit OK</option>
-          <option value="RJCT">RJCT — Rejeté</option>
-          <option value="CANC">CANC — Annulé</option>
-        </select>
-      </div>
-
-      <div class="filtre-item">
-        <select [(ngModel)]="filtreEmisDevise">
-          <option value="">Toutes devises</option>
-          <option *ngFor="let d of devisesEmisDistinctes" [value]="d">{{ d }}</option>
-        </select>
-      </div>
-
-      <div class="filtre-item">
-        <select [(ngModel)]="filtreEmisBicExp">
-          <option value="">Tous BIC exp.</option>
-          <option *ngFor="let b of bicExpediteursEmisDistincts" [value]="b">{{ b }}</option>
-        </select>
-      </div>
-
-      <div class="filtre-item">
-        <label style="font-size:0.75rem;color:#888">Date valeur</label>
-        <input type="date" [(ngModel)]="filtreEmisDateDu" />
-      </div>
-
-      <button class="btn-reset" (click)="resetFiltresEmis()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-        Réinitialiser
-      </button>
-    </div>
-
-    <div class="filtres-count">
-      {{ paiementsEmisFiltres.length }} résultat(s) sur {{ paiementsEmis.length }} paiements
-    </div>
-
-    <div class="table-wrapper">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Message ID</th>
-            <th>Type MSG</th>
-            <th>UETR</th>
-            <th>Expéditeur</th>
-            <th>Destinataire</th>
-            <th>Montant</th>
-            <th>Devise</th>
-            <th>Date Valeur</th>
-            <th>Statut</th>
-            <th>Motif Rejet</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let p of paiementsEmisFiltres">
-            <td><strong>{{ p.messageId }}</strong></td>
-            <td>
-              <span *ngIf="p.msgType === 'pacs.008' || !p.msgType"
-                style="background:#eff6ff;color:#3b82f6;border:1.5px solid #3b82f6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
-                pacs.008
-              </span>
-              <span *ngIf="p.msgType === 'pacs.009'"
-                style="background:#f5f3ff;color:#8b5cf6;border:1.5px solid #8b5cf6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
-                pacs.009
-              </span>
-              <span *ngIf="p.msgType === 'pacs.009.COV'"
-                class="badge-type-cov">
-                pacs.009 COV
-              </span>
-            </td>
-            <td class="uetr-cell" [title]="p.uetr">{{ p.uetr || '—' }}</td>
-            <td>{{ p.senderName }}</td>
-            <td>{{ p.receiverName }}</td>
-            <td class="montant-cell">{{ formatMontant(p.montant) }}</td>
-            <td>{{ p.devise }}</td>
-            <td>{{ p.dateValeur }}</td>
-            <td><span class="badge" [ngClass]="getStatutClass(p.statut)">{{ p.statut }}</span></td>
-            <td>
-              <span *ngIf="p.motifRejet" class="badge badge-rjct">{{ p.motifRejet }}</span>
-              <span *ngIf="!p.motifRejet" style="color:#aaa">—</span>
-            </td>
-            <td>
-              <div class="action-btns">
-                <button class="btn-xml" (click)="voirXmlEmis(p)" title="Voir XML">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="16 18 22 12 16 6"/>
-                    <polyline points="8 6 2 12 8 18"/>
-                  </svg>
-                  XML
-                </button>
-                <button class="btn-timeline" (click)="voirTimelineEmis(p)" title="Timeline">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="20" x2="12" y2="10"/>
-                    <line x1="18" y1="20" x2="18" y2="4"/>
-                    <line x1="6" y1="20" x2="6" y2="16"/>
-                  </svg>
-                  Timeline
-                </button>
-              </div>
-            </td>
-          </tr>
-
-          <tr *ngIf="paiementsEmisFiltres.length === 0">
-            <td colspan="11" class="empty-state">Aucun résultat</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
     <!-- ═══════════════════════════════════════════════════
          TAB 2 : PAIEMENTS ENTRANTS
     ═══════════════════════════════════════════════════ -->
@@ -373,17 +357,11 @@
                 <td><strong>{{ p.messageId }}</strong></td>
                 <td>
                   <span *ngIf="p.msgType === 'pacs.008' || !p.msgType"
-                    style="background:#eff6ff;color:#3b82f6;border:1.5px solid #3b82f6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
-                    pacs.008
-                  </span>
+                    style="background:#eff6ff;color:#3b82f6;border:1.5px solid #3b82f6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">pacs.008</span>
                   <span *ngIf="p.msgType === 'pacs.009'"
-                    style="background:#f5f3ff;color:#8b5cf6;border:1.5px solid #8b5cf6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
-                    pacs.009
-                  </span>
+                    style="background:#f5f3ff;color:#8b5cf6;border:1.5px solid #8b5cf6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">pacs.009</span>
                   <span *ngIf="p.msgType === 'pacs.009.COV'"
-                    style="background:#fdf4ff;color:#a855f7;border:1.5px solid #a855f7;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
-                    pacs.009 COV
-                  </span>
+                    style="background:#fdf4ff;color:#a855f7;border:1.5px solid #a855f7;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">pacs.009 COV</span>
                 </td>
                 <td class="uetr-cell" [title]="p.uetr">{{ p.uetr || '—' }}</td>
                 <td>{{ p.senderName }}</td>
@@ -394,17 +372,11 @@
                 <td>{{ p.devise }}</td>
                 <td>{{ p.dateValeur }}</td>
                 <td>
-                  <span *ngIf="p.statut === 'PDNG'" class="badge badge-pdng">PDNG</span>
-                  <span *ngIf="p.statut === 'ACSC'" class="badge badge-acsc">ACSC</span>
-                  <span *ngIf="p.statut === 'RJCT'" class="badge badge-rjct">RJCT</span>
-                  <span *ngIf="p.statut === 'ACCP'" class="badge badge-accp">ACCP</span>
-                  <span *ngIf="p.statut === 'ACSP'" class="badge badge-acsp">ACSP</span>
-                  <span *ngIf="p.statut === 'CANC'" class="badge badge-canc">CANC</span>
-                  <span *ngIf="!p.statut" class="badge badge-pdng">PDNG</span>
+                  <span class="badge" [ngClass]="getStatutClass(p.statut || 'PDNG')">{{ p.statut || 'PDNG' }}</span>
                 </td>
                 <td>
                   <div class="action-btns">
-                    <button class="btn-xml" (click)="voirXmlRecu(p)" title="Voir XML">
+                    <button class="btn-xml" (click)="voirXmlRecu(p)">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                       XML
                     </button>
@@ -428,27 +400,27 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════
-         TAB 3 : ENVOYER camt.056
+         TAB 3 : DEMANDE ANNULATION (camt.056)
     ═══════════════════════════════════════════════════ -->
     <div *ngIf="activeTab==='annulation'" class="tab-content">
       <div class="page-title">Demande d'Annulation</div>
       <div class="content-card">
         <div class="card-header">
-          <div><h2>camt.056 — Annulation de paiement</h2><p class="content-sub">Uniquement pour transactions PDNG</p></div>
+          <div><h2>camt.056 — Annulation de paiement émis</h2><p class="content-sub">Uniquement pour paiements émis (EMIS) avec statut PDNG</p></div>
         </div>
         <div class="info-box">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Le camt.056 ne peut être envoyé que pour des transactions avec statut PDNG.
+          Le camt.056 est une demande d'annulation envoyée à la banque destinataire pour un paiement que vous avez émis (pacs.008 EMIS). La banque répondra par un camt.029.
         </div>
         <div class="form-group">
-          <label>Paiement à annuler <span class="required">*</span></label>
+          <label>Paiement émis à annuler <span class="required">*</span></label>
           <select [(ngModel)]="annulationMessageId" class="select-uetr">
             <option value="">-- Sélectionnez un paiement PDNG --</option>
-           <option *ngFor="let p of paiementsAnnulables" [value]="p.messageId">
-              UETR: {{ p.uetr || '—' }} | MSGID: {{ p.messageId }} | EXP: {{ p.senderName || '—' }} | MNT: {{ formatMontant(p.montant) }} {{ p.devise }}
+            <option *ngFor="let p of paiementsAnnulables" [value]="p.messageId">
+              MSGID: {{ p.messageId }} | UETR: {{ p.uetr || '—' }} | {{ p.receiverBic }} | {{ formatMontant(p.montant) }} {{ p.devise }}
             </option>
           </select>
-          <small *ngIf="paiementsAnnulables.length === 0" style="color:#cc0000">⚠️ Aucun paiement annulable (statut PDNG requis)</small>
+          <small *ngIf="paiementsAnnulables.length === 0" style="color:#cc0000">⚠️ Aucun paiement émis annulable (statut PDNG requis)</small>
         </div>
         <div class="form-group">
           <label>Motif d'Annulation <span class="required">*</span></label>
@@ -460,10 +432,10 @@
             <option value="TECH">TECH — Technical error</option>
             <option value="CUTA">CUTA — Cancel upon unable to apply</option>
             <option value="COVR">COVR — Cover cancelled or returned</option>
-            <option value="NARR">NARR — Narrative</option>
             <option value="CURR">CURR — Incorrect currency</option>
             <option value="AGNT">AGNT — Agent error</option>
             <option value="AM09">AM09 — Incorrect amount</option>
+            <option value="NARR">NARR — Narrative</option>
           </select>
         </div>
         <div class="form-group">
@@ -480,13 +452,13 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════
-         TAB 4 : SUIVI camt.029
+         TAB 4 : SUIVI ANNULATIONS (camt.029)
     ═══════════════════════════════════════════════════ -->
     <div *ngIf="activeTab==='annulations'" class="tab-content">
       <div class="page-title">Suivi des Annulations</div>
       <div class="content-card">
         <div class="card-header">
-          <div><h2>camt.029 — Réponses reçues</h2><p class="content-sub">Réponses aux demandes d'annulation camt.056</p></div>
+          <div><h2>camt.056 envoyés — Réponses camt.029</h2><p class="content-sub">Suivi des demandes d'annulation et réponses reçues</p></div>
           <button class="btn-refresh" (click)="loadCamt056()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             Actualiser
@@ -502,28 +474,19 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Réf. camt.056</th>
-                <th>UETR</th>
-                <th>BIC Émetteur</th>
-                <th>Motif</th>
-                <th>Détail</th>
-                <th>Date Envoi</th>
-                <th>Statut camt.029</th>
-                <th>Motif Refus</th>
-                <th>Réponse</th>
-                <th>Action</th>
+                <th>Réf. camt.056</th><th>Pacs.008 Original</th><th>UETR</th>
+                <th>BIC Émetteur</th><th>BIC Récepteur</th>
+                <th>Motif</th><th>Détail</th><th>Date Envoi</th>
+                <th>Statut camt.029</th><th>Motif Refus</th><th>Action</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let a of filteredAnnulations">
                 <td><strong>{{ a.messageId }}</strong></td>
+                <td><strong>{{ a.originalMsgId }}</strong></td>
                 <td class="uetr-cell" [title]="a.uetr">{{ a.uetr || '—' }}</td>
-                <td>
-                  <div class="user-cell">
-                    <div class="user-avatar-sm">BI</div>
-                    <div><div class="user-name">{{ a.bicEmetteur }}</div></div>
-                  </div>
-                </td>
+                <td><strong>{{ a.bicEmetteur }}</strong></td>
+                <td><strong>{{ a.bicRecepteur }}</strong></td>
                 <td>{{ a.motif }}</td>
                 <td class="motif-cell">{{ a.motifDetail || '—' }}</td>
                 <td>{{ a.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
@@ -532,20 +495,29 @@
                   <span *ngIf="a.motifRefus" class="motif-rejet">{{ a.motifRefus }}</span>
                   <span *ngIf="!a.motifRefus" class="text-light">—</span>
                 </td>
-                <td>{{ a.statut === 'PDNG' ? 'En attente' : a.statut === 'ACCP' ? 'Annulation acceptée ✅' : 'Annulation refusée ❌' }}</td>
                 <td>
-                  <button
-                    class="btn-accepter"
-                    *ngIf="a.statut === 'PDNG'"
-                    [disabled]="camt029EnvoisEnCours"
-                    (click)="genererCamt029(a)">
-                    {{ camt029EnvoisEnCours ? 'Génération...' : 'Répondre camt.029' }}
-                  </button>
+                  <div *ngIf="a.statut === 'PDNG'" style="display:flex;gap:8px;align-items:center">
+                    <button class="btn-accepter" (click)="repondreAnnulation(a, 'ACCP')">
+                      Accepter
+                    </button>
+
+                    <select [(ngModel)]="motifRefusCamt029" style="max-width:90px">
+                      <option value="AGNT">AGNT</option>
+                      <option value="CUST">CUST</option>
+                      <option value="LEGL">LEGL</option>
+                      <option value="NARR">NARR</option>
+                    </select>
+
+                    <button class="btn-danger" (click)="repondreAnnulation(a, 'RJCT')">
+                      Rejeter
+                    </button>
+                  </div>
+
                   <span *ngIf="a.statut !== 'PDNG'" class="text-light">Déjà traité</span>
                 </td>
               </tr>
               <tr *ngIf="filteredAnnulations.length===0">
-                <td colspan="10" class="empty-state">Aucune annulation trouvée</td>
+                <td colspan="11" class="empty-state">Aucune annulation trouvée</td>
               </tr>
             </tbody>
           </table>
@@ -611,7 +583,7 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════
-         TAB : HISTORIQUE PACS
+         TAB 6 : HISTORIQUE PACS
     ═══════════════════════════════════════════════════ -->
     <div *ngIf="activeTab==='historique-pacs'" class="tab-content">
       <div class="page-title">Historique des Messages pacs</div>
@@ -675,27 +647,17 @@
               <tr *ngFor="let p of historiquePacsFiltres">
                 <td>
                   <span *ngIf="p.typeMsg === 'RECU'"
-                    style="background:#f0fdf4;color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
-                    ↓ RECU
-                  </span>
+                    style="background:#f0fdf4;color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">↓ RECU</span>
                   <span *ngIf="p.typeMsg === 'EMIS'"
-                    style="background:#eff6ff;color:#2563eb;border:1.5px solid #2563eb;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
-                    ↑ EMIS
-                  </span>
+                    style="background:#eff6ff;color:#2563eb;border:1.5px solid #2563eb;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">↑ EMIS</span>
                 </td>
                 <td>
                   <span *ngIf="p.msgType === 'pacs.008' || !p.msgType"
-                    style="background:#eff6ff;color:#3b82f6;border:1.5px solid #3b82f6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
-                    pacs.008
-                  </span>
+                    style="background:#eff6ff;color:#3b82f6;border:1.5px solid #3b82f6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">pacs.008</span>
                   <span *ngIf="p.msgType === 'pacs.009'"
-                    style="background:#f5f3ff;color:#8b5cf6;border:1.5px solid #8b5cf6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
-                    pacs.009
-                  </span>
+                    style="background:#f5f3ff;color:#8b5cf6;border:1.5px solid #8b5cf6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">pacs.009</span>
                   <span *ngIf="p.msgType === 'pacs.009.COV'"
-                    style="background:#fdf4ff;color:#a855f7;border:1.5px solid #a855f7;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
-                    pacs.009 COV
-                  </span>
+                    style="background:#fdf4ff;color:#a855f7;border:1.5px solid #a855f7;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">pacs.009 COV</span>
                 </td>
                 <td><strong>{{ p.messageId }}</strong></td>
                 <td class="uetr-cell" [title]="p.uetr">{{ p.uetr || '—' }}</td>
@@ -703,7 +665,7 @@
                 <td><strong>{{ p.receiverBic }}</strong></td>
                 <td class="montant-cell">{{ formatMontant(p.montant) }}</td>
                 <td>{{ p.devise }}</td>
-                <td><span class="badge" [ngClass]="getStatutClass(p.statut)">{{ p.statut || 'PDNG' }}</span></td>
+                <td><span class="badge" [ngClass]="getStatutClass(p.statut || 'PDNG')">{{ p.statut || 'PDNG' }}</span></td>
                 <td>{{ p.receivedAt | date:'dd/MM/yyyy HH:mm' }}</td>
               </tr>
               <tr *ngIf="historiquePacsFiltres.length === 0">
@@ -805,7 +767,7 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════
-     MODAL : TIMELINE
+     MODAL : TIMELINE PAIEMENT ÉMIS
 ═══════════════════════════════════════════════════ -->
 <div *ngIf="showTimelineModal" class="modal-overlay" (click)="fermerTimelineModal()">
   <div class="modal-box modal-timeline" (click)="$event.stopPropagation()">
@@ -819,51 +781,141 @@
       </button>
     </div>
     <div class="modal-body">
+
+      <!-- Info bar -->
       <div class="timeline-modal-info">
         <span><strong>UETR:</strong> {{ timelinePaiement?.uetr || '—' }}</span>
         <span><strong>Montant:</strong> {{ formatMontant(timelinePaiement?.montant) }} {{ timelinePaiement?.devise }}</span>
+        <span><strong>Vers:</strong> {{ timelinePaiement?.receiverBic }}</span>
       </div>
+
       <div class="msg-timeline">
+
+        <!-- ── STEP 1: pacs.008 envoyé ───────────────────── -->
         <div class="msg-step">
           <div class="msg-step-icon badge-acsc">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </div>
-          <div class="msg-step-line" *ngIf="timelinePaiement?.statut && timelinePaiement?.statut !== 'PDNG'"></div>
+          <div class="msg-step-line"></div>
           <div class="msg-step-body">
             <div class="msg-step-top">
-              <span class="msg-type-tag">pacs.008</span>
+              <span class="msg-type-tag">{{ timelinePaiement?.msgType || 'pacs.008' }}</span>
               <span class="badge badge-acsc">ENVOYÉ</span>
               <span class="msg-date">{{ timelinePaiement?.receivedAt | date:'dd/MM/yyyy HH:mm' }}</span>
             </div>
             <p class="msg-ref">REF: {{ timelinePaiement?.messageId }}</p>
-            <p class="msg-detail">{{ timelinePaiement?.senderBic }} → {{ timelinePaiement?.receiverBic }}</p>
+            <p class="msg-detail">{{ timelinePaiement?.senderBic }} → {{ timelinePaiement?.receiverBic }} | {{ formatMontant(timelinePaiement?.montant) }} {{ timelinePaiement?.devise }}</p>
           </div>
         </div>
-        <div class="msg-step" *ngIf="timelinePaiement?.statut && timelinePaiement?.statut !== 'PDNG'">
-          <div class="msg-step-icon" [ngClass]="getStatutClass(timelinePaiement?.statut || '')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <div class="msg-step-body">
-            <div class="msg-step-top">
-              <span class="msg-type-tag">pacs.002</span>
-              <span class="badge" [ngClass]="getStatutClass(timelinePaiement?.statut || '')">{{ timelinePaiement?.statut }}</span>
+
+        <!-- ── STEP 2a: pacs.002 reçu (pas d'annulation) ── -->
+        <ng-container *ngIf="!getCamt056ForPaiement(timelinePaiement)">
+
+          <!-- pacs.002 reçu avec statut -->
+          <div class="msg-step" *ngIf="timelinePaiement?.statut && timelinePaiement?.statut !== 'PDNG'">
+            <div class="msg-step-icon" [ngClass]="getStatutClass(timelinePaiement?.statut || '')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-            <p class="msg-ref">ACK-{{ timelinePaiement?.messageId }}</p>
-            <p class="msg-detail" *ngIf="timelinePaiement?.motifRejet">Motif rejet: {{ timelinePaiement?.motifRejet }}</p>
-          </div>
-        </div>
-        <div class="msg-step" *ngIf="!timelinePaiement?.statut || timelinePaiement?.statut === 'PDNG'">
-          <div class="msg-step-icon badge-pdng">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div class="msg-step-body">
-            <div class="msg-step-top">
-              <span class="msg-type-tag">pacs.002</span>
-              <span class="badge badge-pdng">EN ATTENTE</span>
+            <div class="msg-step-body">
+              <div class="msg-step-top">
+                <span class="msg-type-tag">pacs.002</span>
+                <span class="badge" [ngClass]="getStatutClass(timelinePaiement?.statut || '')">{{ timelinePaiement?.statut }}</span>
+              </div>
+              <p class="msg-ref">ACK-{{ timelinePaiement?.messageId }}</p>
+              <p class="msg-detail" *ngIf="timelinePaiement?.motifRejet">Motif rejet: {{ timelinePaiement?.motifRejet }}</p>
+              <p class="msg-detail" *ngIf="!timelinePaiement?.motifRejet">Réponse reçue de {{ timelinePaiement?.receiverBic }}</p>
             </div>
-            <p class="msg-detail">En attente de réponse de {{ timelinePaiement?.receiverBic }}</p>
           </div>
-        </div>
+
+          <!-- en attente de pacs.002 -->
+          <div class="msg-step" *ngIf="!timelinePaiement?.statut || timelinePaiement?.statut === 'PDNG'">
+            <div class="msg-step-icon badge-pdng">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="msg-step-body">
+              <div class="msg-step-top">
+                <span class="msg-type-tag">pacs.002</span>
+                <span class="badge badge-pdng">EN ATTENTE</span>
+              </div>
+              <p class="msg-detail">En attente de réponse de {{ timelinePaiement?.receiverBic }}</p>
+            </div>
+          </div>
+
+        </ng-container>
+
+        <!-- ── STEP 2b: camt.056 envoyé (annulation) ──────── -->
+        <ng-container *ngIf="getCamt056ForPaiement(timelinePaiement) as camt056">
+
+          <div class="msg-step">
+            <div class="msg-step-icon"
+              [style.background]="'#fef9c3'"
+              [style.border-color]="'#ca8a04'"
+              style="border:2px solid #ca8a04">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+            <div class="msg-step-line" *ngIf="hasCancellationPending(timelinePaiement) || hasCancellationAccepted(timelinePaiement) || hasCancellationRejected(timelinePaiement)"></div>
+            <div class="msg-step-body">
+              <div class="msg-step-top">
+                <span class="msg-type-tag">camt.056</span>
+                <span class="badge badge-pdng">DEMANDE ANNULATION ENVOYÉE</span>
+                <span class="msg-date">{{ camt056.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <p class="msg-ref">REF: {{ camt056.messageId }}</p>
+              <p class="msg-detail">Motif: {{ camt056.motif }}{{ camt056.motifDetail ? ' — ' + camt056.motifDetail : '' }}</p>
+            </div>
+          </div>
+
+          <!-- STEP 3: En attente camt.029 -->
+          <div class="msg-step" *ngIf="hasCancellationPending(timelinePaiement)">
+            <div class="msg-step-icon badge-pdng">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="msg-step-body">
+              <div class="msg-step-top">
+                <span class="msg-type-tag">camt.029</span>
+                <span class="badge badge-pdng">EN ATTENTE</span>
+              </div>
+              <p class="msg-detail">En attente de la réponse à la demande d'annulation de {{ timelinePaiement?.receiverBic }}</p>
+            </div>
+          </div>
+
+          <!-- STEP 3: camt.029 ACCP — annulation acceptée -->
+          <div class="msg-step" *ngIf="hasCancellationAccepted(timelinePaiement)">
+            <div class="msg-step-icon badge-acsc">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="msg-step-body">
+              <div class="msg-step-top">
+                <span class="msg-type-tag">camt.029</span>
+                <span class="badge badge-acsc">ANNULATION ACCEPTÉE ✅</span>
+                <span class="msg-date">{{ camt056.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <p class="msg-detail">La banque destinataire a accepté l'annulation du paiement.</p>
+            </div>
+          </div>
+
+          <!-- STEP 3: camt.029 RJCT — annulation refusée -->
+          <div class="msg-step" *ngIf="hasCancellationRejected(timelinePaiement)">
+            <div class="msg-step-icon badge-rjct">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div class="msg-step-body">
+              <div class="msg-step-top">
+                <span class="msg-type-tag">camt.029</span>
+                <span class="badge badge-rjct">ANNULATION REFUSÉE ❌</span>
+                <span class="msg-date">{{ camt056.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <p class="msg-detail">
+                La banque destinataire a refusé l'annulation.
+                <span *ngIf="camt056.motifRefus"> Motif: <strong>{{ camt056.motifRefus }}</strong></span>
+              </p>
+            </div>
+          </div>
+
+        </ng-container>
+
       </div>
     </div>
   </div>

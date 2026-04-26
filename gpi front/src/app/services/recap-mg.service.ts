@@ -113,7 +113,6 @@ export class RecapMgService {
     return this.http.get<HistoriqueItem[]>(`${this.api}/historique`);
   }
 
-  // ✅ Historique pacs only (pacs.008 + pacs.009, no pacs.002)
   getHistoriquePacs(): Observable<RecapMg[]> {
     return this.http.get<RecapMg[]>(`${this.api}/historique-pacs`);
   }
@@ -130,16 +129,33 @@ export class RecapMgService {
     return this.http.get<XmlResponse>(`${this.api}/paiements-recus/${id}/xml`);
   }
 
+  // ── camt.056 ───────────────────────────────────────────────
   getCamt056(): Observable<Camt056[]> {
     return this.http.get<Camt056[]>(`${this.api}/camt056`);
   }
 
+  // Send camt.056 — demande annulation for our EMIS pacs
   envoyerCamt056(originalMsgId: string, motif: string, motifDetail?: string): Observable<Camt056> {
     return this.http.post<Camt056>(`${this.api}/camt056`, {
       originalMsgId, motif, motifDetail
     });
   }
-  genererCamt029(uetr: string) {
-  return this.http.post<any>('http://localhost:8080/api/backoffice/camt029', { uetr });
-}
+
+  // ✅ Respond to incoming camt.056 — réponse annulation (ACCP or RJCT)
+  // Generates camt.029 and updates camt.056 statut
+  repondreCamt056(
+    id: number,
+    decision: 'ACCP' | 'RJCT',
+    motifRefus?: string
+  ): Observable<any> {
+    return this.http.post<any>(`${this.api}/camt056/${id}/repondre`, {
+      decision,
+      motifRefus
+    });
+  }
+
+  // Generate camt.029 directly by UETR (used by Camt029Controller)
+  genererCamt029(uetr: string): Observable<any> {
+    return this.http.post<any>(`${this.api}/camt029`, { uetr });
+  }
 }

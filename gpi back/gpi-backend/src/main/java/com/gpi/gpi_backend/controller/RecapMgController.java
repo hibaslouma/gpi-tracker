@@ -150,7 +150,7 @@ public class RecapMgController {
                     .body(resource);
 
         } catch (IOException e) {
-            System.err.println("[RecapMgController] ❌ Erreur lecture pacs.002 : "
+            System.err.println("[RecapMgController]  Erreur lecture pacs.002 : "
                     + e.getMessage());
             return ResponseEntity.ok().build();
         }

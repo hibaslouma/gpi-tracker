@@ -9,4 +9,7 @@ public interface Camt056Repository extends JpaRepository<Camt056, Long> {
     List<Camt056> findAllByOrderByCreatedAtDesc();
     Optional<Camt056> findByUetr(String uetr);
     boolean existsByMessageId(String messageId);
+    Optional<Camt056> findTopByUetrOrderByCreatedAtDesc(String uetr);
+    // ✅ needed by Camt029ParserService
+    Optional<Camt056> findTopByOriginalMsgIdOrderByCreatedAtDesc(String originalMsgId);
 }

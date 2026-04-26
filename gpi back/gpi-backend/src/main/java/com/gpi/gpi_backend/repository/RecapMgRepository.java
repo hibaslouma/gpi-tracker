@@ -8,6 +8,6 @@ import java.util.Optional;
 public interface RecapMgRepository extends JpaRepository<RecapMg, Long> {
     List<RecapMg> findByTypeMsg(String typeMsg);
     boolean existsByMessageId(String messageId);
-    Optional<RecapMg> findByUetr(String uetr);
+    Optional<RecapMg> findByUetr(String uetr);           // ✅ needed by Pacs002ParserService
     Optional<RecapMg> findByMessageId(String messageId); // ✅ needed by Camt056Service
 }
