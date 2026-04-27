@@ -349,13 +349,13 @@ export class BackofficeComponent implements OnInit, OnDestroy {
         const link = document.createElement('a');
         link.href = url;
         link.download = `pacs002_${messageId}_${statutEnvoi}.xml`;
-        link.click();// ← téléchargement automatique
+        link.click();
         window.URL.revokeObjectURL(url);
 
-        this.displayToast(` pacs.002 généré — ${statutEnvoi}`, 'success');
+        this.displayToast(`✅ pacs.002 généré — ${statutEnvoi}`, 'success');
 
-        this.loadPaiementsRecus();// ← rafraîchit la liste
-        this.loadStats();// ← rafraîchit les statistiques du dashboard
+        this.loadPaiementsRecus();
+        this.loadStats();
         this.loadHistorique();
         this.loadHistoriquePacs();
         this.cdr.detectChanges();
@@ -594,18 +594,29 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     return this.paiementsEmis.filter(p => p.statut === 'PDNG' || !p.statut);
   }
 
-  get filteredAnnulations(): Camt056[] {
-    if (!this.searchAnnulations) return this.camt056List;
+ private readonly MY_BIC = 'BIATTNTT';
 
-    const q = this.searchAnnulations.toLowerCase();
+get camt056Recu(): Camt056[] {
+  return this.camt056List.filter(c =>
+    c.bicRecepteur?.toUpperCase() === this.MY_BIC
+  );
+}
 
-    return this.camt056List.filter(c =>
-      c.messageId?.toLowerCase().includes(q) ||
-      c.uetr?.toLowerCase().includes(q) ||
-      c.originalMsgId?.toLowerCase().includes(q)
-    );
-  }
+get filteredAnnulations(): Camt056[] {
+  const source = this.camt056Recu;
 
+  if (!this.searchAnnulations) return source;
+
+  const q = this.searchAnnulations.toLowerCase();
+
+  return source.filter(c =>
+    c.messageId?.toLowerCase().includes(q) ||
+    c.uetr?.toLowerCase().includes(q) ||
+    c.originalMsgId?.toLowerCase().includes(q) ||
+    c.bicEmetteur?.toLowerCase().includes(q) ||
+    c.bicRecepteur?.toLowerCase().includes(q)
+  );
+}
   get nbEntrantsEnAttente(): number {
     return this.paiementsEnAttente.length;
   }

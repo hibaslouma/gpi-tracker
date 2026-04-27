@@ -117,7 +117,13 @@ export class AppMenu implements OnInit, OnChanges {
                     icon: 'pi pi-fw pi-download',
                     routerLink: ['/client'],
                     queryParams: { tab: 'recus' }
-                }
+                },
+    {
+        label: 'Historique',
+        icon: 'pi pi-fw pi-history',
+        routerLink: ['/client'],
+        queryParams: { tab: 'historique' }
+    }
             ]
         }
     ];

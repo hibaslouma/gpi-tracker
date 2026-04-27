@@ -12,15 +12,18 @@ public class ClientRecuService {
     private final Pacs002ParserService pacs002ParserService;
     private final Pacs009ParserService pacs009ParserService;
     private final Camt029ParserService camt029ParserService;
+    private final Camt056ParserService camt056ParserService;
 
     public ClientRecuService(MxParserService mxParserService,
                              Pacs002ParserService pacs002ParserService,
                              Pacs009ParserService pacs009ParserService,
-                             Camt029ParserService camt029ParserService) {
+                             Camt029ParserService camt029ParserService,
+                             Camt056ParserService camt056ParserService) {
         this.mxParserService = mxParserService;
         this.pacs002ParserService = pacs002ParserService;
         this.pacs009ParserService = pacs009ParserService;
         this.camt029ParserService = camt029ParserService;
+        this.camt056ParserService = camt056ParserService;
     }
 
     public void clientRecu(Path file) {
@@ -31,13 +34,7 @@ public class ClientRecuService {
 
         try {
             String fileName = file.getFileName().toString();
-            String content  = Files.readString(file);
-
-            // ✅ Ignore generated camt.056 files — they are outgoing
-            if (fileName.startsWith("CAMT056-")) {
-                System.out.println("[ClientRecu]  Ignoring outgoing camt.056: " + fileName);
-                return;
-            }
+            String content = Files.readString(file);
 
             if (content.contains("xsd:pacs.008")) {
                 System.out.println("[ClientRecu]  Type détecté: pacs.008 (RECU)");
@@ -55,8 +52,11 @@ public class ClientRecuService {
                 System.out.println("[ClientRecu]  Type détecté: pacs.002");
                 pacs002ParserService.parsingPacs002(file);
 
+            } else if (content.contains("camt.056")) {
+                System.out.println("[ClientRecu]  Type détecté: camt.056 (RECU)");
+                camt056ParserService.parsingCamt056(file);
+
             } else if (content.contains("camt.029")) {
-                // ✅ camt.029 — response to our camt.056 cancellation
                 System.out.println("[ClientRecu]  Type détecté: camt.029");
                 camt029ParserService.parsingCamt029(file);
 
