@@ -89,6 +89,8 @@ export class RecapMgService {
 
   constructor(private http: HttpClient) {}
 
+  // ── Backoffice: all payments ────────────────────────────────
+
   getPaiementsRecus(): Observable<RecapMg[]> {
     return this.http.get<RecapMg[]>(`${this.api}/paiements-recus`);
   }
@@ -96,6 +98,18 @@ export class RecapMgService {
   getPaiementsEmis(): Observable<RecapMg[]> {
     return this.http.get<RecapMg[]>(`${this.api}/paiements-emis`);
   }
+
+  // ── Client: only payments of the logged-in client ───────────
+
+  getClientPaiementsRecus(): Observable<RecapMg[]> {
+    return this.http.get<RecapMg[]>(`${this.api}/client/paiements-recus`);
+  }
+
+  getClientPaiementsEmis(): Observable<RecapMg[]> {
+    return this.http.get<RecapMg[]>(`${this.api}/client/paiements-emis`);
+  }
+
+  // ── Stats ────────────────────────────────────────────────────
 
   getStats(): Observable<BackofficeStats> {
     return this.http.get<BackofficeStats>(`${this.api}/stats`);
@@ -109,6 +123,8 @@ export class RecapMgService {
     );
   }
 
+  // ── Historique ──────────────────────────────────────────────
+
   getHistorique(): Observable<HistoriqueItem[]> {
     return this.http.get<HistoriqueItem[]>(`${this.api}/historique`);
   }
@@ -121,6 +137,8 @@ export class RecapMgService {
     return this.http.get<Pacs002Recu[]>(`${this.api}/pacs002-recus`);
   }
 
+  // ── XML view ────────────────────────────────────────────────
+
   getXmlEmis(id: number): Observable<XmlResponse> {
     return this.http.get<XmlResponse>(`${this.api}/paiements-emis/${id}/xml`);
   }
@@ -129,7 +147,8 @@ export class RecapMgService {
     return this.http.get<XmlResponse>(`${this.api}/paiements-recus/${id}/xml`);
   }
 
-  // ── camt.056 ───────────────────────────────────────────────
+  // ── camt.056 / camt.029 ─────────────────────────────────────
+
   getCamt056(): Observable<Camt056[]> {
     return this.http.get<Camt056[]>(`${this.api}/camt056`);
   }
@@ -141,8 +160,7 @@ export class RecapMgService {
     });
   }
 
-  // ✅ Respond to incoming camt.056 — réponse annulation (ACCP or RJCT)
-  // Generates camt.029 and updates camt.056 statut
+  // Respond to incoming camt.056 — réponse annulation (ACCP or RJCT)
   repondreCamt056(
     id: number,
     decision: 'ACCP' | 'RJCT',
@@ -154,7 +172,7 @@ export class RecapMgService {
     });
   }
 
-  // Generate camt.029 directly by UETR (used by Camt029Controller)
+  // Generate camt.029 directly by UETR
   genererCamt029(uetr: string): Observable<any> {
     return this.http.post<any>(`${this.api}/camt029`, { uetr });
   }

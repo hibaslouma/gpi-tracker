@@ -2,8 +2,9 @@ package com.gpi.gpi_backend.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
+
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,6 +38,7 @@ public class User {
 
     @Column(name = "ACTIVE")
     private boolean active = true;
+
     @Column(name = "FIRST_LOGIN")
     private boolean firstLogin = true;
 
@@ -45,6 +47,14 @@ public class User {
 
     @Column(name = "LAST_LOGIN")
     private LocalDateTime lastLogin;
+
+    // 🔹 NEW: link to Keycloak user (sub claim)
+    @Column(name = "KEYCLOAK_ID", unique = true, length = 64)
+    private String keycloakId;
+
+    // 🔹 NEW: client's IBAN (one IBAN per user for now)
+    @Column(name = "IBAN", length = 34)
+    private String iban;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
