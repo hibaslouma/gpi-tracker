@@ -1,12 +1,19 @@
 <!-- TOAST -->
 <div [class]="'toast toast--' + toastType + (showToast ? ' show' : '')">
   <ng-container [ngSwitch]="toastType">
-    <svg *ngSwitchCase="'success'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-      <polyline points="20 6 9 17 4 12" /></svg>
-    <svg *ngSwitchCase="'error'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-    <svg *ngSwitchDefault width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-      <circle cx="12" cy="12" r="10" /></svg>
+    <svg *ngSwitchCase="'success'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2.5">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+    <svg *ngSwitchCase="'error'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2.5">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+    <svg *ngSwitchDefault width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2.5">
+      <circle cx="12" cy="12" r="10" />
+    </svg>
   </ng-container>
   {{ toastMessage }}
 </div>
@@ -14,7 +21,9 @@
 <div class="backoffice-wrapper">
   <main class="main-content">
 
-    <!-- DASHBOARD CLIENT -->
+    <!-- ═══════════════════════════════════════════════════
+         DASHBOARD CLIENT
+    ═══════════════════════════════════════════════════ -->
     <div *ngIf="isClient && activeTab==='dashboard'" class="tab-content client-dashboard">
       <div class="page-title">Tableau de Bord</div>
 
@@ -56,8 +65,8 @@
         <div class="card-header">
           <h2>Derniers paiements</h2>
           <button class="btn-navy" (click)="setActiveTab('vue-transactionnelle')">
-  Voir tout ›
-</button>
+            Voir tout ›
+          </button>
         </div>
 
         <table class="data-table">
@@ -98,7 +107,9 @@
       </div>
     </div>
 
-    <!-- DASHBOARD BACKOFFICE -->
+    <!-- ═══════════════════════════════════════════════════
+         DASHBOARD BACKOFFICE
+    ═══════════════════════════════════════════════════ -->
     <div *ngIf="(isBackoffice || isAdmin) && activeTab==='dashboard'" class="tab-content">
       <div class="page-title">Tableau de Bord</div>
 
@@ -171,9 +182,7 @@
                 </span>
               </div>
               <div class="statut-bar-track">
-                <div
-                  class="statut-bar-fill"
-                  [ngClass]="'bar-fill--' + item.statut.toLowerCase()"
+                <div class="statut-bar-fill" [ngClass]="'bar-fill--' + item.statut.toLowerCase()"
                   [style.width.%]="item.pct">
                 </div>
               </div>
@@ -202,10 +211,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr
-                *ngFor="let p of paiementsRecus.slice(0,5)"
-                (click)="setActiveTab('entrants')"
-                style="cursor:pointer">
+              <tr *ngFor="let p of paiementsRecus.slice(0,5)" (click)="setActiveTab('entrants')" style="cursor:pointer">
                 <td>
                   <span class="badge" [ngClass]="getStatutClass(p.statut)">
                     {{ p.statut }}
@@ -227,10 +233,7 @@
           <div class="card-header">
             <h2>
               Paiements entrants en attente
-              <span
-                class="menu-badge"
-                *ngIf="nbEntrantsEnAttente > 0"
-                style="margin-left:0.5rem">
+              <span class="menu-badge" *ngIf="nbEntrantsEnAttente > 0" style="margin-left:0.5rem">
                 {{ nbEntrantsEnAttente }}
               </span>
             </h2>
@@ -271,10 +274,7 @@
           <div class="card-header">
             <h2>
               Annulations en cours
-              <span
-                class="menu-badge"
-                *ngIf="nbAnnulationsPdng > 0"
-                style="margin-left:0.5rem">
+              <span class="menu-badge" *ngIf="nbAnnulationsPdng > 0" style="margin-left:0.5rem">
                 {{ nbAnnulationsPdng }}
               </span>
             </h2>
@@ -309,7 +309,9 @@
       </div>
     </div>
 
-    <!-- MES PAIEMENTS / PAIEMENTS SORTANTS -->
+    <!-- ═══════════════════════════════════════════════════
+         MES PAIEMENTS / PAIEMENTS SORTANTS
+    ═══════════════════════════════════════════════════ -->
     <div *ngIf="activeTab==='vue-transactionnelle'" class="tab-content">
       <div class="page-title">
         {{ isClient ? 'Mes Paiements' : 'Paiements Sortants (pacs.008 / pacs.009 Émis)' }}
@@ -321,15 +323,13 @@
             <h2>{{ isClient ? 'Mes messages SWIFT' : 'Messages SWIFT émis' }}</h2>
             <p class="content-sub">
               {{
-                isClient
-                  ? 'Paiements entrants et sortants'
-                  : 'Paiements envoyés par BIAT vers d’autres banques'
+              isClient
+              ? 'Paiements entrants et sortants'
+              : 'Paiements envoyés par BIAT vers d’autres banques'
               }}
             </p>
           </div>
-          <button
-            class="btn-refresh"
-            (click)="isClient ? loadHistoriquePacs() : loadPaiementsEmis()">
+          <button class="btn-refresh" (click)="isClient ? loadHistoriquePacs() : loadPaiementsEmis()">
             Actualiser
           </button>
         </div>
@@ -337,20 +337,12 @@
         <div class="filtres-bar">
           <!-- Client: UETR optional -->
           <div class="filtre-item filtre-search" *ngIf="isClient">
-            <input
-              type="text"
-              [(ngModel)]="clientUetrSearch"
-              placeholder="Filtrer par UETR (optionnel)..."
-            />
+            <input type="text" [(ngModel)]="clientUetrSearch" placeholder="Filtrer par UETR (optionnel)..." />
           </div>
 
           <!-- Backoffice/Admin: global search -->
           <div class="filtre-item filtre-search" *ngIf="!isClient">
-            <input
-              type="text"
-              [(ngModel)]="filtreEmisSearch"
-              placeholder="Rechercher messageId, UETR, BIC..."
-            />
+            <input type="text" [(ngModel)]="filtreEmisSearch" placeholder="Rechercher messageId, UETR, BIC..." />
           </div>
 
           <div class="filtre-item">
@@ -374,16 +366,10 @@
             </select>
           </div>
 
-          <button
-            *ngIf="isClient"
-            class="btn-reset"
-            (click)="resetRechercheClient()">
+          <button *ngIf="isClient" class="btn-reset" (click)="resetRechercheClient()">
             Réinitialiser
           </button>
-          <button
-            *ngIf="!isClient"
-            class="btn-reset"
-            (click)="resetFiltresEmis()">
+          <button *ngIf="!isClient" class="btn-reset" (click)="resetFiltresEmis()">
             Réinitialiser
           </button>
         </div>
@@ -415,34 +401,28 @@
               </tr>
             </thead>
             <tbody>
-              <tr
-                *ngFor="let p of (isClient ? clientMesPaiementsFiltres : paiementsEmisFiltres)">
+              <tr *ngFor="let p of (isClient ? clientMesPaiementsFiltres : paiementsEmisFiltres)">
                 <td *ngIf="isClient">
-                  <span
-                    *ngIf="p.typeMsg === 'EMIS'"
+                  <span *ngIf="p.typeMsg === 'EMIS'"
                     style="background:#eff6ff;color:#2563eb;border:1.5px solid #2563eb;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
                     ↑ EMIS
                   </span>
-                  <span
-                    *ngIf="p.typeMsg === 'RECU'"
+                  <span *ngIf="p.typeMsg === 'RECU'"
                     style="background:#f0fdf4;color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
                     ↓ RECU
                   </span>
                 </td>
                 <td><strong>{{ p.messageId }}</strong></td>
                 <td>
-                  <span
-                    *ngIf="p.msgType === 'pacs.008' || !p.msgType"
+                  <span *ngIf="p.msgType === 'pacs.008' || !p.msgType"
                     style="background:#eff6ff;color:#3b82f6;border:1.5px solid #3b82f6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
                     pacs.008
                   </span>
-                  <span
-                    *ngIf="p.msgType === 'pacs.009'"
+                  <span *ngIf="p.msgType === 'pacs.009'"
                     style="background:#f5f3ff;color:#8b5cf6;border:1.5px solid #8b5cf6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
                     pacs.009
                   </span>
-                  <span
-                    *ngIf="p.msgType === 'pacs.009.COV'"
+                  <span *ngIf="p.msgType === 'pacs.009.COV'"
                     style="background:#fdf4ff;color:#a855f7;border:1.5px solid #a855f7;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
                     pacs.009 COV
                   </span>
@@ -461,16 +441,10 @@
                   </span>
                 </td>
                 <td>
-                  <button
-                    class="btn-xml"
-                    *ngIf="!isClient && p.typeMsg === 'EMIS'"
-                    (click)="voirXmlEmis(p)">
+                  <button class="btn-xml" *ngIf="!isClient && p.typeMsg === 'EMIS'" (click)="voirXmlEmis(p)">
                     XML
                   </button>
-                  <button
-                    class="btn-xml"
-                    *ngIf="!isClient && p.typeMsg === 'RECU'"
-                    (click)="voirXmlRecu(p)">
+                  <button class="btn-xml" *ngIf="!isClient && p.typeMsg === 'RECU'" (click)="voirXmlRecu(p)">
                     XML
                   </button>
                   <button class="btn-timeline" (click)="voirTimelineEmis(p)">
@@ -483,7 +457,7 @@
                 <td colspan="11" class="empty-state">Aucun paiement trouvé</td>
               </tr>
               <tr *ngIf="!isClient && paiementsEmisFiltres.length === 0">
-                <td colspan="10" class="empty-state">Aucun paiement trouvé</td>
+                <td colspan="11" class="empty-state">Aucun paiement trouvé</td>
               </tr>
             </tbody>
           </table>
@@ -491,7 +465,9 @@
       </div>
     </div>
 
-    <!-- PAIEMENTS ENTRANTS (BACKOFFICE) -->
+    <!-- ═══════════════════════════════════════════════════
+         PAIEMENTS ENTRANTS (BACKOFFICE)
+    ═══════════════════════════════════════════════════ -->
     <div *ngIf="(isBackoffice || isAdmin) && activeTab==='entrants'" class="tab-content">
       <div class="page-title">Paiements Entrants (pacs.008 / pacs.009 reçus)</div>
 
@@ -510,10 +486,7 @@
 
         <div class="filtres-bar">
           <div class="filtre-item filtre-search">
-            <input
-              type="text"
-              [(ngModel)]="filtreSearch"
-              placeholder="Rechercher messageId, expéditeur..." />
+            <input type="text" [(ngModel)]="filtreSearch" placeholder="Rechercher messageId, expéditeur..." />
           </div>
           <div class="filtre-item">
             <select [(ngModel)]="filtreStatut">
@@ -572,18 +545,15 @@
               <tr *ngFor="let p of paiementsRecusFiltres">
                 <td><strong>{{ p.messageId }}</strong></td>
                 <td>
-                  <span
-                    *ngIf="p.msgType === 'pacs.008' || !p.msgType"
+                  <span *ngIf="p.msgType === 'pacs.008' || !p.msgType"
                     style="background:#eff6ff;color:#3b82f6;border:1.5px solid #3b82f6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
                     pacs.008
                   </span>
-                  <span
-                    *ngIf="p.msgType === 'pacs.009'"
+                  <span *ngIf="p.msgType === 'pacs.009'"
                     style="background:#f5f3ff;color:#8b5cf6;border:1.5px solid #8b5cf6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
                     pacs.009
                   </span>
-                  <span
-                    *ngIf="p.msgType === 'pacs.009.COV'"
+                  <span *ngIf="p.msgType === 'pacs.009.COV'"
                     style="background:#fdf4ff;color:#a855f7;border:1.5px solid #a855f7;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;white-space:nowrap">
                     pacs.009 COV
                   </span>
@@ -601,9 +571,7 @@
                 <td>{{ p.devise }}</td>
                 <td>{{ p.dateValeur }}</td>
                 <td>
-                  <span
-                    class="badge"
-                    [ngClass]="getStatutClass(p.statut || 'PDNG')">
+                  <span class="badge" [ngClass]="getStatutClass(p.statut || 'PDNG')">
                     {{ p.statut || 'PDNG' }}
                   </span>
                 </td>
@@ -612,9 +580,7 @@
                     <button class="btn-xml" (click)="voirXmlRecu(p)">
                       XML
                     </button>
-                    <button
-                      *ngIf="isBackoffice || isAdmin"
-                      class="btn-accepter"
+                    <button *ngIf="isBackoffice || isAdmin" class="btn-accepter"
                       (click)="ouvrirModalTraitement(p)">
                       Traiter
                     </button>
@@ -638,18 +604,496 @@
         </div>
       </div>
     </div>
+
     <!-- ═══════════════════════════════════════════════════
+         DEMANDE ANNULATION (camt.056)
+    ═══════════════════════════════════════════════════ -->
+    <div *ngIf="(isBackoffice || isAdmin) && activeTab==='annulation'" class="tab-content">
+      <div class="page-title">Demande d'Annulation</div>
+
+      <div class="content-card">
+        <div class="card-header">
+          <div>
+            <h2>camt.056 — Annulation de paiement émis</h2>
+            <p class="content-sub">
+              Uniquement pour paiements émis (EMIS) avec statut PDNG
+            </p>
+          </div>
+        </div>
+
+        <div class="info-box">
+          Le camt.056 est une demande d'annulation envoyée à la banque
+          destinataire pour un paiement que vous avez émis (pacs.008 EMIS).
+          La banque répondra par un camt.029.
+        </div>
+
+        <div class="form-group">
+          <label>Paiement émis à annuler <span class="required">*</span></label>
+          <select [(ngModel)]="annulationMessageId" class="select-uetr">
+            <option value="">-- Sélectionnez un paiement PDNG --</option>
+            <option *ngFor="let p of paiementsAnnulables" [value]="p.messageId">
+              MSGID: {{ p.messageId }} | UETR: {{ p.uetr || '—' }} |
+              {{ p.receiverBic }} |
+              {{ formatMontant(p.montant) }} {{ p.devise }}
+            </option>
+          </select>
+          <small *ngIf="paiementsAnnulables.length === 0" style="color:#cc0000">
+            ⚠️ Aucun paiement émis annulable (statut PDNG requis)
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Motif d'Annulation <span class="required">*</span></label>
+          <select [(ngModel)]="annulationMotif">
+            <option value="DUPL">DUPL — Duplicate payment</option>
+            <option value="FRAD">FRAD — Fraudulent origin</option>
+            <option value="UPAY">UPAY — Undue payment</option>
+            <option value="CUST">CUST — Requested by customer</option>
+            <option value="TECH">TECH — Technical error</option>
+            <option value="AGNT">AGNT — Agent error</option>
+            <option value="AM09">AM09 — Incorrect amount</option>
+            <option value="NARR">NARR — Narrative</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Détail Narratif</label>
+          <textarea [(ngModel)]="annulationRaison" placeholder="Précisions sur la demande d'annulation..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-danger" (click)="envoyerAnnulation()" [disabled]="camt056EnvoisEnCours">
+            {{ camt056EnvoisEnCours ? 'Envoi...' : 'Envoyer camt.056' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         SUIVI ANNULATIONS (camt.029)
+    ═══════════════════════════════════════════════════ -->
+    <div *ngIf="(isBackoffice || isAdmin) && activeTab==='annulations'" class="tab-content">
+      <div class="page-title">Suivi des Annulations</div>
+
+      <div class="content-card">
+        <div class="card-header">
+          <div>
+            <h2>camt.056 envoyés — Réponses camt.029</h2>
+            <p class="content-sub">
+              Suivi des demandes d'annulation et réponses reçues
+            </p>
+          </div>
+          <button class="btn-refresh" (click)="loadCamt056()">
+            Actualiser
+          </button>
+        </div>
+
+        <div class="search-section">
+          <div class="search-wrapper">
+            <input class="search-input" type="text" placeholder="Rechercher référence, UETR..."
+              [(ngModel)]="searchAnnulations" />
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Réf. camt.056</th>
+                <th>Pacs.008 Original</th>
+                <th>UETR</th>
+                <th>BIC Émetteur</th>
+                <th>BIC Récepteur</th>
+                <th>Motif</th>
+                <th>Détail</th>
+                <th>Date Envoi</th>
+                <th>Statut camt.029</th>
+                <th>Motif Refus</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let a of filteredAnnulations">
+                <td><strong>{{ a.messageId }}</strong></td>
+                <td><strong>{{ a.originalMsgId }}</strong></td>
+                <td class="uetr-cell" [title]="a.uetr">
+                  {{ a.uetr || '—' }}
+                </td>
+                <td><strong>{{ a.bicEmetteur }}</strong></td>
+                <td><strong>{{ a.bicRecepteur }}</strong></td>
+                <td>{{ a.motif }}</td>
+                <td class="motif-cell">
+                  {{ a.motifDetail || '—' }}
+                </td>
+                <td>{{ a.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getAnnulStatutClass(a.statut)">
+                    {{ getAnnulStatutLabel(a.statut) }}
+                  </span>
+                </td>
+                <td>
+                  <span *ngIf="a.motifRefus" class="motif-rejet">
+                    {{ a.motifRefus }}
+                  </span>
+                  <span *ngIf="!a.motifRefus" class="text-light">—</span>
+                </td>
+                <td>
+                  <div *ngIf="a.statut === 'PDNG'" style="display:flex;gap:8px;align-items:center">
+                    <button class="btn-accepter" (click)="repondreAnnulation(a, 'ACCP')">
+                      Accepter
+                    </button>
+
+                    <select [(ngModel)]="motifRefusCamt029" style="max-width:90px">
+                      <option value="AGNT">AGNT</option>
+                      <option value="CUST">CUST</option>
+                      <option value="LEGL">LEGL</option>
+                      <option value="NARR">NARR</option>
+                    </select>
+
+                    <button class="btn-danger" (click)="repondreAnnulation(a, 'RJCT')">
+                      Rejeter
+                    </button>
+                  </div>
+
+                  <span *ngIf="a.statut !== 'PDNG'" class="text-light">
+                    Déjà traité
+                  </span>
+                </td>
+              </tr>
+
+              <tr *ngIf="filteredAnnulations.length === 0">
+                <td colspan="11" class="empty-state">
+                  Aucune annulation trouvée
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         HISTORIQUE (MX)
+    ═══════════════════════════════════════════════════ -->
+    <div *ngIf="activeTab==='historique'" class="tab-content">
+      <div class="page-title">Historique Messages MX</div>
+      <div class="content-card">
+        <div class="card-header">
+          <div>
+            <h2>Tous les messages échangés</h2>
+            <p class="content-sub">pacs.008 / pacs.002 / camt.056 / camt.029</p>
+          </div>
+        </div>
+        <div class="filtres-bar">
+          <div class="filtre-item filtre-search">
+            <input type="text" [(ngModel)]="filtreHistoriqueSearch" placeholder="Rechercher messageId, BIC..." />
+          </div>
+          <div class="filtre-item">
+            <select [(ngModel)]="filtreHistoriqueType">
+              <option value="">Tous les types</option>
+              <option value="pacs.008">pacs.008</option>
+              <option value="pacs.002">pacs.002</option>
+            </select>
+          </div>
+          <div class="filtre-item">
+            <select [(ngModel)]="filtreHistoriqueStatut">
+              <option value="">Tous les statuts</option>
+              <option value="PDNG">PDNG</option>
+              <option value="ACCP">ACCP</option>
+              <option value="ACSP">ACSP</option>
+              <option value="ACSC">ACSC</option>
+              <option value="RJCT">RJCT</option>
+              <option value="CANC">CANC</option>
+            </select>
+          </div>
+          <button class="btn-reset" (click)="resetFiltresHistorique()">
+            Réinitialiser
+          </button>
+        </div>
+        <div class="filtres-count">
+          {{ historiqueFiltres.length }} résultat(s) sur
+          {{ historiqueReel.length }} messages
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Message ID</th>
+                <th>BIC Expéditeur</th>
+                <th>BIC Destinataire</th>
+                <th>Montant</th>
+                <th>Devise</th>
+                <th>Statut</th>
+                <th>Motif Rejet</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let h of historiqueFiltres">
+                <td>
+                  <span class="badge"
+                    [ngClass]="h.type === 'pacs.008' ? 'badge-msg-pacs' : 'badge-acsc'">
+                    {{ h.type }}
+                  </span>
+                </td>
+                <td><strong>{{ h.messageId }}</strong></td>
+                <td><strong>{{ h.senderBic }}</strong></td>
+                <td>{{ h.receiverBic }}</td>
+                <td class="montant-cell">{{ formatMontant(h.montant) }}</td>
+                <td>{{ h.devise }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getStatutClass(h.statut)">
+                    {{ h.statut }}
+                  </span>
+                </td>
+                <td>{{ h.motifRejet || '—' }}</td>
+                <td>{{ h.date | date: 'dd/MM/yyyy HH:mm' }}</td>
+              </tr>
+              <tr *ngIf="historiqueFiltres.length === 0">
+                <td colspan="9" class="empty-state">Aucun historique</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         HISTORIQUE PACS
+    ═══════════════════════════════════════════════════ -->
+    <div *ngIf="activeTab==='historique-pacs'" class="tab-content">
+      <div class="page-title">Historique des Messages pacs</div>
+      <div class="content-card">
+        <div class="card-header">
+          <div>
+            <h2>Tous les messages pacs.008 / pacs.009</h2>
+            <p class="content-sub">
+              Paiements entrants (RECU) et sortants (EMIS) — pacs.002 exclus
+            </p>
+          </div>
+          <button class="btn-refresh" (click)="loadHistoriquePacs()">
+            Actualiser
+          </button>
+        </div>
+        <div class="filtres-bar">
+          <div class="filtre-item filtre-search">
+            <input type="text" [(ngModel)]="filtreHistPacsSearch" placeholder="Rechercher messageId, BIC..." />
+          </div>
+          <div class="filtre-item">
+            <select [(ngModel)]="filtreHistPacsDirection">
+              <option value="">Tous (RECU + EMIS)</option>
+              <option value="RECU">RECU — Entrants</option>
+              <option value="EMIS">EMIS — Sortants</option>
+            </select>
+          </div>
+          <div class="filtre-item">
+            <select [(ngModel)]="filtreHistPacsType">
+              <option value="">Tous les types</option>
+              <option value="pacs.008">pacs.008</option>
+              <option value="pacs.009">pacs.009</option>
+              <option value="pacs.009.COV">pacs.009 COV</option>
+            </select>
+          </div>
+          <div class="filtre-item">
+            <select [(ngModel)]="filtreHistPacsStatut">
+              <option value="">Tous les statuts</option>
+              <option value="PDNG">PDNG</option>
+              <option value="ACCP">ACCP</option>
+              <option value="ACSC">ACSC</option>
+              <option value="RJCT">RJCT</option>
+              <option value="CANC">CANC</option>
+            </select>
+          </div>
+          <button class="btn-reset" (click)="resetFiltresHistPacs()">
+            Réinitialiser
+          </button>
+        </div>
+        <div class="filtres-count">
+          {{ historiquePacsFiltres.length }} résultat(s) sur
+          {{ historiquePacs.length }} messages
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Direction</th>
+                <th>Type MSG</th>
+                <th>Message ID</th>
+                <th>UETR</th>
+                <th>BIC Expéditeur</th>
+                <th>BIC Destinataire</th>
+                <th>Montant</th>
+                <th>Devise</th>
+                <th>Statut</th>
+                <th>Date Réception</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of historiquePacsFiltres">
+                <td>
+                  <span *ngIf="p.typeMsg === 'RECU'"
+                    style="background:#f0fdf4;color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
+                    ↓ RECU
+                  </span>
+                  <span *ngIf="p.typeMsg === 'EMIS'"
+                    style="background:#eff6ff;color:#2563eb;border:1.5px solid #2563eb;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
+                    ↑ EMIS
+                  </span>
+                </td>
+                <td>
+                  <span *ngIf="p.msgType === 'pacs.008' || !p.msgType"
+                    style="background:#eff6ff;color:#3b82f6;border:1.5px solid #3b82f6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
+                    pacs.008
+                  </span>
+                  <span *ngIf="p.msgType === 'pacs.009'"
+                    style="background:#f5f3ff;color:#8b5cf6;border:1.5px solid #8b5cf6;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
+                    pacs.009
+                  </span>
+                  <span *ngIf="p.msgType === 'pacs.009.COV'"
+                    style="background:#fdf4ff;color:#a855f7;border:1.5px solid #a855f7;border-radius:6px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700">
+                    pacs.009 COV
+                  </span>
+                </td>
+                <td><strong>{{ p.messageId }}</strong></td>
+                <td class="uetr-cell" [title]="p.uetr">
+                  {{ p.uetr || '—' }}
+                </td>
+                <td><strong>{{ p.senderBic }}</strong></td>
+                <td><strong>{{ p.receiverBic }}</strong></td>
+                <td class="montant-cell">{{ formatMontant(p.montant) }}</td>
+                <td>{{ p.devise }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getStatutClass(p.statut || 'PDNG')">
+                    {{ p.statut || 'PDNG' }}
+                  </span>
+                </td>
+                <td>{{ p.receivedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              </tr>
+              <tr *ngIf="historiquePacsFiltres.length === 0">
+                <td colspan="10" class="empty-state">
+                  Aucun message pacs trouvé
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL : TRAITEMENT pacs.008 REÇU
+═══════════════════════════════════════════════════ -->
+<div *ngIf="showTraitementModal" class="modal-overlay" (click)="fermerTraitementModal()">
+  <div class="modal-box modal-traitement" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        Traiter — {{ paiementATraiter?.messageId }}
+      </h3>
+      <button class="modal-close" (click)="fermerTraitementModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="traitement-info-grid">
+        <div class="traitement-info-item">
+          <span class="traitement-label">Expéditeur</span>
+          <span class="traitement-value">{{ paiementATraiter?.senderBic }}</span>
+        </div>
+        <div class="traitement-info-item">
+          <span class="traitement-label">Destinataire</span>
+          <span class="traitement-value">{{ paiementATraiter?.receiverBic }}</span>
+        </div>
+        <div class="traitement-info-item">
+          <span class="traitement-label">Montant</span>
+          <span class="traitement-value">
+            {{ formatMontant(paiementATraiter?.montant) }}
+            {{ paiementATraiter?.devise }}
+          </span>
+        </div>
+        <div class="traitement-info-item">
+          <span class="traitement-label">UETR</span>
+          <span class="traitement-value mono" style="font-size:0.75rem">
+            {{ paiementATraiter?.uetr || '—' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:1.25rem">
+        <label>Nouveau Statut ISO <span class="required">*</span></label>
+        <select [(ngModel)]="modalNouveauStatut">
+          <option value="ACCP">ACCP — Accepté (vérification technique OK)</option>
+          <option value="ACSP">ACSP — Règlement en cours</option>
+          <option value="ACSC">ACSC — Crédit confirmé ✅</option>
+          <option value="RJCT">RJCT — Rejeté ❌</option>
+        </select>
+      </div>
+
+      <div *ngIf="modalNouveauStatut === 'RJCT'" class="rejet-section">
+        <div class="form-group">
+          <label>Code Motif de Rejet <span class="required">*</span></label>
+          <select [(ngModel)]="modalMotifRejet">
+            <optgroup label="── Compte ──">
+              <option value="AC01">AC01 — IBAN incorrect</option>
+              <option value="AC04">AC04 — Compte clôturé</option>
+              <option value="AC06">AC06 — Compte bloqué</option>
+              <option value="AM04">AM04 — Provision insuffisante</option>
+            </optgroup>
+            <optgroup label="── Banque ──">
+              <option value="AGNT">AGNT — Agent incorrect</option>
+            </optgroup>
+            <optgroup label="── Paiement ──">
+              <option value="FF01">FF01 — Format invalide</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-actions" style="margin-top:1rem">
+        <button class="btn-primary" (click)="confirmerTraitement()" [disabled]="modalEnvoi">
+          {{ modalEnvoi ? 'Envoi...' : 'Envoyer pacs.002' }}
+        </button>
+        <button class="btn-secondary" (click)="fermerTraitementModal()">
+          Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL : XML
+═══════════════════════════════════════════════════ -->
+<div *ngIf="showXmlModal" class="modal-overlay" (click)="fermerXmlModal()">
+  <div class="modal-box modal-xml" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>XML — {{ xmlFileName }}</h3>
+      <button class="modal-close" (click)="fermerXmlModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <pre class="xml-content">{{ xmlContent }}</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
      MODAL : TIMELINE PAIEMENT ÉMIS
 ═══════════════════════════════════════════════════ -->
 <div *ngIf="showTimelineModal" class="modal-overlay" (click)="fermerTimelineModal()">
   <div class="modal-box modal-timeline" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="20" x2="12" y2="10" />
-          <line x1="18" y1="20" x2="18" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="16" />
-        </svg>
         Timeline — {{ timelinePaiement?.messageId }}
       </h3>
       <button class="modal-close" (click)="fermerTimelineModal()">
@@ -660,17 +1104,16 @@
       </button>
     </div>
     <div class="modal-body">
-
-      <!-- Info bar -->
       <div class="timeline-modal-info">
         <span><strong>UETR:</strong> {{ timelinePaiement?.uetr || '—' }}</span>
-        <span><strong>Montant:</strong> {{ formatMontant(timelinePaiement?.montant) }} {{ timelinePaiement?.devise }}</span>
+        <span><strong>Montant:</strong> {{ formatMontant(timelinePaiement?.montant) }} {{ timelinePaiement?.devise
+          }}</span>
         <span><strong>Vers:</strong> {{ timelinePaiement?.receiverBic }}</span>
       </div>
 
       <div class="msg-timeline">
 
-        <!-- STEP 1: pacs.008/pacs.009 envoyé -->
+        <!-- STEP 1: Envoi pacs -->
         <div class="msg-step">
           <div class="msg-step-icon badge-acsc">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -693,9 +1136,8 @@
           </div>
         </div>
 
-        <!-- STEP 2a: pacs.002 reçu (pas d’annulation) -->
+        <!-- STEP 2a: pacs.002 (pas d’annulation) -->
         <ng-container *ngIf="!getCamt056ForPaiement(timelinePaiement)">
-
           <div class="msg-step" *ngIf="timelinePaiement?.statut && timelinePaiement?.statut !== 'PDNG'">
             <div class="msg-step-icon" [ngClass]="getStatutClass(timelinePaiement?.statut || '')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -738,21 +1180,17 @@
           </div>
         </ng-container>
 
-        <!-- STEP 2b: camt.056 + camt.029 (annulation) -->
+        <!-- STEP 2b: camt.056 / camt.029 -->
         <ng-container *ngIf="getCamt056ForPaiement(timelinePaiement) as camt056">
           <div class="msg-step">
-            <div
-              class="msg-step-icon"
-              [style.background]="'#fef9c3'"
-              [style.border-color]="'#ca8a04'"
+            <div class="msg-step-icon" [style.background]="'#fef9c3'" [style.border-color]="'#ca8a04'"
               style="border:2px solid #ca8a04">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
               </svg>
             </div>
-            <div
-              class="msg-step-line"
+            <div class="msg-step-line"
               *ngIf="hasCancellationPending(timelinePaiement) || hasCancellationAccepted(timelinePaiement) || hasCancellationRejected(timelinePaiement)">
             </div>
             <div class="msg-step-body">
@@ -837,16 +1275,3 @@
     </div>
   </div>
 </div>
-
-    <!-- DEMANDE ANNULATION, SUIVI ANNULATIONS, HISTORIQUE, HISTORIQUE PACS -->
-    <!-- (sections identical to your current ones except unchanged; keep what you have) -->
-
-    <!-- For brevity, I won't repeat all of them here; keep your existing
-         annulation / annulations / historique / historique-pacs sections as they were,
-         since we did not change their structure beyond what you already have. -->
-
-  </main>
-</div>
-
-<!-- MODAL TRAITEMENT, XML, TIMELINE -->
-<!-- Keep your existing modal blocks (they already match the TS) -->
