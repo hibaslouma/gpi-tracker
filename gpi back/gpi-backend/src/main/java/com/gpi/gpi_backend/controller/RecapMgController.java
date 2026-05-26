@@ -20,7 +20,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import com.gpi.gpi_backend.dto.AiPredictionResponse;
+import com.gpi.gpi_backend.service.AiService;
 @RestController
 @RequestMapping("/api/backoffice")
 @RequiredArgsConstructor
@@ -28,6 +29,7 @@ public class RecapMgController {
 
     private final RecapMgRepository recapMgRepository;
     private final Pacs002GeneratorService pacs002GeneratorService;
+    private final AiService aiService;
 
     @Value("${watcher.output-folder-path}")
     private String outputFolderPath;
@@ -153,6 +155,32 @@ public class RecapMgController {
             System.err.println("[RecapMgController]  Erreur lecture pacs.002 : "
                     + e.getMessage());
             return ResponseEntity.ok().build();
+        }
+    }
+    @GetMapping("/paiements/{id}/ai-prediction")
+    public ResponseEntity<Map<String, Object>> getAiPrediction(@PathVariable Long id) {
+        RecapMg recap = recapMgRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Paiement introuvable"));
+
+        // Appel Flask pour SHAP frais
+        try {
+            AiPredictionResponse prediction = aiService.predict(recap);
+            Map<String, Object> result = new HashMap<>();
+            result.put("status",           prediction.getStatus());
+            result.put("reject_reason",    prediction.getRejectReason());
+            result.put("risk_score",       prediction.getRiskScore());
+            result.put("confidence",       prediction.getConfidence());
+            result.put("shap_explanation", prediction.getShapExplanation());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            // Retourner les données stockées si Flask est down
+            Map<String, Object> fallback = new HashMap<>();
+            fallback.put("status",        recap.getAiStatus());
+            fallback.put("reject_reason", recap.getAiRejectReason());
+            fallback.put("risk_score",    recap.getAiRiskScore());
+            fallback.put("confidence",    recap.getAiConfidence());
+            fallback.put("shap_explanation", List.of());
+            return ResponseEntity.ok(fallback);
         }
     }
 

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08">
+  <FIToFICstmrCdtTrf>
+    <GrpHdr>
+      <MsgId>MSG-TEST-005-AG02</MsgId>
+      <CreDtTm>2024-06-15T14:00:00</CreDtTm>
+      <NbOfTxs>1</NbOfTxs>
+      <SttlmInf>
+        <SttlmMtd>CLRG</SttlmMtd>
+      </SttlmInf>
+    </GrpHdr>
+    <CdtTrfTxInf>
+      <PmtId>
+        <EndToEndId>E2E-TEST-005</EndToEndId>
+        <UETR>550e8400-e29b-41d4-a716-446655440005</UETR>
+      </PmtId>
+      <!-- Devise invalide : XYZ n'existe pas dans ISO 4217 -->
+      <IntrBkSttlmAmt Ccy="XYZ">22000.00</IntrBkSttlmAmt>
+      <IntrBkSttlmDt>2024-06-15</IntrBkSttlmDt>
+      <Dbtr>
+        <Nm>ING Bank Nederland</Nm>
+        <PstlAdr>
+          <StrtNm>Bijlmerplein</StrtNm>
+          <BldgNb>888</BldgNb>
+          <PstCd>1102 MG</PstCd>
+          <TwnNm>Amsterdam</TwnNm>
+          <Ctry>NL</Ctry>
+        </PstlAdr>
+      </Dbtr>
+      <DbtrAcct>
+        <Id>
+          <IBAN>NL91ABNA0417164300</IBAN>
+        </Id>
+      </DbtrAcct>
+      <DbtrAgt>
+        <FinInstnId>
+          <BICFI>INGBNL2A</BICFI>
+        </FinInstnId>
+      </DbtrAgt>
+      <CdtrAgt>
+        <FinInstnId>
+          <BICFI>BNPAFRPP</BICFI>
+        </FinInstnId>
+      </CdtrAgt>
+      <Cdtr>
+        <Nm>BNP Paribas France</Nm>
+        <PstlAdr>
+          <StrtNm>Boulevard des Italiens</StrtNm>
+          <BldgNb>16</BldgNb>
+          <PstCd>75009</PstCd>
+          <TwnNm>Paris</TwnNm>
+          <Ctry>FR</Ctry>
+        </PstlAdr>
+      </Cdtr>
+      <CdtrAcct>
+        <Id>
+          <IBAN>FR7630006000011234567890189</IBAN>
+        </Id>
+      </CdtrAcct>
+    </CdtTrfTxInf>
+  </FIToFICstmrCdtTrf>
+</Document>

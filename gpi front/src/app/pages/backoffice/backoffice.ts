@@ -54,6 +54,7 @@ export interface NouveauPaiement {
 })
 export class BackofficeComponent implements OnInit, OnDestroy {
 
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -789,4 +790,73 @@ get filteredAnnulations(): Camt056[] {
       maximumFractionDigits: 2
     }) || '0,00';
   }
+ // ===== IA MODULE — VERSION RÉELLE =====
+
+showAiModal = false;
+aiResult: any = null;
+aiLoading = false;
+Math = Math;
+
+voirPredictionIA(p: RecapMg): void {
+  // Utiliser les données déjà stockées en base
+  this.aiResult = {
+    status      : p.aiStatus       || 'N/A',
+    reject_reason: p.aiRejectReason || null,
+    risk_score  : p.aiRiskScore     ?? null,
+    confidence  : p.aiConfidence    || 'N/A',
+    explanation : [],
+    interpretation: this.buildInterpretation(p),
+  };
+  this.showAiModal = true;
+  this.aiLoading = true;
+
+  // Appel Spring Boot → Flask pour SHAP frais
+  this.recapMgService.getPredictionIA(p.id).subscribe({
+    next: (data) => {
+      if (data?.shap_explanation) {
+        this.aiResult.explanation = data.shap_explanation;
+      }
+      this.aiLoading = false;
+      this.cdr.detectChanges();
+    },
+    error: () => {
+      this.aiLoading = false;
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+private buildInterpretation(p: RecapMg): string {
+  if (!p.aiStatus || p.aiStatus === 'N/A') {
+    return 'Aucune analyse IA disponible pour cette transaction.';
+  }
+  if (p.aiStatus === 'ACCP') {
+    return `Transaction acceptée avec un score de risque de ${p.aiRiskScore?.toFixed(4) ?? '—'}. 
+            Tous les champs SWIFT ont passé les contrôles du modèle.`;
+  }
+  const motifs: Record<string, string> = {
+    'AC01': 'IBAN destinataire invalide ou pays inconnu.',
+    'AC04': 'Compte destinataire clôturé (IBAN trop court).',
+    'AC06': 'Compte destinataire bloqué.',
+    'AC13': 'Compte émetteur invalide.',
+    'AG01': 'BIC destinataire appartient à un pays sous embargo SWIFT.',
+    'AG02': 'Devise non reconnue dans la norme ISO 4217.',
+    'AGNT': 'Les deux BIC (émetteur et destinataire) sont structurellement invalides.',
+    'AM01': 'Montant quasi-nul (inférieur à 0,50 €).',
+    'AM02': `Montant de ${p.montant?.toLocaleString('fr-FR')} ${p.devise} dépasse le plafond réglementaire de 500 000 €.`,
+    'AM04': `Montant de ${p.montant?.toLocaleString('fr-FR')} ${p.devise} suggère une provision insuffisante.`,
+    'AM09': 'Montant avec 3 décimales — format invalide selon pacs.008.',
+    'FF01': 'Type de message SWIFT non reconnu.',
+  };
+  return motifs[p.aiRejectReason] || `Transaction rejetée — motif : ${p.aiRejectReason}.`;
+}
+
+fermerPredictionIA(): void {
+  this.showAiModal = false;
+  this.aiResult = null;
+}
+parseConfidence(conf: string | undefined): number {
+  if (!conf) return 0;
+  return parseFloat(conf.replace('%', '')) || 0;
+}
 }

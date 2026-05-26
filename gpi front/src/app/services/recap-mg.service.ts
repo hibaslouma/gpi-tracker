@@ -23,6 +23,10 @@ export interface RecapMg {
   receivedAt: string;
   statut: string;
   motifRejet: string;
+   aiStatus: string;
+  aiRejectReason: string;
+  aiRiskScore: number;
+  aiConfidence: string;
 }
 
 export interface BackofficeStats {
@@ -92,6 +96,10 @@ export class RecapMgService {
   getPaiementsRecus(): Observable<RecapMg[]> {
     return this.http.get<RecapMg[]>(`${this.api}/paiements-recus`);
   }
+  // Dans recap-mg.service.ts
+getPredictionIA(id: number): Observable<any> {
+  return this.http.get<any>(`${this.api}/paiements/${id}/ai-prediction`);
+}
 
   getPaiementsEmis(): Observable<RecapMg[]> {
     return this.http.get<RecapMg[]>(`${this.api}/paiements-emis`);

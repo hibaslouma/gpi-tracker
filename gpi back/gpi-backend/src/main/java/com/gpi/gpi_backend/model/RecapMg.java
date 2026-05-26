@@ -75,6 +75,17 @@ public class RecapMg {
 
     @Column(name = "MOTIF_REJET", length = 10)
     private String motifRejet;
+    @Column(name = "AI_STATUS", length = 10)
+    private String aiStatus;
+
+    @Column(name = "AI_REJECT_REASON", length = 10)
+    private String aiRejectReason;
+
+    @Column(name = "AI_RISK_SCORE")
+    private Double aiRiskScore;
+
+    @Column(name = "AI_CONFIDENCE", length = 10)
+    private String aiConfidence;
 
     @PrePersist
     public void prePersist() {

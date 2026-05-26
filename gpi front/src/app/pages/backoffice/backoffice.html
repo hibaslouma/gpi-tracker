@@ -279,6 +279,9 @@
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
                       Timeline
                     </button>
+                    <button class="btn-ai" (click)="voirPredictionIA(p)">
+                      Voir prédiction IA
+    </button>
                   </div>
                 </td>
               </tr>
@@ -380,6 +383,9 @@
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                       XML
                     </button>
+                    <button class="btn-ai" (click)="voirPredictionIA(p)">
+                       Voir prédiction IA
+</button>
                     <button *ngIf="p.statut === 'PDNG' || !p.statut" class="btn-accepter" (click)="ouvrirModalTraitement(p)">
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                       Traiter
@@ -387,6 +393,7 @@
                     <span *ngIf="p.statut === 'ACSC'" class="badge badge-acsc">Accepté ✅</span>
                     <span *ngIf="p.statut === 'RJCT'" class="badge badge-rjct">Rejeté ❌</span>
                     <span *ngIf="p.statut === 'CANC'" class="badge badge-canc">Annulé</span>
+
                   </div>
                 </td>
               </tr>
@@ -917,6 +924,137 @@
         </ng-container>
 
       </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="showAiModal" class="modal-overlay" (click)="fermerPredictionIA()">
+  <div class="modal-box modal-ai" (click)="$event.stopPropagation()">
+
+    <div class="ai-header">
+      <div>
+        <h3> Résultat de la prédiction IA</h3>
+        <p>Analyse automatique du paiement SWIFT</p>
+      </div>
+      <button class="modal-close" (click)="fermerPredictionIA()">×</button>
+    </div>
+
+    <!-- ── Chargement initial ── -->
+    <div *ngIf="!aiResult" style="padding:2.5rem;text-align:center;color:#64748b">
+      <div style="font-size:1.5rem;margin-bottom:0.5rem">⏳</div>
+      <p style="font-size:0.88rem">Chargement de l'analyse IA...</p>
+    </div>
+
+    <div class="ai-body" *ngIf="aiResult">
+
+      <!-- ── Résumé statut + risk ── -->
+      <div class="ai-summary-grid">
+
+        <!-- Carte statut -->
+        <div class="ai-card ai-card-status" [class.ai-card-danger]="aiResult.status === 'RJCT'">
+          <span class="ai-label">Statut prédit</span>
+          <div class="ai-status-line">
+            <span class="ai-icon-danger" *ngIf="aiResult.status === 'RJCT'">✕</span>
+            <span class="ai-icon-success" *ngIf="aiResult.status === 'ACCP'">✓</span>
+            <span class="ai-icon-success" *ngIf="aiResult.status === 'N/A'"
+                  style="background:#94a3b8">?</span>
+            <strong [style.color]="aiResult.status === 'RJCT' ? '#dc2626' :
+                                   aiResult.status === 'ACCP' ? '#16a34a' : '#94a3b8'">
+              {{ aiResult.status }}
+            </strong>
+          </div>
+          <small *ngIf="aiResult.reject_reason"
+                 style="background:#fee2e2;color:#dc2626;padding:0.25rem 0.6rem;
+                        border-radius:20px;font-weight:700;font-size:0.78rem">
+            {{ aiResult.reject_reason }}
+          </small>
+          <small *ngIf="!aiResult.reject_reason" style="color:#64748b">
+            Aucune anomalie détectée
+          </small>
+        </div>
+
+        <!-- Carte risk score + confidence -->
+        <div class="ai-card">
+          <span class="ai-label">Risk Score</span>
+          <div class="ai-score"
+               [style.color]="(aiResult.risk_score ?? 0) > 0.5 ? '#dc2626' : '#16a34a'">
+            {{ aiResult.risk_score != null ? (aiResult.risk_score | number:'1.4-4') : '—' }}
+          </div>
+          <div class="ai-progress">
+            <div class="ai-progress-fill"
+                 [class.danger]="(aiResult.risk_score ?? 0) > 0.5"
+                 [class.success]="(aiResult.risk_score ?? 0) <= 0.5"
+                 [style.width.%]="(aiResult.risk_score ?? 0) * 100">
+            </div>
+          </div>
+
+          <span class="ai-label mt">Confidence</span>
+          <div class="ai-confidence">{{ aiResult.confidence || '—' }}</div>
+          <div class="ai-progress">
+            <div class="ai-progress-fill success"
+                 [style.width.%]="parseConfidence(aiResult.confidence)">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section SHAP ── -->
+      <div class="ai-section">
+        <div class="ai-section-title">
+          <span> Explication SHAP</span>
+          <small>Facteurs qui influencent la décision</small>
+        </div>
+
+        <!-- Chargement SHAP -->
+        <div *ngIf="aiLoading"
+             style="text-align:center;padding:1.5rem;color:#94a3b8;font-size:0.82rem">
+           Chargement des explications SHAP...
+        </div>
+
+        <!-- Lignes SHAP -->
+        <ng-container *ngIf="!aiLoading">
+          <div *ngFor="let item of aiResult.explanation" class="shap-row">
+            <div class="shap-feature">{{ item.feature }}</div>
+            <div class="shap-track">
+              <div class="shap-fill"
+                   [style.width.%]="Math.min(Math.abs(item.impact) * 25, 100)"
+                   [class.positive]="item.impact > 0"
+                   [class.negative]="item.impact < 0">
+              </div>
+            </div>
+            <div class="shap-value"
+                 [class.pos]="item.impact > 0"
+                 [class.neg]="item.impact < 0">
+              {{ item.impact > 0 ? '+' : '' }}{{ item.impact | number:'1.2-4' }}
+            </div>
+          </div>
+
+          <!-- Légende -->
+          <div class="shap-legend" *ngIf="aiResult.explanation?.length > 0">
+            <span class="neg-dot"></span> Favorise ACCP
+            <span class="pos-dot"></span> Favorise RJCT
+          </div>
+
+          <!-- Pas de SHAP dispo -->
+          <div *ngIf="!aiResult.explanation || aiResult.explanation.length === 0"
+               style="text-align:center;padding:1.5rem;color:#94a3b8;font-size:0.82rem;
+                      background:#f8fafc;border-radius:10px">
+            Détail SHAP non disponible
+            <br><small>L'API IA est peut-être hors ligne</small>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- ── Interprétation ── -->
+      <div class="ai-interpretation">
+        <strong> Interprétation</strong>
+        <p>{{ aiResult.interpretation || 'Décision calculée par le modèle IA.' }}</p>
+      </div>
+
+      <!-- ── Actions ── -->
+      <div class="ai-actions">
+        <button class="btn-secondary" (click)="fermerPredictionIA()">Fermer</button>
+      </div>
+
     </div>
   </div>
 </div>

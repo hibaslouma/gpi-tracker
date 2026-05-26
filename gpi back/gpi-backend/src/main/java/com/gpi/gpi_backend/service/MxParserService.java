@@ -13,12 +13,14 @@ import javax.xml.xpath.*;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import com.gpi.gpi_backend.dto.AiPredictionResponse;
 
 @Service
 @RequiredArgsConstructor
 public class MxParserService {
 
     private final RecapMgRepository recapMgRepository;
+    private final AiService aiService;
 
     public void parsingMx(Path file, String typeMsg) {
         System.out.println("[MxParser] 🔍 Parsing pacs.008: " + file.getFileName());
@@ -95,6 +97,27 @@ public class MxParserService {
                     .build();
 
             recapMgRepository.save(recap);
+
+// ── Analyse IA ────────────────────────────────────────────
+            try {
+                AiPredictionResponse prediction = aiService.predict(recap);
+                if (prediction != null) {
+                    recap.setAiStatus(prediction.getStatus());
+                    recap.setAiRejectReason(prediction.getRejectReason());
+                    recap.setAiRiskScore(prediction.getRiskScore());
+                    recap.setAiConfidence(prediction.getConfidence());
+                    recapMgRepository.save(recap);   // 2e save avec les résultats IA
+
+                    System.out.println("[MxParser] 🤖 IA → "
+                            + prediction.getStatus()
+                            + (prediction.getRejectReason() != null
+                            ? " (" + prediction.getRejectReason() + ")" : "")
+                            + " | risk=" + prediction.getRiskScore()
+                            + " | confiance=" + prediction.getConfidence());
+                }
+            } catch (Exception e) {
+                System.err.println("[MxParser] ⚠️ IA non disponible : " + e.getMessage());
+            }
 
             System.out.println("[MxParser] ✅ Saved pacs.008 to RECAP_MG:"
                     + "\n  messageId  : " + messageId
