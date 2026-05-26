@@ -59,8 +59,5 @@ public class AdminUserController {
         }
     }
 
-    @GetMapping("/{id}/logs")
-    public ResponseEntity<List<?>> getLogs(@PathVariable String id) {
-        return ResponseEntity.ok(List.of());
-    }
+
 }

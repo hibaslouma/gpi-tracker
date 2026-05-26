@@ -12,79 +12,20 @@ import {
   Pacs002Recu,
   Camt056
 } from '../../services/recap-mg.service';
+import {
+  StatutISO,
+  MotifRejet,
+  MotifRefusCamt,
+  Charge,
+  Agent,
+  MessageTrace,
+  Transaction,
+  PaiementEntrant,
+  Annulation,
+  NouveauPaiement
+} from './backoffice.model';
 
-export type StatutISO = 'PDNG' | 'ACCP' | 'ACSP' | 'ACSC' | 'RJCT' | 'CANC';
-export type MotifRejet = 'AC01' | 'AC04' | 'AG01' | 'FF01' | 'MS03' | 'NARR';
-export type MotifRefusCamt = 'LEGL' | 'CUST' | 'AGET' | 'NARR';
-
-export interface Charge {
-  bic: string;
-  pays: string;
-  montant: number;
-  devise: string;
-  type: 'SHA' | 'OUR' | 'BEN';
-}
-export interface Agent {
-  bic: string;
-  pays: string;
-  role: 'emetteur' | 'intermediaire' | 'recepteur';
-  statut: 'confirme' | 'en-transit' | 'en-attente';
-  dateHeure?: string;
-  ref?: string;
-  charges: Charge[];
-}
-export interface MessageTrace {
-  type: 'pacs.008' | 'pacs.002' | 'camt.056' | 'camt.029';
-  dateHeure: string;
-  statut: StatutISO;
-  ref: string;
-  detail?: string;
-}
-export interface Transaction {
-  statutISO: StatutISO;
-  uetr: string;
-  bicEmetteur: string;
-  bicRecepteur: string;
-  montant: number;
-  devise: string;
-  date: string;
-  agents: Agent[];
-  messages: MessageTrace[];
-  motifRejet?: MotifRejet;
-  motifRejetDetail?: string;
-  delaiGPI?: number;
-}
-export interface PaiementEntrant {
-  statutISO: StatutISO;
-  uetr: string;
-  bicEmetteur: string;
-  montant: number;
-  devise: string;
-  date: string;
-  motif: string;
-  typeCharges: 'SHA' | 'OUR' | 'BEN';
-  motifRejet?: MotifRejet;
-  motifRejetDetail?: string;
-}
-export interface Annulation {
-  reference: string;
-  uetr: string;
-  bicEmetteur: string;
-  motif: string;
-  motifDetail?: string;
-  date: string;
-  statutReponse: 'PDNG' | 'ACCP' | 'RJCT';
-  motifRefus?: MotifRefusCamt;
-  reponse: string;
-}
-export interface NouveauPaiement {
-  bicDestinataire: string;
-  iban: string;
-  montant: number;
-  devise: 'TND' | 'EUR' | 'USD' | 'GBP';
-  typeCharges: 'SHA' | 'OUR' | 'BEN';
-  motif: string;
-}
+// ─── the rest of the file is UNCHANGED from here ───────────────
 
 @Component({
   selector: 'app-backoffice',
@@ -257,17 +198,14 @@ export class BackofficeComponent implements OnInit, OnDestroy {
 
   // ── Mes Paiements (client) ──────────────────────────────────
 
-  // UETR filter (optional – not mandatory anymore)
   clientUetrSearch = '';
 
-  // All client payments (incoming + outgoing) based on IBAN filter from backend
   get clientMesPaiements(): RecapMg[] {
     return this.historiquePacs.filter(
       p => p.typeMsg === 'EMIS' || p.typeMsg === 'RECU'
     );
   }
 
-  // Filtered by optional UETR + status + currency
   get clientMesPaiementsFiltres(): RecapMg[] {
     const base = this.clientMesPaiements;
     const q = this.clientUetrSearch.toLowerCase().trim();
@@ -283,9 +221,7 @@ export class BackofficeComponent implements OnInit, OnDestroy {
     });
   }
 
-  rechercherClientPaiement(): void {
-    // plus de logique spéciale : filtre réactif via [(ngModel)]
-  }
+  rechercherClientPaiement(): void {}
 
   resetRechercheClient(): void {
     this.clientUetrSearch = '';
