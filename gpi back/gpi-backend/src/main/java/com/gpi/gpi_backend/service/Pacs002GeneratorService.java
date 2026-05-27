@@ -145,10 +145,10 @@ public class Pacs002GeneratorService {
             return fileName;
 
         } catch (IOException e) {
-            System.err.println("[Pacs002GeneratorService]  Erreur écriture : " + e.getMessage());
+            System.err.println("[Pacs002GeneratorService] ❌ Erreur écriture : " + e.getMessage());
             throw new RuntimeException("Erreur écriture pacs.002", e);
         } catch (Exception e) {
-            System.err.println("[Pacs002GeneratorService]  Erreur Prowide : " + e.getMessage());
+            System.err.println("[Pacs002GeneratorService] ❌ Erreur Prowide : " + e.getMessage());
             throw new RuntimeException("Erreur Prowide pacs.002", e);
         }
     }

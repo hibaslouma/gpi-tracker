@@ -5,13 +5,11 @@ import com.gpi.gpi_backend.service.BanqueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/banques")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
 public class BanqueController {
 
     private final BanqueService service;
@@ -32,8 +30,7 @@ public class BanqueController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BanqueDTO> update(@PathVariable Long id,
-                                            @RequestBody BanqueDTO dto) {
+    public ResponseEntity<BanqueDTO> update(@PathVariable Long id, @RequestBody BanqueDTO dto) {
         return ResponseEntity.ok(service.update(id, dto));
     }
 

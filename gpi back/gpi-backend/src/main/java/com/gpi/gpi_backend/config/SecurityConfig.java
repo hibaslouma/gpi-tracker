@@ -1,4 +1,5 @@
 package com.gpi.gpi_backend.config;
+
 import org.springframework.web.client.RestTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,15 +34,15 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(s -> s
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/admin/**").hasRole("Admin")
+                        .requestMatchers("/api/backoffice/**").hasAnyRole("Admin", "Backoffice", "Client")
+                        .requestMatchers("/api/banques/**").hasAnyRole("Admin", "Backoffice", "Client")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                        )
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 );
         return http.build();
     }
@@ -77,6 +78,7 @@ public class SecurityConfig {
         });
         return converter;
     }
+
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();

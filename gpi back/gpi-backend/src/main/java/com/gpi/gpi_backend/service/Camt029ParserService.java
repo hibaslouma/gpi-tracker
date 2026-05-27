@@ -87,7 +87,7 @@ public class Camt029ParserService {
                     + camt056.getMessageId() + " → " + statut);
 
         } catch (Exception e) {
-            System.err.println("[Camt029Parser]  Error: "
+            System.err.println("[Camt029Parser] ❌ Error: "
                     + file.getFileName() + " → " + e.getMessage());
             throw new RuntimeException("Camt029 parsing failed: " + e.getMessage(), e);
         }
