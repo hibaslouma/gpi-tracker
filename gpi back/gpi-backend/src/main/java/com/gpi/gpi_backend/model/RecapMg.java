@@ -27,7 +27,7 @@ public class RecapMg {
     @Column(name = "TYPE_MSG", length = 10)
     private String typeMsg;
 
-
+    // ✅ New: stores pacs.008 / pacs.009 / pacs.009.COV
     @Column(name = "MSG_TYPE", length = 20)
     private String msgType;
 

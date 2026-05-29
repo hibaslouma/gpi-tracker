@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
 public class AuthController {
 
     private final KeycloakAdminService keycloakAdminService;
@@ -24,7 +23,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final AdminUserService adminUserService;
 
-    // ✅ Endpoint 1 — récupérer firstLogin après login
+    // ── GET /me — récupérer firstLogin après login ─────────────
     @GetMapping("/me")
     public ResponseEntity<UserDTO> me(@AuthenticationPrincipal Jwt jwt) {
         String email = jwt.getClaimAsString("email");
@@ -32,7 +31,7 @@ public class AuthController {
         UserDTO dto = new UserDTO();
         dto.setEmail(email);
 
-        // ✅ si utilisateur pas dans Oracle (ex: Super Admin Keycloak)
+        // Si utilisateur pas dans Oracle (ex: Super Admin Keycloak)
         // → firstLogin = false par défaut
         userRepository.findByEmail(email).ifPresentOrElse(
                 user -> {
@@ -42,7 +41,7 @@ public class AuthController {
                     dto.setActive(user.isActive());
                 },
                 () -> {
-                    dto.setFirstLogin(false); // ✅ Admin Keycloak → pas de reset forcé
+                    dto.setFirstLogin(false);
                     dto.setRole("Admin");
                 }
         );
@@ -50,7 +49,7 @@ public class AuthController {
         return ResponseEntity.ok(dto);
     }
 
-    // ✅ Endpoint 2 — changer mot de passe première connexion
+    // ── POST /change-password — changer mot de passe ───────────
     @PostMapping("/change-password")
     public ResponseEntity<Void> changePassword(
             @RequestBody ChangePasswordRequest req ,
@@ -77,5 +76,4 @@ public class AuthController {
         adminUserService.finaliserInscription(email);
         return ResponseEntity.ok().build();
     }
-
 }

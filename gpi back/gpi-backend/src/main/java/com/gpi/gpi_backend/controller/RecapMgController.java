@@ -1,8 +1,10 @@
 package com.gpi.gpi_backend.controller;
 
 import com.gpi.gpi_backend.model.RecapMg;
+import com.gpi.gpi_backend.model.User;
 import com.gpi.gpi_backend.repository.RecapMgRepository;
 import com.gpi.gpi_backend.service.Pacs002GeneratorService;
+import com.gpi.gpi_backend.service.UserProvisioningService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -10,6 +12,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -22,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import com.gpi.gpi_backend.dto.AiPredictionResponse;
 import com.gpi.gpi_backend.service.AiService;
+import java.util.*;
+
 @RestController
 @RequestMapping("/api/backoffice")
 @RequiredArgsConstructor
@@ -30,6 +36,7 @@ public class RecapMgController {
     private final RecapMgRepository recapMgRepository;
     private final Pacs002GeneratorService pacs002GeneratorService;
     private final AiService aiService;
+    private final UserProvisioningService userProvisioningService;
 
     @Value("${watcher.output-folder-path}")
     private String outputFolderPath;
@@ -40,7 +47,7 @@ public class RecapMgController {
     @Value("${watcher.pacs002-folder-path}")
     private String pacs002FolderPath;
 
-    // ── GET paiements ──────────────────────────────────────────
+    // ── GET paiements (backoffice – all) ──────────────────────────
     @GetMapping("/paiements-recus")
     public ResponseEntity<List<RecapMg>> getPaiementsRecus() {
         return ResponseEntity.ok(recapMgRepository.findByTypeMsg("RECU"));
@@ -49,6 +56,45 @@ public class RecapMgController {
     @GetMapping("/paiements-emis")
     public ResponseEntity<List<RecapMg>> getPaiementsEmis() {
         return ResponseEntity.ok(recapMgRepository.findByTypeMsg("EMIS"));
+    }
+
+    // ── NEW: GET paiements for logged-in client (filtered by IBAN) ─────────
+
+    /**
+     * Client incoming payments.
+     * typeMsg = 'RECU' and receiverIban = user's IBAN
+     */
+    @GetMapping("/client/paiements-recus")
+    public ResponseEntity<List<RecapMg>> getClientPaiementsRecus(@AuthenticationPrincipal Jwt jwt) {
+
+        User user = userProvisioningService.ensureUserFromJwt(jwt);
+        String iban = user.getIban();
+
+        if (iban == null || iban.isBlank()) {
+            // No IBAN set for this local user → no client-specific transactions
+            return ResponseEntity.ok(List.of());
+        }
+
+        List<RecapMg> list = recapMgRepository.findByTypeMsgAndReceiverIban("RECU", iban);
+        return ResponseEntity.ok(list);
+    }
+
+    /**
+     * Client outgoing payments.
+     * typeMsg = 'EMIS' and senderIban = user's IBAN
+     */
+    @GetMapping("/client/paiements-emis")
+    public ResponseEntity<List<RecapMg>> getClientPaiementsEmis(@AuthenticationPrincipal Jwt jwt) {
+
+        User user = userProvisioningService.ensureUserFromJwt(jwt);
+        String iban = user.getIban();
+
+        if (iban == null || iban.isBlank()) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        List<RecapMg> list = recapMgRepository.findByTypeMsgAndSenderIban("EMIS", iban);
+        return ResponseEntity.ok(list);
     }
 
     // ── GET XML files ──────────────────────────────────────────
@@ -67,10 +113,12 @@ public class RecapMgController {
                     "content", "<!-- Fichier XML introuvable dans l'archive -->"));
         }
         try {
-            return ResponseEntity.ok(Map.of("fileName", recap.getFileName(),
+            return ResponseEntity.ok(Map.of(
+                    "fileName", recap.getFileName(),
                     "content", Files.readString(archivePath)));
         } catch (IOException e) {
-            return ResponseEntity.ok(Map.of("fileName", recap.getFileName(),
+            return ResponseEntity.ok(Map.of(
+                    "fileName", recap.getFileName(),
                     "content", "<!-- Erreur lecture: " + e.getMessage() + " -->"));
         }
     }
@@ -87,10 +135,12 @@ public class RecapMgController {
                     "content", "<!-- Fichier XML introuvable dans l'archive -->"));
         }
         try {
-            return ResponseEntity.ok(Map.of("fileName", recap.getFileName(),
+            return ResponseEntity.ok(Map.of(
+                    "fileName", recap.getFileName(),
                     "content", Files.readString(archivePath)));
         } catch (IOException e) {
-            return ResponseEntity.ok(Map.of("fileName", recap.getFileName(),
+            return ResponseEntity.ok(Map.of(
+                    "fileName", recap.getFileName(),
                     "content", "<!-- Erreur lecture: " + e.getMessage() + " -->"));
         }
     }
@@ -104,8 +154,10 @@ public class RecapMgController {
         stats.put("totalRecus", (long) recus.size());
         stats.put("enAttente", recus.stream().filter(r -> "PDNG".equals(r.getStatut())).count());
         stats.put("acceptes", recus.stream()
-                .filter(r -> "ACSC".equals(r.getStatut()) || "ACCP".equals(r.getStatut())
-                        || "ACSP".equals(r.getStatut())).count());
+                .filter(r -> "ACSC".equals(r.getStatut())
+                        || "ACCP".equals(r.getStatut())
+                        || "ACSP".equals(r.getStatut()))
+                .count());
         stats.put("rejetes", recus.stream().filter(r -> "RJCT".equals(r.getStatut())).count());
 
         List<RecapMg> emis = recapMgRepository.findByTypeMsg("EMIS");
@@ -133,11 +185,11 @@ public class RecapMgController {
         if (motifRejet != null) recap.setMotifRejet(motifRejet);
         recapMgRepository.save(recap);
 
-        // ✅ Generate pacs.002 → saved in pacs002 folder
+        // Generate pacs.002
         String generatedFileName = pacs002GeneratorService
                 .genererPacs002AvecProwide(recap, nouveauStatut, motifRejet);
 
-        // ✅ Read generated file and return as downloadable XML
+        // Read generated file and return as downloadable XML
         try {
             Path filePath = Paths.get(pacs002FolderPath).resolve(generatedFileName);
             byte[] fileContent = Files.readAllBytes(filePath);

@@ -21,31 +21,35 @@ export class RedirectComponent implements OnInit {
     this.authService.getMe().subscribe({
       next: (me) => {
         if (me.firstLogin) {
-          // ✅ Première connexion → changer le mot de passe
           this.router.navigateByUrl('/auth/change-password');
           return;
         }
-        // ✅ Rediriger selon le rôle
-        const roles = this.keycloak.getUserRoles();
-        if (roles.includes('Admin')) {
-          this.router.navigateByUrl('/admin');
-        } else if (roles.includes('Backoffice')) {
-          this.router.navigateByUrl('/backoffice');
-        } else {
-          this.router.navigateByUrl('/client');
-        }
+
+        this.redirectByRole();
       },
       error: () => {
-        // Si /me échoue, rediriger selon le rôle
-        const roles = this.keycloak.getUserRoles();
-        if (roles.includes('Admin')) {
-          this.router.navigateByUrl('/admin');
-        } else if (roles.includes('Backoffice')) {
-          this.router.navigateByUrl('/backoffice');
-        } else {
-          this.router.navigateByUrl('/client');
-        }
+        this.redirectByRole();
       }
     });
+  }
+
+  private redirectByRole(): void {
+    const roles = this.keycloak.getUserRoles();
+
+    sessionStorage.setItem('role',
+      roles.includes('Admin')
+        ? 'Admin'
+        : roles.includes('Backoffice')
+          ? 'Backoffice'
+          : 'Client'
+    );
+
+    if (roles.includes('Admin')) {
+      this.router.navigateByUrl('/admin');
+    } else if (roles.includes('Backoffice')) {
+      this.router.navigateByUrl('/backoffice');
+    } else {
+      this.router.navigateByUrl('/client');
+    }
   }
 }
