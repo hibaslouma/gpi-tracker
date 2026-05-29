@@ -985,31 +985,44 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════
-     MODAL : TRAITEMENT pacs.008 REÇU
+     MODAL : TRAITEMENT pacs.008 REÇU + IA
 ═══════════════════════════════════════════════════ -->
 <div *ngIf="showTraitementModal" class="modal-overlay" (click)="fermerTraitementModal()">
   <div class="modal-box modal-traitement" (click)="$event.stopPropagation()">
+
     <div class="modal-header">
       <h3>
         Traiter — {{ paiementATraiter?.messageId }}
       </h3>
+
       <button class="modal-close" (click)="fermerTraitementModal()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5">
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
     </div>
+
     <div class="modal-body">
+
+      <!-- INFOS PAIEMENT -->
       <div class="traitement-info-grid">
+
         <div class="traitement-info-item">
           <span class="traitement-label">Expéditeur</span>
-          <span class="traitement-value">{{ paiementATraiter?.senderBic }}</span>
+          <span class="traitement-value">
+            {{ paiementATraiter?.senderBic }}
+          </span>
         </div>
+
         <div class="traitement-info-item">
           <span class="traitement-label">Destinataire</span>
-          <span class="traitement-value">{{ paiementATraiter?.receiverBic }}</span>
+          <span class="traitement-value">
+            {{ paiementATraiter?.receiverBic }}
+          </span>
         </div>
+
         <div class="traitement-info-item">
           <span class="traitement-label">Montant</span>
           <span class="traitement-value">
@@ -1017,52 +1030,183 @@
             {{ paiementATraiter?.devise }}
           </span>
         </div>
+
         <div class="traitement-info-item">
           <span class="traitement-label">UETR</span>
           <span class="traitement-value mono" style="font-size:0.75rem">
             {{ paiementATraiter?.uetr || '—' }}
           </span>
         </div>
+
       </div>
+
+      <!-- ===================================================== -->
+      <!-- IA PREDICTION -->
+      <!-- ===================================================== -->
+
+      <div class="ai-box">
+
+        <div class="ai-header">
+          🤖 Analyse IA Anti-Rejet
+        </div>
+
+        <button class="btn-ai"
+                (click)="predictAi(paiementATraiter)">
+          Lancer Analyse IA
+        </button>
+
+        <div *ngIf="aiLoading" class="ai-loading">
+          Analyse IA en cours...
+        </div>
+
+        <div *ngIf="aiPrediction && !aiLoading" class="ai-result">
+
+          <div class="ai-score-row">
+
+            <div class="ai-score-card success">
+              <div class="ai-score-title">
+                Acceptation
+              </div>
+
+              <div class="ai-score-value">
+                {{ aiPrediction.acceptanceProbability }}%
+              </div>
+            </div>
+
+            <div class="ai-score-card danger">
+              <div class="ai-score-title">
+                Rejet
+              </div>
+
+              <div class="ai-score-value">
+                {{ aiPrediction.rejectionProbability }}%
+              </div>
+            </div>
+
+          </div>
+
+          <div class="ai-status">
+
+            <span
+              [ngClass]="{
+                'ai-badge-green': aiPrediction.prediction === 'ACCEPTED',
+                'ai-badge-red': aiPrediction.prediction === 'REJECTED'
+              }">
+
+              {{
+                aiPrediction.prediction === 'ACCEPTED'
+                  ? 'Paiement probablement ACCEPTÉ'
+                  : 'Paiement probablement REJETÉ'
+              }}
+
+            </span>
+
+          </div>
+
+          <!-- RAISONS -->
+          <div class="ai-reasons">
+
+            <h4>Raisons détectées :</h4>
+
+            <ul>
+              <li *ngFor="let reason of aiPrediction.reasons">
+                {{ reason }}
+              </li>
+            </ul>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ===================================================== -->
+      <!-- TRAITEMENT -->
+      <!-- ===================================================== -->
 
       <div class="form-group" style="margin-top:1.25rem">
-        <label>Nouveau Statut ISO <span class="required">*</span></label>
+
+        <label>
+          Nouveau Statut ISO
+          <span class="required">*</span>
+        </label>
+
         <select [(ngModel)]="modalNouveauStatut">
-          <option value="ACCP">ACCP — Accepté (vérification technique OK)</option>
-          <option value="ACSP">ACSP — Règlement en cours</option>
-          <option value="ACSC">ACSC — Crédit confirmé ✅</option>
-          <option value="RJCT">RJCT — Rejeté ❌</option>
+
+          <option value="ACCP">
+            ACCP — Accepté (vérification technique OK)
+          </option>
+
+          <option value="ACSP">
+            ACSP — Règlement en cours
+          </option>
+
+          <option value="ACSC">
+            ACSC — Crédit confirmé ✅
+          </option>
+
+          <option value="RJCT">
+            RJCT — Rejeté ❌
+          </option>
+
         </select>
+
       </div>
 
-      <div *ngIf="modalNouveauStatut === 'RJCT'" class="rejet-section">
+      <!-- REJET -->
+      <div *ngIf="modalNouveauStatut === 'RJCT'"
+           class="rejet-section">
+
         <div class="form-group">
-          <label>Code Motif de Rejet <span class="required">*</span></label>
+
+          <label>
+            Code Motif de Rejet
+            <span class="required">*</span>
+          </label>
+
           <select [(ngModel)]="modalMotifRejet">
+
             <optgroup label="── Compte ──">
               <option value="AC01">AC01 — IBAN incorrect</option>
               <option value="AC04">AC04 — Compte clôturé</option>
               <option value="AC06">AC06 — Compte bloqué</option>
               <option value="AM04">AM04 — Provision insuffisante</option>
             </optgroup>
+
             <optgroup label="── Banque ──">
               <option value="AGNT">AGNT — Agent incorrect</option>
             </optgroup>
+
             <optgroup label="── Paiement ──">
               <option value="FF01">FF01 — Format invalide</option>
             </optgroup>
+
           </select>
+
         </div>
+
       </div>
 
+      <!-- ACTIONS -->
       <div class="form-actions" style="margin-top:1rem">
-        <button class="btn-primary" (click)="confirmerTraitement()" [disabled]="modalEnvoi">
+
+        <button class="btn-primary"
+                (click)="confirmerTraitement()"
+                [disabled]="modalEnvoi">
+
           {{ modalEnvoi ? 'Envoi...' : 'Envoyer pacs.002' }}
+
         </button>
-        <button class="btn-secondary" (click)="fermerTraitementModal()">
+
+        <button class="btn-secondary"
+                (click)="fermerTraitementModal()">
+
           Annuler
+
         </button>
+
       </div>
+
     </div>
   </div>
 </div>

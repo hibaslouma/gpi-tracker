@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+<RequestPayload>
+<head:AppHdr xmlns:head="urn:iso:std:iso:20022:tech:xsd:head.001.001.02">
+    <head:Fr>
+        <head:FIId>
+            <head:FinInstnId>
+                <head:BICFI>BIATTNTT</head:BICFI>
+            </head:FinInstnId>
+        </head:FIId>
+    </head:Fr>
+    <head:To>
+        <head:FIId>
+            <head:FinInstnId>
+                <head:BICFI>EXTBTNTT</head:BICFI>
+            </head:FinInstnId>
+        </head:FIId>
+    </head:To>
+    <head:BizMsgIdr>ACK-MSG-CLIENT-A-001-20260501_174046</head:BizMsgIdr>
+    <head:MsgDefIdr>pacs.002.001.10</head:MsgDefIdr>
+    <head:CreDt>2026-05-01T17:40:47.0000109+01:00</head:CreDt>
+</head:AppHdr>
+<pacs:Document xmlns:pacs="urn:iso:std:iso:20022:tech:xsd:pacs.002.001.10">
+    <pacs:FIToFIPmtStsRpt>
+        <pacs:GrpHdr>
+            <pacs:MsgId>ACK-MSG-CLIENT-A-001-20260501_174046</pacs:MsgId>
+            <pacs:CreDtTm>2026-05-01T16:40:47.0010161+00:00</pacs:CreDtTm>
+        </pacs:GrpHdr>
+        <pacs:TxInfAndSts>
+            <pacs:OrgnlGrpInf>
+                <pacs:OrgnlMsgId>MSG-CLIENT-A-001</pacs:OrgnlMsgId>
+                <pacs:OrgnlMsgNmId>pacs.008.001.08</pacs:OrgnlMsgNmId>
+            </pacs:OrgnlGrpInf>
+            <pacs:OrgnlUETR>aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa</pacs:OrgnlUETR>
+            <pacs:TxSts>ACSC</pacs:TxSts>
+        </pacs:TxInfAndSts>
+    </pacs:FIToFIPmtStsRpt>
+</pacs:Document>
+</RequestPayload>
+</data>

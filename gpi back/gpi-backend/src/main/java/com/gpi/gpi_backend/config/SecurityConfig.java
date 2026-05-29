@@ -63,24 +63,31 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
+
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-            Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
-            if (realmAccess == null) return Collections.emptyList();
+
+            Map<String, Object> realmAccess =
+                    jwt.getClaimAsMap("realm_access");
+
+            if (realmAccess == null)
+                return Collections.emptyList();
 
             @SuppressWarnings("unchecked")
-            List<String> roles = (List<String>) realmAccess.get("roles");
-            if (roles == null) return Collections.emptyList();
+            List<String> roles =
+                    (List<String>) realmAccess.get("roles");
+
+            if (roles == null)
+                return Collections.emptyList();
 
             return roles.stream()
                     .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
                     .collect(Collectors.toList());
         });
+
         return converter;
     }
 
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
 }
+

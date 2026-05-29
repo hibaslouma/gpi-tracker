@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { KeycloakService } from 'keycloak-angular';
+import { AiService } from '../../services/ai.service';
+import { HttpClient } from '@angular/common/http';
 import {
   RecapMgService,
   RecapMg,
@@ -25,6 +27,7 @@ import {
   NouveauPaiement
 } from './backoffice.model';
 
+
 // ─── the rest of the file is UNCHANGED from here ───────────────
 
 @Component({
@@ -36,13 +39,22 @@ import {
 })
 export class BackofficeComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  aiResult: any = null;
+
+  loadingAi = false;
+  // AI Prediction
+aiLoading: boolean = false;
+
+aiPrediction: any = null;
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
     private recapMgService: RecapMgService,
     private cdr: ChangeDetectorRef,
-    private keycloak: KeycloakService
+    private keycloak: KeycloakService,
+    private aiService: AiService,
+    private http: HttpClient
   ) {}
 
   // ── Roles / user ─────────────────────────────────────────────
@@ -1049,4 +1061,54 @@ export class BackofficeComponent implements OnInit, OnDestroy {
       }) || '0,00'
     );
   }
+ predictAi(paiement: any): void {
+
+  if (!paiement) {
+    return;
+  }
+
+  this.aiLoading = true;
+
+  this.aiPrediction = null;
+
+  const payload = {
+
+    amount: paiement.montant || 0,
+
+    currency: paiement.devise || '',
+
+    sender_bic: paiement.senderBic || '',
+
+    receiver_bic: paiement.receiverBic || '',
+
+    message_type: paiement.msgType || 'pacs.008'
+
+  };
+
+  this.http.post<any>(
+    'http://localhost:5000/predict',
+    payload
+  ).subscribe({
+
+    next: (response) => {
+
+      this.aiPrediction = response;
+
+      this.aiLoading = false;
+
+      console.log('AI Prediction:', response);
+    },
+
+    error: (error) => {
+
+      console.error('AI Error:', error);
+
+      this.aiLoading = false;
+
+      alert('Erreur IA');
+    }
+
+  });
+
+}
 }
