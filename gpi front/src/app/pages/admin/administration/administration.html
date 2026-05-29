@@ -1,26 +1,8 @@
 <div class="admin-container">
 
   <div class="page-title">Dashboard</div>
-
-  <!-- ── Loading spinner ───────────────────────────────────── -->
-  <div *ngIf="isLoading" style="text-align:center;padding:2rem;color:#888">
-    <i class="pi pi-spin pi-spinner" style="font-size:1.5rem"></i>
-    <p style="margin-top:0.5rem;font-size:0.85rem">Chargement depuis Keycloak...</p>
-  </div>
-
-  <!-- ── Stats Cards ────────────────────────────────────────── -->
-  <div *ngIf="!isLoading" class="stats-grid">
-
-    <div class="stat-card">
-      <div class="stat-info">
-        <span class="stat-number">{{ adminCount }}</span>
-        <span class="stat-label">Administrateurs</span>
-      </div>
-      <div class="stat-icon">
-        <i class="pi pi-shield"></i>
-      </div>
-    </div>
-
+  <!-- Stats Cards -->
+  <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-info">
         <span class="stat-number">{{ backofficeCount }}</span>
@@ -60,62 +42,10 @@
         <i class="pi pi-check-circle"></i>
       </div>
     </div>
-
   </div>
 
-  <!-- ── Répartition par rôle ───────────────────────────────── -->
-  <div *ngIf="!isLoading && totalCount > 0" class="content-grid" style="margin-bottom:1.25rem">
-    <div class="content-card">
-      <div class="card-header">
-        <h2>Répartition par rôle</h2>
-      </div>
-      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;padding:0.5rem 0">
-
-        <!-- Admin -->
-        <div style="flex:1;min-width:140px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:0.4rem">
-            <span style="font-size:0.8rem;font-weight:700;color:#1B2A4A">Admin</span>
-            <span style="font-size:0.8rem;font-weight:700">{{ adminCount }}</span>
-          </div>
-          <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden">
-            <div [style.width.%]="totalCount > 0 ? (adminCount / totalCount * 100) : 0"
-                 style="height:100%;background:#E8421A;border-radius:4px;transition:width 0.6s ease">
-            </div>
-          </div>
-        </div>
-
-        <!-- Backoffice -->
-        <div style="flex:1;min-width:140px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:0.4rem">
-            <span style="font-size:0.8rem;font-weight:700;color:#1B2A4A">Backoffice</span>
-            <span style="font-size:0.8rem;font-weight:700">{{ backofficeCount }}</span>
-          </div>
-          <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden">
-            <div [style.width.%]="totalCount > 0 ? (backofficeCount / totalCount * 100) : 0"
-                 style="height:100%;background:#1B2A4A;border-radius:4px;transition:width 0.6s ease">
-            </div>
-          </div>
-        </div>
-
-        <!-- Client -->
-        <div style="flex:1;min-width:140px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:0.4rem">
-            <span style="font-size:0.8rem;font-weight:700;color:#1B2A4A">Client</span>
-            <span style="font-size:0.8rem;font-weight:700">{{ clientCount }}</span>
-          </div>
-          <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden">
-            <div [style.width.%]="totalCount > 0 ? (clientCount / totalCount * 100) : 0"
-                 style="height:100%;background:#22c55e;border-radius:4px;transition:width 0.6s ease">
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Derniers utilisateurs ──────────────────────────────── -->
-  <div *ngIf="!isLoading" class="content-grid">
+  <!-- Derniers utilisateurs -->
+  <div class="content-grid">
     <div class="content-card">
       <div class="card-header">
         <h2>Derniers utilisateurs</h2>
@@ -123,13 +53,7 @@
           Voir tout <i class="pi pi-arrow-right"></i>
         </button>
       </div>
-
-      <div *ngIf="recentUsers.length === 0"
-           style="text-align:center;color:#aaa;padding:2rem;font-size:0.85rem">
-        Aucun utilisateur trouvé
-      </div>
-
-      <table *ngIf="recentUsers.length > 0" class="data-table">
+      <table class="data-table">
         <thead>
           <tr>
             <th>Nom</th>
@@ -149,11 +73,8 @@
               </div>
             </td>
             <td>
-              <span class="role-badge"
-                    [class.admin]="user.role === 'Admin'"
-                    [class.backoffice]="user.role === 'Backoffice'"
-                    [class.client]="user.role === 'Client'">
-                {{ user.role || '—' }}
+              <span class="role-badge" [class.backoffice]="user.role === 'Backoffice'">
+                {{ user.role }}
               </span>
             </td>
             <td>

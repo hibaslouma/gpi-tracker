@@ -10,106 +10,93 @@
 
 <div class="backoffice-wrapper">
   <main class="main-content">
-
     <!-- ═══════════════════════════════════════════════════
-         TAB 0 : DASHBOARD
+         DASHBOARD CLIENT
     ═══════════════════════════════════════════════════ -->
-    <div *ngIf="activeTab==='dashboard'" class="tab-content">
+    <div *ngIf="isClient && activeTab==='dashboard'" class="tab-content client-dashboard">
       <div class="page-title">Tableau de Bord</div>
-      <div class="stats-grid">
-        <div class="stat-card" (click)="setActiveTab('entrants')" style="cursor:pointer">
-          <div class="stat-info">
-            <span class="stat-number">{{ stats.totalRecus }}</span>
-            <span class="stat-label">Paiements reçus</span>
+
+      <div class="client-stats-grid">
+        <div class="client-stat-card">
+          <div>
+            <div class="client-stat-number">{{ clientTotalPaiements }}</div>
+            <div class="client-stat-label">Total paiements</div>
           </div>
-          <div class="stat-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          </div>
+          <div class="client-stat-icon">✈</div>
         </div>
-        <div class="stat-card stat-card--orange" (click)="setActiveTab('entrants')" style="cursor:pointer">
-          <div class="stat-info">
-            <span class="stat-number">{{ stats.enAttente }}</span>
-            <span class="stat-label">En attente</span>
+
+        <div class="client-stat-card">
+          <div>
+            <div class="client-stat-number">{{ clientEnCours }}</div>
+            <div class="client-stat-label">En cours</div>
           </div>
-          <div class="stat-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
+          <div class="client-stat-icon">⏱</div>
         </div>
-        <div class="stat-card" (click)="setActiveTab('entrants')" style="cursor:pointer">
-          <div class="stat-info">
-            <span class="stat-number">{{ stats.acceptes }}</span>
-            <span class="stat-label">Acceptés (ACSC)</span>
+
+        <div class="client-stat-card client-stat-card--success">
+          <div>
+            <div class="client-stat-number">{{ clientEffectues }}</div>
+            <div class="client-stat-label">Effectués</div>
           </div>
-          <div class="stat-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
+          <div class="client-stat-icon">✓</div>
         </div>
-        <div class="stat-card stat-card--navy" (click)="setActiveTab('entrants')" style="cursor:pointer">
-          <div class="stat-info">
-            <span class="stat-number">{{ stats.rejetes }}</span>
-            <span class="stat-label">Rejetés (RJCT)</span>
+
+        <div class="client-stat-card client-stat-card--danger">
+          <div>
+            <div class="client-stat-number">{{ clientRefuses }}</div>
+            <div class="client-stat-label">Refusés</div>
           </div>
-          <div class="stat-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-          </div>
+          <div class="client-stat-icon">×</div>
         </div>
       </div>
 
-      <div class="dash-grid">
-        <div class="content-card dash-card">
-          <div class="card-header">
-            <h2>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-              Répartition des statuts ISO
-            </h2>
-          </div>
-          <div *ngIf="paiementsRecus.length === 0" class="dash-empty">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <p>Aucun paiement reçu pour l'instant</p>
-          </div>
-          <div *ngIf="paiementsRecus.length > 0" class="statut-bars">
-            <div class="statut-bar-row" *ngFor="let item of repartitionStatuts">
-              <div class="statut-bar-label"><span class="badge" [ngClass]="getStatutClass(item.statut)">{{ item.statut }}</span></div>
-              <div class="statut-bar-track"><div class="statut-bar-fill" [ngClass]="'bar-fill--' + item.statut.toLowerCase()" [style.width.%]="item.pct"></div></div>
-              <div class="statut-bar-count">{{ item.count }}</div>
-            </div>
-          </div>
+      <div class="content-card client-last-card">
+        <div class="card-header">
+          <h2>Derniers paiements</h2>
+          <button class="btn-navy" (click)="setActiveTab('vue-transactionnelle')">
+            Voir tout ›
+          </button>
         </div>
 
-        <div class="content-card dash-card">
-          <div class="card-header">
-            <h2>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>
-              Dernières transactions
-            </h2>
-            <button class="btn-navy" (click)="setActiveTab('entrants')">Voir tout <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
-          </div>
-          <div *ngIf="paiementsRecus.length === 0" class="dash-empty">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            <p>Aucun paiement reçu pour l'instant</p>
-          </div>
-          <table *ngIf="paiementsRecus.length > 0" class="data-table">
-            <thead><tr><th>Statut</th><th>BIC Expéditeur</th><th>Montant</th><th>Date</th></tr></thead>
-            <tbody>
-              <tr *ngFor="let p of paiementsRecus.slice(0,5)" (click)="setActiveTab('entrants')" style="cursor:pointer">
-                <td><span class="badge" [ngClass]="getStatutClass(p.statut)">{{ p.statut }}</span></td>
-                <td><strong>{{ p.senderBic }}</strong></td>
-                <td class="montant-cell">{{ formatMontant(p.montant) }} {{ p.devise }}</td>
-                <td>{{ p.receivedAt | date:'dd/MM/yyyy' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Statut</th>
+              <th>Référence</th>
+              <th>BIC Expéditeur</th>
+              <th>BIC Destinataire</th>
+              <th>Montant</th>
+              <th>Date</th>
+              <th>Détail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of clientDerniersPaiements">
+              <td>
+                <span class="badge" [ngClass]="getStatutClass(p.statut || 'PDNG')">
+                  {{ getClientStatutLabel(p.statut || 'PDNG') }}
+                </span>
+              </td>
+              <td class="uetr-cell">{{ p.uetr || p.messageId }}</td>
+              <td><strong>{{ p.senderBic }}</strong></td>
+              <td><strong>{{ p.receiverBic }}</strong></td>
+              <td class="montant-cell">
+                {{ formatMontant(p.montant) }} {{ p.devise }}
+              </td>
+              <td>{{ p.dateValeur | date: 'dd/MM/yyyy' }}</td>
+              <td>
+                <button class="btn-action" (click)="voirTimelineEmis(p)">→</button>
+              </td>
+            </tr>
+            <tr *ngIf="clientDerniersPaiements.length === 0">
+              <td colspan="7" class="empty-state">Aucun paiement trouvé</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+    </div>
 
-      <div class="dash-grid">
-        <div class="content-card dash-card">
-          <div class="card-header">
-            <h2>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              Paiements entrants en attente
-              <span class="menu-badge" *ngIf="nbEntrantsEnAttente > 0" style="margin-left:0.5rem">{{ nbEntrantsEnAttente }}</span>
-            </h2>
+  
 
     <!-- ═══════════════════════════════════════════════════
          DASHBOARD BACKOFFICE
@@ -590,7 +577,7 @@
                     <button class="btn-ai" (click)="voirPredictionIA(p)">
                       Voir prédiction IA
                     </button>
-                    <button *ngIf="isBackoffice || isAdmin" class="btn-accepter"
+                    <button *ngIf="(isBackoffice || isAdmin) && (!p.statut || p.statut === 'PDNG')" class="btn-accepter"
                       (click)="ouvrirModalTraitement(p)">
                       Traiter
                     </button>
@@ -781,7 +768,7 @@
         </div>
       </div>
     </div>
-    </div>
+
 
     <!-- ═══════════════════════════════════════════════════
          TAB 5 : HISTORIQUE

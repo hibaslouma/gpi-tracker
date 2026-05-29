@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+<AppHdr xmlns="urn:iso:std:iso:20022:tech:xsd:head.001.001.02">
+  <Fr><FIId><FinInstnId><BICFI>INGBNL2A</BICFI></FinInstnId></FIId></Fr>
+  <To><FIId><FinInstnId><BICFI>BNPAFRPP</BICFI></FinInstnId></FIId></To>
+  <BizMsgIdr>CAMT056-MSG-TEST-005-AG02-20260529_235143</BizMsgIdr>
+  <MsgDefIdr>camt.056.001.08</MsgDefIdr>
+  <CreDt>2026-05-29T23:51:43Z</CreDt>
+</AppHdr>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.056.001.08">
+  <FIToFIPmtCxlReq>
+    <Assgnmt>
+      <Id>545d3f1c-6267-4b37-8f6a-f5b394fc3ca3</Id>
+      <Assgnr><Agt><FinInstnId><BICFI>INGBNL2A</BICFI></FinInstnId></Agt></Assgnr>
+      <Assgne><Agt><FinInstnId><BICFI>BNPAFRPP</BICFI></FinInstnId></Agt></Assgne>
+      <CreDtTm>2026-05-29T23:51:43Z</CreDtTm>
+    </Assgnmt>
+    <Undrlyg>
+      <TxInf>
+        <OrgnlGrpInf>
+          <OrgnlMsgId>MSG-TEST-005-AG02</OrgnlMsgId>
+          <OrgnlMsgNmId>pacs.008.001.08</OrgnlMsgNmId>
+        </OrgnlGrpInf>
+        <OrgnlUETR>550e8400-e29b-41d4-a716-446655440005</OrgnlUETR>
+        <CxlRsnInf>
+          <Rsn><Cd>TECH</Cd></Rsn>
+        </CxlRsnInf>
+      </TxInf>
+    </Undrlyg>
+  </FIToFIPmtCxlReq>
+</Document>
+</data>

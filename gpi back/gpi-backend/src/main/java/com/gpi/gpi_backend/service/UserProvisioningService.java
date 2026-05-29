@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
+import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class UserProvisioningService {
@@ -34,15 +34,37 @@ public class UserProvisioningService {
         // 1️⃣ Try by keycloakId
         Optional<User> byKeycloak = userRepository.findByKeycloakId(keycloakId);
         if (byKeycloak.isPresent()) {
-            return byKeycloak.get();
-        }
+            User existing = byKeycloak.get();
 
+            // Corriger l'IBAN si le rôle n'est pas Client
+            User.Role role = extractRoleFromJwt(jwt);
+            if (role != User.Role.Client && existing.getIban() != null) {
+                existing.setIban(null);
+                existing.setRole(role);
+                return userRepository.save(existing);
+            }
+
+            return existing;
+        }
+        // 2️⃣ Try by email (existing user without keycloakId)
         // 2️⃣ Try by email (existing user without keycloakId)
         if (email != null) {
             Optional<User> byEmail = userRepository.findByEmail(email);
             if (byEmail.isPresent()) {
                 User existing = byEmail.get();
                 existing.setKeycloakId(keycloakId);
+
+                // Sync role from JWT
+                User.Role role = extractRoleFromJwt(jwt);
+                existing.setRole(role);
+
+                // IBAN uniquement pour les clients
+                if (role != User.Role.Client) {
+                    existing.setIban(null);
+                } else if (existing.getIban() == null) {
+                    existing.setIban(generateIban());
+                }
+
                 return userRepository.save(existing);
             }
         }
@@ -52,6 +74,7 @@ public class UserProvisioningService {
 
         User newUser = User.builder()
                 .keycloakId(keycloakId)
+                .iban(role == User.Role.Client ? generateIban() : null)
                 .email(email != null ? email : (keycloakId + "@unknown"))
                 .username(username)
                 .password("N/A") // not used, authentication is via Keycloak
@@ -78,5 +101,8 @@ public class UserProvisioningService {
         }
         // Default role if none found
         return User.Role.Client;
+    }
+    private String generateIban() {
+        return "TN59" + UUID.randomUUID().toString().replace("-", "").substring(0, 14).toUpperCase();
     }
 }

@@ -107,9 +107,7 @@ getPredictionIA(id: number): Observable<any> {
     return this.http.get<RecapMg[]>(`${this.api}/paiements-emis`);
   }
 
-  getPaiementsEmis(): Observable<RecapMg[]> {
-    return this.http.get<RecapMg[]>(`${this.api}/paiements-emis`);
-  }
+
 
   // ── Client: only payments of the logged-in client ───────────
 

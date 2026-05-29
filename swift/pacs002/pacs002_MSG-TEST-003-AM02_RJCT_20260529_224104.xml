@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+<RequestPayload>
+<head:AppHdr xmlns:head="urn:iso:std:iso:20022:tech:xsd:head.001.001.02">
+    <head:Fr>
+        <head:FIId>
+            <head:FinInstnId>
+                <head:BICFI>BARCLONDON</head:BICFI>
+            </head:FinInstnId>
+        </head:FIId>
+    </head:Fr>
+    <head:To>
+        <head:FIId>
+            <head:FinInstnId>
+                <head:BICFI>SOGEFRPP</head:BICFI>
+            </head:FinInstnId>
+        </head:FIId>
+    </head:To>
+    <head:BizMsgIdr>ACK-MSG-TEST-003-AM02-20260529_224104</head:BizMsgIdr>
+    <head:MsgDefIdr>pacs.002.001.10</head:MsgDefIdr>
+    <head:CreDt>2026-05-29T22:41:04.8469409+01:00</head:CreDt>
+</head:AppHdr>
+<pacs:Document xmlns:pacs="urn:iso:std:iso:20022:tech:xsd:pacs.002.001.10">
+    <pacs:FIToFIPmtStsRpt>
+        <pacs:GrpHdr>
+            <pacs:MsgId>ACK-MSG-TEST-003-AM02-20260529_224104</pacs:MsgId>
+            <pacs:CreDtTm>2026-05-29T21:41:04.8499782+00:00</pacs:CreDtTm>
+        </pacs:GrpHdr>
+        <pacs:TxInfAndSts>
+            <pacs:OrgnlGrpInf>
+                <pacs:OrgnlMsgId>MSG-TEST-003-AM02</pacs:OrgnlMsgId>
+                <pacs:OrgnlMsgNmId>pacs.008.001.08</pacs:OrgnlMsgNmId>
+            </pacs:OrgnlGrpInf>
+            <pacs:OrgnlUETR>550e8400-e29b-41d4-a716-446655440002</pacs:OrgnlUETR>
+            <pacs:TxSts>RJCT</pacs:TxSts>
+            <pacs:StsRsnInf>
+                <pacs:Rsn>
+                    <pacs:Cd>AC01</pacs:Cd>
+                </pacs:Rsn>
+            </pacs:StsRsnInf>
+        </pacs:TxInfAndSts>
+    </pacs:FIToFIPmtStsRpt>
+</pacs:Document>
+</RequestPayload>
+</data>

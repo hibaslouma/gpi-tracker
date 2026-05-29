@@ -1,33 +1,47 @@
 package com.gpi.gpi_backend.service;
 
-import com.gpi.gpi_backend.dto.UserDTO;
-import com.gpi.gpi_backend.repository.UserRepository;
+import com.gpi.gpi_backend.dto.*;
+import com.gpi.gpi_backend.model.*;
+import com.gpi.gpi_backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AdminUserService {
 
-    private final KeycloakAdminService keycloakAdminService;
     private final UserRepository userRepository;
+    private final UserLogRepository userLogRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final KeycloakAdminService keycloakAdminService;
+    private final EmailService emailService;
+
+    private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final DateTimeFormatter D_FMT  = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public List<UserDTO> getAllUsers() {
-        return keycloakAdminService.getAllUsers();
+        return userRepository.findAll()
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
-    public void deleteUser(String id) {
-        keycloakAdminService.deleteUserById(id);
-    }
+    public UserDTO createUser(UserRequest req, String adminName) {
+        if (userRepository.existsByEmail(req.getEmail()))
+            throw new RuntimeException("Email déjà utilisé !");
 
-    public void createUser(UserDTO dto) {
+        //  Keycloak d'abord
         keycloakAdminService.createUser(
-                dto.getEmail(),
-                dto.getName(),
-                dto.getPassword(),
-                dto.getRole()
+                req.getEmail(),
+                req.getName(),
+                req.getPassword(),
+                req.getRole()
         );
 
         //  Oracle DB ensuite
@@ -35,6 +49,7 @@ public class AdminUserService {
         user.setUsername(req.getName());
         user.setEmail(req.getEmail());
         user.setPhone(req.getPhone());
+        user.setIban("Client".equals(req.getRole()) ? generateFakeIban() : null);
         user.setRole(User.Role.valueOf(req.getRole()));
         user.setActive(true);
         user.setFirstLogin(true);
@@ -47,16 +62,14 @@ public class AdminUserService {
         return toDTO(user);
     }
 
-    public void updateUser(String id, UserDTO dto) {
-        keycloakAdminService.updateUser(id, dto);
-    }
-
-    // ✅ Set firstLogin = false after first password change
     public void finaliserInscription(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
         user.setFirstLogin(false);
         userRepository.save(user);
+    }
+    private String generateFakeIban() {
+        return "TN59" + System.currentTimeMillis();
     }
 
     public UserDTO updateUser(Long id, UserRequest req, String adminName) {

@@ -46,6 +46,10 @@ public class User {
 
     @Column(name = "LAST_LOGIN")
     private LocalDateTime lastLogin;
+    @Column(name = "IBAN", length = 34)
+    private String iban;
+    @Column(name = "KEYCLOAK_ID", unique = true)
+    private String keycloakId;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
