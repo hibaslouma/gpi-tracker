@@ -74,13 +74,13 @@ public class FolderWatcherService {
             System.out.println("[FolderWatcher] Event: " + event.kind()
                     + " → " + fileName + " | type: " + typeMsg);
 
-            // ✅ Ignore archive folder
+            //  Ignore archive folder
             if (fileName.toString().equals("archive")) continue;
 
-            // ✅ Ignore non-files
+            //  Ignore non-files
             if (!Files.isRegularFile(fullPath)) continue;
 
-            // ✅ Ignore generated pacs.002 files in client emis
+            // Ignore generated pacs.002 files in client emis
             if (typeMsg.equals("EMIS") && (
                     fileName.toString().startsWith("pacs002_") ||
                             fileName.toString().startsWith("ACK-"))) {
@@ -89,7 +89,7 @@ public class FolderWatcherService {
             }
 
             try {
-                // ✅ Route to correct service based on folder type
+                //  Route to correct service based on folder type
                 if (typeMsg.equals("RECU")) {
                     clientRecuService.clientRecu(fullPath);
                 } else {

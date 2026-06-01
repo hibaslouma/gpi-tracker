@@ -63,6 +63,7 @@ public class AuthController {
         userRepository.findByEmail(req.getEmail()).ifPresent(user -> {
             user.setPassword(passwordEncoder.encode(req.getNewPassword()));
             userRepository.save(user);
+
         });
 
         return ResponseEntity.ok().build();

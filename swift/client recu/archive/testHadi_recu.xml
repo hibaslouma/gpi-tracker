@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08">
+  <FIToFICstmrCdtTrf>
+    <GrpHdr>
+      <MsgId>MSG-TEST-003-AM02</MsgId>
+      <CreDtTm>2024-06-15T11:00:00</CreDtTm>
+      <NbOfTxs>1</NbOfTxs>
+      <SttlmInf>
+        <SttlmMtd>CLRG</SttlmMtd>
+      </SttlmInf>
+    </GrpHdr>
+    <CdtTrfTxInf>
+      <PmtId>
+        <EndToEndId>E2E-TEST-002</EndToEndId>
+        <UETR>550e8400-e29b-41d4-a716-446655440002</UETR>
+      </PmtId>
+      <IntrBkSttlmAmt Ccy="EUR">750000.00</IntrBkSttlmAmt>
+      <IntrBkSttlmDt>2024-06-15</IntrBkSttlmDt>
+      <Dbtr>
+        <Nm>hiba slouma</Nm>
+        <PstlAdr>
+          <StrtNm>Avenue de Provence</StrtNm>
+          <BldgNb>29</BldgNb>
+          <PstCd>75009</PstCd>
+          <TwnNm>Paris</TwnNm>
+          <Ctry>FR</Ctry>
+        </PstlAdr>
+      </Dbtr>
+      <DbtrAcct>
+        <Id>
+          <IBAN>FR7630003000201234567890163</IBAN>
+        </Id>
+      </DbtrAcct>
+      <DbtrAgt>
+        <FinInstnId>
+          <BICFI>SOGEFRPP</BICFI>
+        </FinInstnId>
+      </DbtrAgt>
+      <CdtrAgt>
+        <FinInstnId>
+          <BICFI>BARCLONDON</BICFI>
+        </FinInstnId>
+      </CdtrAgt>
+      <Cdtr>
+        <Nm>hadi slama</Nm>
+       
+      </Cdtr>
+      <CdtrAcct>
+        <Id>
+          <IBAN>TN591780210470821</IBAN>
+        </Id>
+      </CdtrAcct>
+    </CdtTrfTxInf>
+  </FIToFICstmrCdtTrf>
+</Document>

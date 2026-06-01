@@ -17,7 +17,7 @@ export class RedirectComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
-    // ✅ Vérifier firstLogin via Spring Boot
+    //  Vérifier firstLogin via Spring Boot
     this.authService.getMe().subscribe({
       next: (me) => {
         if (me.firstLogin) {

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08">
+  <FIToFICstmrCdtTrf>
+    <GrpHdr>
+      <MsgId>HADI-TEST</MsgId>
+      <CreDtTm>2026-06-15T10:30:00</CreDtTm>
+      <NbOfTxs>1</NbOfTxs>
+      <SttlmInf>
+        <SttlmMtd>CLRG</SttlmMtd>
+      </SttlmInf>
+    </GrpHdr>
+    <CdtTrfTxInf>
+      <PmtId>
+        <EndToEndId>E2E-TEST-001</EndToEndId>
+        <UETR>550e8400-e29b-41d4-a716-446655440001</UETR>
+      </PmtId>
+      <IntrBkSttlmAmt Ccy="EUR">15000.00</IntrBkSttlmAmt>
+      <IntrBkSttlmDt>2026-06-15</IntrBkSttlmDt>
+      <Dbtr>
+        <Nm>Hadi slama</Nm>
+        <PstlAdr>
+          <StrtNm>tunisie</StrtNm>
+          
+          <PstCd>75009</PstCd>
+          <TwnNm>nabeul</TwnNm>
+          <Ctry>tn</Ctry>
+        </PstlAdr>
+      </Dbtr>
+      <DbtrAcct>
+        <Id>
+          <IBAN>TN591780210470821</IBAN>
+        </Id>
+      </DbtrAcct>
+      <DbtrAgt>
+        <FinInstnId>
+          <BICFI>BNPAFRPP</BICFI>
+        </FinInstnId>
+      </DbtrAgt>
+      <CdtrAgt>
+        <FinInstnId>
+          <BICFI>DEUTDEFF</BICFI>
+        </FinInstnId>
+      </CdtrAgt>
+      <Cdtr>
+        <Nm>sonia hermi</Nm>
+        <PstlAdr>
+          <StrtNm>Taunusanlage</StrtNm>
+          <BldgNb>12</BldgNb>
+          <PstCd>60325</PstCd>
+          <TwnNm>Frankfurt</TwnNm>
+          <Ctry>DE</Ctry>
+        </PstlAdr>
+      </Cdtr>
+      <CdtrAcct>
+        <Id>
+          <IBAN>DE89370400440532013000</IBAN>
+        </Id>
+      </CdtrAcct>
+    </CdtTrfTxInf>
+  </FIToFICstmrCdtTrf>
+</Document>

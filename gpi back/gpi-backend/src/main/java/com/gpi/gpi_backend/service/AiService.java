@@ -18,13 +18,15 @@ import java.util.Map;
 public class AiService {
 
     private final RestTemplate restTemplate;
+    // RestTemplate = client HTTP Java
 
     @Value("${ai.api.url:http://localhost:5000/predict}")
     private String aiApiUrl;
+    // L'URL de Flask configurée dans application.properties
 
     public AiPredictionResponse predict(RecapMg transaction) {
         try {
-            // ── Construire le body JSON ───────────────────────
+            // 1. Préparer les données à envoyer
             Map<String, Object> body = new HashMap<>();
             body.put("sender_iban",   nvl(transaction.getSenderIban()));
             body.put("receiver_iban", nvl(transaction.getReceiverIban()));
@@ -39,18 +41,18 @@ public class AiService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
-            // ── Appel API Flask ───────────────────────────────
+            // 3. Envoyer POST à Flask et recevoir la réponse
             ResponseEntity<AiPredictionResponse> response = restTemplate.postForEntity(
                     aiApiUrl, request, AiPredictionResponse.class
             );
 
             AiPredictionResponse result = response.getBody();
-            log.info("[AiService] ✅ Prédiction → status={} motif={} risk={}",
+            log.info("[AiService]  Prédiction → status={} motif={} risk={}",
                     result.getStatus(), result.getRejectReason(), result.getRiskScore());
             return result;
 
         } catch (Exception e) {
-            log.error("[AiService] ❌ API IA indisponible : {}", e.getMessage());
+            log.error("[AiService]  API IA indisponible : {}", e.getMessage());
             return null; // ← transaction sauvegardée normalement même si IA down
         }
     }

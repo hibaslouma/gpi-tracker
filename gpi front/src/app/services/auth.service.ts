@@ -30,16 +30,15 @@ export class AuthService {
     return this.keycloak.isLoggedIn();
   }
 
-  // ✅ Profil utilisateur depuis Keycloak
+  //  Profil utilisateur depuis Keycloak
   getUserProfile() {
     return this.keycloak.loadUserProfile();
   }
 
-  // ✅ Appel Spring Boot
+  
   getMe(): Observable<any> {
     return this.http.get<any>('http://localhost:8080/api/auth/me');
   }
-  // ✅ Changer le mot de passe
 changePassword(email: string, newPassword: string): Observable<any> {
     return this.http.post<any>(
         'http://localhost:8080/api/auth/change-password',

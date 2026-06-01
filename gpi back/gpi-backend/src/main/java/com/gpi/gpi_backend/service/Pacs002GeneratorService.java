@@ -53,7 +53,7 @@ public class Pacs002GeneratorService {
             // ── 1. Validate UETR (UUIDv4) ─────────────────────────
             ValidationResult uetrResult = validerUetr(recap.getUetr());
             if (!uetrResult.isValid()) {
-                System.err.println("[Pacs002GeneratorService] ⚠️  UETR invalide : "
+                System.err.println("[Pacs002GeneratorService]  UETR invalide : "
                         + uetrResult.getErrors());
                 String newUetr = UUID.randomUUID().toString();
                 System.out.println("[Pacs002GeneratorService]    UETR corrigé  : " + newUetr);
