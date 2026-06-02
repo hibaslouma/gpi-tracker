@@ -120,10 +120,10 @@ public class Pacs002GeneratorService {
             // ── 7. Validate XML against XSD ───────────────────────
             ValidationResult xsdResult = validerXsd(messageXml);
             if (!xsdResult.isValid()) {
-                System.err.println("[Pacs002GeneratorService] ⚠️  Validation XSD échouée :");
+                System.err.println("[Pacs002GeneratorService]   Validation XSD échouée :");
                 xsdResult.getErrors().forEach(e -> System.err.println("    - " + e));
             } else {
-                System.out.println("[Pacs002GeneratorService] ✅ Validation XSD réussie");
+                System.out.println("[Pacs002GeneratorService] Validation XSD réussie");
             }
 
             // ── 8. Wrap in <data> and write file ───────────────────
@@ -133,7 +133,7 @@ public class Pacs002GeneratorService {
 
             Files.writeString(filePath, fullXml);
 
-            System.out.println("[Pacs002GeneratorService] ✅ pacs.002 généré : " + fileName);
+            System.out.println("[Pacs002GeneratorService]  pacs.002 généré : " + fileName);
             System.out.println("[Pacs002GeneratorService]    Dossier    : " + pacs002FolderPath);
             System.out.println("[Pacs002GeneratorService]    OrgnlMsgId : " + recap.getMessageId());
             System.out.println("[Pacs002GeneratorService]    OrgnlUETR  : " + recap.getUetr());
@@ -141,14 +141,14 @@ public class Pacs002GeneratorService {
             System.out.println("[Pacs002GeneratorService]    De         : " + bicFrom);
             System.out.println("[Pacs002GeneratorService]    Vers       : " + bicTo);
 
-            // ✅ Return filename so controller can serve it as download
+            //  Return filename so controller can serve it as download
             return fileName;
 
         } catch (IOException e) {
-            System.err.println("[Pacs002GeneratorService] ❌ Erreur écriture : " + e.getMessage());
+            System.err.println("[Pacs002GeneratorService]  Erreur écriture : " + e.getMessage());
             throw new RuntimeException("Erreur écriture pacs.002", e);
         } catch (Exception e) {
-            System.err.println("[Pacs002GeneratorService] ❌ Erreur Prowide : " + e.getMessage());
+            System.err.println("[Pacs002GeneratorService] Erreur Prowide : " + e.getMessage());
             throw new RuntimeException("Erreur Prowide pacs.002", e);
         }
     }
@@ -175,7 +175,7 @@ public class Pacs002GeneratorService {
         }
         boolean valid = errors.isEmpty();
         if (valid) {
-            System.out.println("[Pacs002GeneratorService] ✅ UETR valide (UUIDv4) : " + uetr);
+            System.out.println("[Pacs002GeneratorService] UETR valide (UUIDv4) : " + uetr);
         }
         return new ValidationResult(valid, errors);
     }
@@ -198,9 +198,9 @@ public class Pacs002GeneratorService {
                     return new ValidationResult(false, errors);
                 }
                 validator.validate(new StreamSource(new StringReader(docOnly)));
-                System.out.println("[Pacs002GeneratorService] ✅ Validation XSD complète réussie");
+                System.out.println("[Pacs002GeneratorService] Validation XSD complète réussie");
             } else {
-                System.out.println("[Pacs002GeneratorService] ℹ️  XSD non trouvé, validation structurelle");
+                System.out.println("[Pacs002GeneratorService]   XSD non trouvé, validation structurelle");
                 return validerStructureBasique(xmlContent);
             }
         } catch (Exception e) {
@@ -233,7 +233,7 @@ public class Pacs002GeneratorService {
             errors.add("Namespace pacs.002.001.10 manquant");
         }
         if (errors.isEmpty()) {
-            System.out.println("[Pacs002GeneratorService] ✅ Validation structurelle réussie");
+            System.out.println("[Pacs002GeneratorService]  Validation structurelle réussie");
         }
         return new ValidationResult(errors.isEmpty(), errors);
     }
@@ -251,7 +251,7 @@ public class Pacs002GeneratorService {
 
         @Override
         public String toString() {
-            return valid ? "✅ Valide" : "❌ Invalide: " + errors;
+            return valid ? " Valide" : " Invalide: " + errors;
         }
     }
 }

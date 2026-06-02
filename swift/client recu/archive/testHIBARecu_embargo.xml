@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08">
+  <FIToFICstmrCdtTrf>
+    <GrpHdr>
+      <MsgId>MSG-TEST-003-AG01</MsgId>
+      <CreDtTm>2024-06-15T12:00:00</CreDtTm>
+      <NbOfTxs>1</NbOfTxs>
+      <SttlmInf>
+        <SttlmMtd>CLRG</SttlmMtd>
+      </SttlmInf>
+    </GrpHdr>
+    <CdtTrfTxInf>
+      <PmtId>
+        <EndToEndId>E2E-TEST-003</EndToEndId>
+        <UETR>550e8400-e29b-41d4-a716-446655440003</UETR>
+      </PmtId>
+      <IntrBkSttlmAmt Ccy="EUR">5000.00</IntrBkSttlmAmt>
+      <IntrBkSttlmDt>2024-06-15</IntrBkSttlmDt>
+      <Dbtr>
+        <Nm></Nm>
+        <PstlAdr>
+          <StrtNm>Ifran houki</StrtNm>
+          <BldgNb>95</BldgNb>
+          <PstCd>1000</PstCd>
+          <TwnNm>IRAN</TwnNm>
+          
+        </PstlAdr>
+      </Dbtr>
+      <DbtrAcct>
+        <Id>
+          <IBAN>IR580570028780010872573114</IBAN>
+        </Id>
+      </DbtrAcct>
+      <DbtrAgt>
+        <FinInstnId>
+          <BICFI>Bank Melli Ira</BICFI>
+        </FinInstnId>
+      </DbtrAgt>
+      <CdtrAgt>
+        <FinInstnId>
+          <BICFI>BIAT</BICFI>
+        </FinInstnId>
+      </CdtrAgt>
+      <Cdtr>
+        <Nm>hiba slouma</Nm>
+        <PstlAdr>
+          <AdrLine>Nabeul,BeniKhiar</AdrLine>
+        </PstlAdr>
+      </Cdtr>
+      <CdtrAcct>
+        <Id>
+          <IBAN>TN591780374000226</IBAN>
+        </Id>
+      </CdtrAcct>
+    </CdtTrfTxInf>
+  </FIToFICstmrCdtTrf>
+</Document>

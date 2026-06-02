@@ -185,6 +185,7 @@ public class RecapMgController {
         if (motifRejet != null) recap.setMotifRejet(motifRejet);
         recapMgRepository.save(recap);
 
+
         // Generate pacs.002
         String generatedFileName = pacs002GeneratorService
                 .genererPacs002AvecProwide(recap, nouveauStatut, motifRejet);

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.002.001.10"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="urn:iso:std:iso:20022:tech:xsd:pacs.002.001.10">
+  <FIToFIPmtStsRpt>
+
+    <!-- ═══════════════════════════════════════════════
+         EN-TÊTE DU MESSAGE
+    ═══════════════════════════════════════════════ -->
+    <GrpHdr>
+      <!-- ID unique du pacs.002 généré par la banque réceptrice -->
+      <MsgId>DEUTDEFF-ACK-HADI-TEST-20260615</MsgId>
+      <!-- Date et heure de génération de la réponse -->
+      <CreDtTm>2026-06-15T11:45:00</CreDtTm>
+    </GrpHdr>
+
+    <!-- ═══════════════════════════════════════════════
+         STATUT ORIGINAL DU MESSAGE
+    ═══════════════════════════════════════════════ -->
+    <OrgnlGrpInfAndSts>
+      <!-- Référence au pacs.008 original émis par BIAT -->
+      <OrgnlMsgId>HADI-TEST</OrgnlMsgId>
+      <!-- Type du message original -->
+      <OrgnlMsgNmId>pacs.008.001.08</OrgnlMsgNmId>
+      <!-- Date de création du message original -->
+      <OrgnlCreDtTm>2026-06-15T10:30:00</OrgnlCreDtTm>
+      <!-- Nombre de transactions dans le message original -->
+      <OrgnlNbOfTxs>1</OrgnlNbOfTxs>
+      <!-- Statut global du groupe -->
+      <GrpSts>ACSC</GrpSts>
+    </OrgnlGrpInfAndSts>
+
+    <!-- ═══════════════════════════════════════════════
+         STATUT DE LA TRANSACTION
+    ═══════════════════════════════════════════════ -->
+    <TxInfAndSts>
+
+      <!-- ID unique de cette réponse de statut -->
+      <StsId>STS-DEUTDEFF-HADI-TEST-001</StsId>
+
+      <!-- Référence End-to-End du pacs.008 original -->
+      <OrgnlEndToEndId>E2E-TEST-001</OrgnlEndToEndId>
+
+      <!-- UETR du pacs.008 original — identifiant GPI unique -->
+      <OrgnlUETR>550e8400-e29b-41d4-a716-446655440001</OrgnlUETR>
+
+      <!-- ═══════════════════════════════════
+           STATUT ISO 20022
+           ACSC = Accepted Settlement Completed
+           Le crédit a été porté au compte de sonia hermi
+      ═══════════════════════════════════ -->
+      <TxSts>ACSC</TxSts>
+
+      <!-- ═══════════════════════════════════
+           INFORMATIONS SUR LE RÈGLEMENT
+      ═══════════════════════════════════ -->
+      <AccptncDtTm>2026-06-15T11:45:00</AccptncDtTm>
+
+      <!-- Montant réglé — identique au pacs.008 -->
+      <OrgnlIntrBkSttlmAmt Ccy="EUR">15000.00</OrgnlIntrBkSttlmAmt>
+
+      <!-- Date de règlement interbancaire -->
+      <OrgnlIntrBkSttlmDt>2026-06-15</OrgnlIntrBkSttlmDt>
+
+      <!-- ═══════════════════════════════════
+           BANQUE ÉMETTRICE DU PACS.008
+           (celle qui a envoyé le paiement)
+      ═══════════════════════════════════ -->
+      <InstgAgt>
+        <FinInstnId>
+          <BICFI>BNPAFRPP</BICFI>
+        </FinInstnId>
+      </InstgAgt>
+
+      <!-- ═══════════════════════════════════
+           BANQUE RÉCEPTRICE
+           (celle qui génère ce pacs.002)
+      ═══════════════════════════════════ -->
+      <InstdAgt>
+        <FinInstnId>
+          <BICFI>DEUTDEFF</BICFI>
+        </FinInstnId>
+      </InstdAgt>
+
+      <!-- ═══════════════════════════════════
+           DÉBITEUR ORIGINAL (expéditeur)
+      ═══════════════════════════════════ -->
+      <OrgnlTxRef>
+        <Dbtr>
+          <Nm>Hadi slama</Nm>
+          <PstlAdr>
+            <StrtNm>tunisie</StrtNm>
+            <PstCd>75009</PstCd>
+            <TwnNm>nabeul</TwnNm>
+            <Ctry>TN</Ctry>
+          </PstlAdr>
+        </Dbtr>
+        <DbtrAcct>
+          <Id>
+            <IBAN>TN591780210470821</IBAN>
+          </Id>
+        </DbtrAcct>
+        <DbtrAgt>
+          <FinInstnId>
+            <BICFI>BNPAFRPP</BICFI>
+          </FinInstnId>
+        </DbtrAgt>
+
+        <!-- ═══════════════════════════════════
+             CRÉDITEUR (bénéficiaire)
+        ═══════════════════════════════════ -->
+        <CdtrAgt>
+          <FinInstnId>
+            <BICFI>DEUTDEFF</BICFI>
+          </FinInstnId>
+        </CdtrAgt>
+        <Cdtr>
+          <Nm>sonia hermi</Nm>
+          <PstlAdr>
+            <StrtNm>Taunusanlage</StrtNm>
+            <BldgNb>12</BldgNb>
+            <PstCd>60325</PstCd>
+            <TwnNm>Frankfurt</TwnNm>
+            <Ctry>DE</Ctry>
+          </PstlAdr>
+        </Cdtr>
+        <CdtrAcct>
+          <Id>
+            <IBAN>DE89370400440532013000</IBAN>
+          </Id>
+        </CdtrAcct>
+
+        <!-- Montant et devise -->
+        <IntrBkSttlmAmt Ccy="EUR">15000.00</IntrBkSttlmAmt>
+        <IntrBkSttlmDt>2026-06-15</IntrBkSttlmDt>
+      </OrgnlTxRef>
+
+    </TxInfAndSts>
+  </FIToFIPmtStsRpt>
+</Document>
